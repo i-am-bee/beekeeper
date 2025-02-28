@@ -1,7 +1,7 @@
 {
   "name": "@i-am-bee/beeai-supervisor",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": false,
   "engines": {
     "node": ">=22.2.0",
@@ -67,7 +67,6 @@
   },
   "dependencies": {
     "@google-cloud/vertexai": "^1.9.2",
-    "@i-am-bee/acp-sdk": "^0.0.1",
     "@ibm-generative-ai/node-sdk": "^3.2.4",
     "@modelcontextprotocol/sdk": "^1.5.0",
     "@opentelemetry/sdk-node": "^0.57.0",
@@ -89,6 +88,7 @@
   "devDependencies": {
     "@ai-sdk/openai": "^1.1.14",
     "@eslint/js": "^9.21.0",
+    "@i-am-bee/acp-sdk": "^0.0.4",
     "@types/blessed": "^0.1.25",
     "@types/eslint-config-prettier": "^6.11.3",
     "@types/eslint__js": "^8.42.3",
@@ -114,6 +114,7 @@
   "peerDependencies": {
     "@ai-sdk/openai": "^1.1.14",
     "@eslint/js": "^9.21.0",
+    "@i-am-bee/acp-sdk": "0.0.4",
     "beeai-framework": "^0.1.2"
   }
 }
