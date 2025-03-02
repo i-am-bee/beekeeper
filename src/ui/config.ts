@@ -96,7 +96,7 @@ export const UIConfig = {
     },
     error: { fg: UIColors.red.red, bold: true },
     executionTime: { fg: UIColors.yellow.yellow },
-    timestamp: { fg: UIColors.gray.gray },
+    timestamp: { fg: UIColors.gray.cadet_gray },
     tool: { fg: UIColors.blue.cyan, icon: "⚒" },
     eventType: {
       fg: UIColors.yellow.yellow,
@@ -114,7 +114,7 @@ export const UIConfig = {
     AWAITING_AGENT: { fg: UIColors.blue.steel_blue, icon: "◇" }, // Hollow diamond
     FAILED: { fg: UIColors.red.red, icon: "×" }, // Square
     COMPLETED: { fg: UIColors.blue.blue, icon: "●" }, // Circle
-    STOPPED: { fg: UIColors.gray.gray, icon: "◼" }, // Filled square
+    STOPPED: { fg: UIColors.gray.cadet_gray, icon: "◼" }, // Filled square
   } satisfies StyleCategory,
 
   BUSY: {

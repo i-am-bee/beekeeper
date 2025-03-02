@@ -1,6 +1,3 @@
-import blessed from "neo-blessed";
-import { join } from "path";
-import { clone } from "remeda";
 import {
   AgentConfigId,
   AgentKindId,
@@ -20,8 +17,14 @@ import {
   AgentStateBuilder,
   StateUpdateType,
 } from "@/agents/state/builder.js";
+import { AssignmentKindEnum } from "@/agents/state/dto.js";
+import { TaskRunHistoryEntry } from "@/tasks/manager/dto.js";
+import blessed from "neo-blessed";
+import { join } from "path";
+import { clone } from "remeda";
+import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
+import { ParentInput, ScreenInput } from "../base/monitor.js";
 import * as st from "../config.js";
-import { BaseMonitor, ParentInput, ScreenInput } from "../base/monitor.js";
 
 const AGENT_LIST_DEFAULT_TEXT = "Select pool to view agents";
 const AGENT_VERSION_DEFAULT_TEXT = "Select pool to view versions";
@@ -29,8 +32,19 @@ const AGENT_TEMPLATE_DETAIL_DEFAULT_TEXT =
   "Select agent pool to view agent config detail";
 const AGENT_DETAIL_DEFAULT_TEXT = "Select agent to view agent detail";
 
-export class AgentMonitor extends BaseMonitor {
-  private stateBuilder: AgentStateBuilder;
+enum AgentDetailTab {
+  DETAIL = "detail",
+  ASSIGNMENTS = "assignments",
+  HISTORY = "history",
+}
+
+const TAB_LABELS = {
+  [AgentDetailTab.DETAIL]: "Detail",
+  [AgentDetailTab.ASSIGNMENTS]: "Assignments",
+  [AgentDetailTab.HISTORY]: "History",
+};
+
+export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
   private agentPoolList: blessed.Widgets.ListElement;
   private agentPoolListItemsData: {
     agentTypeId: AgentTypeId | AgentKindId;
@@ -54,17 +68,14 @@ export class AgentMonitor extends BaseMonitor {
 
   private agentConfigDetail: blessed.Widgets.BoxElement;
   private agentDetail: blessed.Widgets.BoxElement;
-  private logBox: blessed.Widgets.Log;
+
+  private currentAgentDetailTab: AgentDetailTab = AgentDetailTab.DETAIL;
+  private detailTabButton: blessed.Widgets.ButtonElement;
+  private assignmentsTabButton: blessed.Widgets.ButtonElement;
+  private historyTabButton: blessed.Widgets.ButtonElement;
 
   constructor(arg: ParentInput | ScreenInput) {
-    super(arg);
-    this.stateBuilder = new AgentStateBuilder();
-    this.stateBuilder.on("log:reset", () => {
-      this.reset();
-    });
-    this.stateBuilder.on("log:new_line", (line) => {
-      this.logBox.log(`${new Date().toLocaleString()} - ${line}`);
-    });
+    super(arg, new AgentStateBuilder());
     this.stateBuilder.on("state:updated", (update) => {
       switch (update.type) {
         case StateUpdateType.TOOLS:
@@ -95,9 +106,9 @@ export class AgentMonitor extends BaseMonitor {
 
     // Left column - Pools and Agents (30%)
     this.agentPoolList = blessed.list({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "30%",
-      height: "20%",
+      height: "30%",
       left: 0,
       top: 0,
       border: { type: "line" },
@@ -112,11 +123,11 @@ export class AgentMonitor extends BaseMonitor {
     });
 
     this.agentVersionsList = blessed.list({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "30%",
       height: "20%",
       left: 0,
-      top: "20%",
+      top: "30%",
       border: { type: "line" },
       label: " Agent Versions ",
       content: AGENT_VERSION_DEFAULT_TEXT,
@@ -130,11 +141,11 @@ export class AgentMonitor extends BaseMonitor {
     });
 
     this.agentList = blessed.list({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "30%",
       height: "50%",
       left: 0,
-      top: "40%",
+      top: "50%",
       border: { type: "line" },
       label: " Agents ",
       content: AGENT_LIST_DEFAULT_TEXT,
@@ -149,7 +160,7 @@ export class AgentMonitor extends BaseMonitor {
 
     // Center column - Details and Tools (40%)
     this.agentConfigDetail = blessed.box({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "70%",
       height: "40%",
       left: "30%",
@@ -166,9 +177,9 @@ export class AgentMonitor extends BaseMonitor {
     });
 
     this.agentDetail = blessed.box({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "70%",
-      height: "50%",
+      height: "60%",
       left: "30%",
       top: "40%",
       border: { type: "line" },
@@ -182,21 +193,80 @@ export class AgentMonitor extends BaseMonitor {
       scrollbar: st.UIConfig.scrollbar,
     });
 
-    // Bottom - Live Updates
-    this.logBox = blessed.log({
-      parent: this.parent,
-      width: "100%",
-      height: "10%",
-      left: 0,
-      top: "90%",
-      border: { type: "line" },
-      label: " Live Updates ",
-      tags: true,
-      scrollable: true,
+    // Tab buttons at the top of agentDetail
+    this.detailTabButton = blessed.button({
+      parent: this.agentDetail,
       mouse: true,
       keys: true,
-      vi: true,
-      scrollbar: st.UIConfig.scrollbar,
+      shrink: true,
+      padding: {
+        left: 1,
+        right: 1,
+      },
+      left: 1,
+      top: 0,
+      name: "detailTab",
+      content: TAB_LABELS[AgentDetailTab.DETAIL],
+      style: {
+        bg: "blue",
+        focus: {
+          bg: "blue",
+        },
+        hover: {
+          bg: "blue",
+        },
+      },
+      hidden: true,
+    });
+
+    this.assignmentsTabButton = blessed.button({
+      parent: this.agentDetail,
+      mouse: true,
+      keys: true,
+      shrink: true,
+      padding: {
+        left: 1,
+        right: 1,
+      },
+      left: 10,
+      top: 0,
+      name: "assignmentsTab",
+      content: TAB_LABELS[AgentDetailTab.ASSIGNMENTS],
+      style: {
+        bg: "grey",
+        focus: {
+          bg: "blue",
+        },
+        hover: {
+          bg: "blue",
+        },
+      },
+      hidden: true,
+    });
+
+    this.historyTabButton = blessed.button({
+      parent: this.agentDetail,
+      mouse: true,
+      keys: true,
+      shrink: true,
+      padding: {
+        left: 1,
+        right: 1,
+      },
+      left: 23,
+      top: 0,
+      name: "historyTab",
+      content: TAB_LABELS[AgentDetailTab.HISTORY],
+      style: {
+        bg: "grey",
+        focus: {
+          bg: "blue",
+        },
+        hover: {
+          bg: "blue",
+        },
+      },
+      hidden: true,
     });
 
     this.setupEventHandlers();
@@ -264,6 +334,28 @@ export class AgentMonitor extends BaseMonitor {
     this.updateAgentDetails((itemData && itemData.agent) || undefined);
   }
 
+  private onTabSelect(tab: AgentDetailTab): void {
+    this.currentAgentDetailTab = tab;
+
+    // Update tab button styles
+    this.detailTabButton.style.bg =
+      tab === AgentDetailTab.DETAIL ? "blue" : "grey";
+    this.assignmentsTabButton.style.bg =
+      tab === AgentDetailTab.ASSIGNMENTS ? "blue" : "grey";
+    this.historyTabButton.style.bg =
+      tab === AgentDetailTab.HISTORY ? "blue" : "grey";
+
+    // Re-render the current agent with the new selected tab
+    if (this.agentListSelectedIndex != null) {
+      const itemData = this.agentListItemsData[this.agentListSelectedIndex];
+      if (itemData) {
+        this.updateAgentDetails(itemData.agent);
+      }
+    }
+
+    this.screen.render();
+  }
+
   private setupEventHandlers() {
     this.screen.key(["escape", "q", "C-c"], () => process.exit(0));
 
@@ -277,12 +369,24 @@ export class AgentMonitor extends BaseMonitor {
       this.onAgentSelect(selectedIndex),
     );
 
+    this.detailTabButton.on("press", () => {
+      this.onTabSelect(AgentDetailTab.DETAIL);
+    });
+
+    this.assignmentsTabButton.on("press", () => {
+      this.onTabSelect(AgentDetailTab.ASSIGNMENTS);
+    });
+
+    this.historyTabButton.on("press", () => {
+      this.onTabSelect(AgentDetailTab.HISTORY);
+    });
+
     // Mouse scrolling for all components
     [
       this.agentPoolList,
       this.agentList,
       this.agentConfigDetail,
-      this.agentDetail,      
+      this.agentDetail,
     ].forEach((component) => {
       component.on("mouse", (data) => {
         if (data.action === "wheelup") {
@@ -296,7 +400,8 @@ export class AgentMonitor extends BaseMonitor {
     });
   }
 
-  private reset(shouldRender = true): void {
+  protected reset(shouldRender = true): void {
+    super.reset(false);
     // Reset selections
     this.agentListSelectedIndex = null;
     this.agentPoolListSelectedIndex = null;
@@ -306,10 +411,6 @@ export class AgentMonitor extends BaseMonitor {
     this.updateAgentPoolsList(false);
     this.updateAgentConfig(undefined, false);
     this.updateAgentList(false);
-
-    // Reset log box
-    this.logBox.setContent("");
-    this.logBox.log("Reading initial state from log...");
 
     // Render
     if (shouldRender) {
@@ -531,21 +632,21 @@ export class AgentMonitor extends BaseMonitor {
     }
 
     const details = [
-      `{bold}Id:{/bold} ${st.agentConfigId(agentConfig.agentConfigId)}`,
-      `{bold}Version:{/bold} ${st.versionNum(agentConfig.agentConfigVersion)}`,
-      `{bold}Agent Kind:{/bold} ${st.agentKind(agentConfig.agentKind)}`,
-      `{bold}Agent Type:{/bold} ${st.agentType(agentConfig.agentType)}`,
-      `{bold}Max Pool Size:{/bold} ${st.num(agentConfig.maxPoolSize)}`,
-      `{bold}Auto-populate pool:{/bold} ${st.bool(agentConfig.autoPopulatePool)}`,
+      `${st.label("Id:")} ${st.agentConfigId(agentConfig.agentConfigId)}`,
+      `${st.label("Version:")} ${st.versionNum(agentConfig.agentConfigVersion)}`,
+      `${st.label("Agent Kind:")} ${st.agentKind(agentConfig.agentKind)}`,
+      `${st.label("Agent Type:")} ${st.agentType(agentConfig.agentType)}`,
+      `${st.label("Max Pool Size:")} ${st.num(agentConfig.maxPoolSize)}`,
+      `${st.label("Auto-populate pool:")} ${st.bool(agentConfig.autoPopulatePool)}`,
       "",
-      "{bold}Description:{/bold}",
+      `${st.label("Description:")}`,
       st.desc(agentConfig.description),
       "",
-      "{bold}Instructions:{/bold}",
+      `${st.label("Instructions:")}`,
       st.desc(agentConfig.instructions),
       "",
       ...(agentConfig.tools.length
-        ? ["{bold}Tools:{/bold}", st.tools(this.mapTools(agentConfig.tools))]
+        ? [`${st.label("Tools:")}`, st.tools(this.mapTools(agentConfig.tools))]
         : []),
     ].join("\n");
     this.agentConfigDetail.setContent(details);
@@ -567,18 +668,121 @@ export class AgentMonitor extends BaseMonitor {
   private updateAgentDetails(agent?: AgentInfo, shouldRender = true): void {
     if (!agent) {
       this.agentDetail.setContent(AGENT_DETAIL_DEFAULT_TEXT);
+      this.detailTabButton.hide();
+      this.assignmentsTabButton.hide();
+      this.historyTabButton.hide();
       if (shouldRender) {
         this.screen.render();
       }
       return;
     }
 
-    const details = [
-      `${st.label("Id")}: ${st.agentId(stringToAgent(agent.agentId))}`,
-      `${st.label("In Use")}: ${st.bool(agent.inUse, "busy_idle")}`,
-      `${st.label("Is destroyed")}: ${st.bool(agent.isDestroyed, "inverse_color")}`,
-    ].join("\n");
-    this.agentDetail.setContent(details);
+    this.agentDetail.setContent("");
+    this.detailTabButton.show();
+    this.assignmentsTabButton.show();
+    this.historyTabButton.show();
+
+    let content = "";
+
+    switch (this.currentAgentDetailTab) {
+      case AgentDetailTab.DETAIL:
+        content = [
+          `${st.label("Id")}: ${st.agentId(stringToAgent(agent.agentId))}`,
+          `${st.label("In Use")}: ${st.bool(agent.inUse, "busy_idle")}`,
+          `${st.label("Is destroyed")}: ${st.bool(agent.isDestroyed, "inverse_color")}`,
+          `${st.label("Assignments")}: ${st.num(agent.assignments.size)}`,
+        ].join("\n");
+        break;
+
+      case AgentDetailTab.ASSIGNMENTS:
+        if (agent.assignments.size > 0) {
+          content = Array.from(agent.assignments.entries())
+            .map(([assignmentId, assignment]) => {
+              return [
+                `${st.label("ID")}: ${st.label(assignmentId)}`,
+                `${st.label("Kind")}: ${st.label(assignment.assignmentKind)}`,
+                `${st.label("Assigned Since")}: ${st.timestamp(assignment.assignedSince)}`,
+                `${st.label("History Entries")}: ${st.num(assignment.history.length)}`,
+                "-------------------",
+              ].join("\n");
+            })
+            .join("\n");
+        } else {
+          content = "No active assignments for this agent.";
+        }
+        break;
+
+      case AgentDetailTab.HISTORY:
+        if (agent.assignments.size > 0) {
+          content = Array.from(agent.assignments.entries())
+            .flatMap(([assignmentId, assignment]) => {
+              if (assignment.history.length === 0) {
+                return [];
+              }
+
+              const assignmentHeader = `${st.label("Assignment")}: ${st.label(assignmentId)} (${st.label(assignment.assignmentKind)})`;
+
+              // Use a switch based on the assignment kind
+              switch (assignment.assignmentKind) {
+                case AssignmentKindEnum.enum.task:
+                  // Specific handling for task kind assignments
+                  return [
+                    assignmentHeader,
+                    ...assignment.history.map((entry) => {
+                      // Since we know this is a task history entry, we can type it more specifically
+                      const taskEntry = entry as TaskRunHistoryEntry;
+                      const entryDetails = [
+                        `  ${st.label("Run")}: ${st.num(taskEntry.runNumber)}/${taskEntry.maxRuns || "∞"}`,
+                        `  ${st.label("Timestamp")}: ${st.timestamp(taskEntry.timestamp)}`,
+                        taskEntry.terminalStatus
+                          ? `  ${st.label("Status")}: ${st.taskRunStatus(taskEntry.terminalStatus)}`
+                          : null,
+                        taskEntry.executionTimeMs
+                          ? `  ${st.label("Execution Time")}: ${st.num(taskEntry.executionTimeMs)}ms`
+                          : null,
+                        taskEntry.output
+                          ? `  ${st.label("Output")}: \n    ${st.output(String(taskEntry.output))}`
+                          : null,
+                        taskEntry.error
+                          ? `  ${st.label("Error")}: \n    ${st.error(String(taskEntry.error))}`
+                          : null,
+                        taskEntry.trajectory && taskEntry.trajectory.length > 0
+                          ? `  ${st.label("Trajectory Entries")}: ${st.num(taskEntry.trajectory.length)}`
+                          : null,
+                      ];
+
+                      return entryDetails.filter(Boolean).join("\n");
+                    }),
+                    "-------------------",
+                  ];
+
+                default:
+                  // Generic handling for other assignment kinds or unknown types
+                  return [
+                    assignmentHeader,
+                    ...assignment.history.map((entry) => {
+                      if (typeof entry === "object" && entry !== null) {
+                        // Pretty print the object with indentation for readability
+                        return `  ${JSON.stringify(entry, null, 2).replace(/\n/g, "\n  ")}`;
+                      } else {
+                        // Fallback for primitive types
+                        return `  ${String(entry)}`;
+                      }
+                    }),
+                    "-------------------",
+                  ];
+              }
+            })
+            .join("\n");
+        } else {
+          content = "No history available for this agent.";
+        }
+        break;
+    }
+
+    // Add padding for content to appear below the tab buttons
+    this.agentDetail.setContent("\n\n" + content);
+
     if (shouldRender) {
       this.screen.render();
     }

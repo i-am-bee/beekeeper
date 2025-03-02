@@ -1,6 +1,3 @@
-import blessed from "neo-blessed";
-import { join } from "path";
-import { clone } from "remeda";
 import { stringToAgent } from "@/agents/agent-id.js";
 import {
   isTaskRunActiveStatus,
@@ -21,7 +18,12 @@ import {
   taskSomeIdToTypeValue,
   TaskTypeId,
 } from "@/tasks/task-id.js";
-import { BaseMonitor, ParentInput, ScreenInput } from "../base/monitor.js";
+import { sortByObjectDateStringProperty } from "@/utils/time.js";
+import blessed from "neo-blessed";
+import { join } from "path";
+import { clone } from "remeda";
+import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
+import { ParentInput, ScreenInput } from "../base/monitor.js";
 import * as st from "../config.js";
 
 const TASK_CONFIG_DETAIL_DEFAULT_TEXT =
@@ -42,8 +44,7 @@ const TAB_LABELS = {
   [TaskRunDetailTab.HISTORY]: "History",
 };
 
-export class TaskMonitor extends BaseMonitor {
-  private stateBuilder: TaskStateBuilder;
+export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
   private taskPoolList: blessed.Widgets.ListElement;
   private taskPoolListItemsData: {
     taskTypeId: TaskTypeId | TaskKindId;
@@ -74,17 +75,8 @@ export class TaskMonitor extends BaseMonitor {
   private trajectoryTabButton: blessed.Widgets.ButtonElement;
   private historyTabButton: blessed.Widgets.ButtonElement;
 
-  private logBox: blessed.Widgets.Log;
-
   constructor(arg: ParentInput | ScreenInput) {
-    super(arg);
-    this.stateBuilder = new TaskStateBuilder();
-    this.stateBuilder.on("log:reset", () => {
-      this.reset();
-    });
-    this.stateBuilder.on("log:new_line", (line) => {
-      this.logBox.log(`${new Date().toLocaleString()} - ${line}`);
-    });
+    super(arg, new TaskStateBuilder());
     this.stateBuilder.on("state:updated", (update) => {
       switch (update.type) {
         case StateUpdateType.TASK_CONFIG:
@@ -113,15 +105,11 @@ export class TaskMonitor extends BaseMonitor {
       }
     });
 
-    this.stateBuilder.on("error", (error: Error) => {
-      this.logBox.log(`Error occurred: ${JSON.stringify(error)}`);
-    });
-
     // Left column - Pools and Task Runs (70%)
     this.taskPoolList = blessed.list({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "30%",
-      height: "20%",
+      height: "30%",
       left: 0,
       top: 0,
       border: { type: "line" },
@@ -136,11 +124,11 @@ export class TaskMonitor extends BaseMonitor {
     });
 
     this.taskVersionsList = blessed.list({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "30%",
-      height: "30%",
+      height: "20%",
       left: 0,
-      top: "20%",
+      top: "30%",
       border: { type: "line" },
       label: " Task Runs Versions ",
       content: TASK_VERSION_DEFAULT_TEXT,
@@ -154,9 +142,9 @@ export class TaskMonitor extends BaseMonitor {
     });
 
     this.taskRunList = blessed.list({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "30%",
-      height: "40%",
+      height: "50%",
       left: 0,
       top: "50%",
       border: { type: "line" },
@@ -173,9 +161,9 @@ export class TaskMonitor extends BaseMonitor {
 
     // Center column - Details and Tools (40%)
     this.taskConfigDetail = blessed.box({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "70%",
-      height: "30%",
+      height: "40%",
       left: "30%",
       top: 0,
       border: { type: "line" },
@@ -190,11 +178,11 @@ export class TaskMonitor extends BaseMonitor {
     });
 
     this.taskRunDetail = blessed.box({
-      parent: this.parent,
+      parent: this.contentBox,
       width: "70%",
       height: "60%",
       left: "30%",
-      top: "30%",
+      top: "40%",
       border: { type: "line" },
       label: " Task Run Detail ",
       content: TASK_RUN_DETAIL_DEFAULT_TEXT,
@@ -282,23 +270,6 @@ export class TaskMonitor extends BaseMonitor {
       hidden: true,
     });
 
-    // Bottom - Live Updates
-    this.logBox = blessed.log({
-      parent: this.parent,
-      width: "100%",
-      height: "10%",
-      left: 0,
-      top: "90%",
-      border: { type: "line" },
-      label: " Live Updates ",
-      tags: true,
-      scrollable: true,
-      mouse: true,
-      keys: true,
-      vi: true,
-      scrollbar: st.UIConfig.scrollbar,
-    });
-
     this.setupEventHandlers();
     this.screen.render();
   }
@@ -311,7 +282,7 @@ export class TaskMonitor extends BaseMonitor {
       const taskTypeId = itemData.taskTypeId;
       if ((taskTypeId as TaskTypeId).taskType) {
         taskConfig = this.stateBuilder.getTaskConfig(
-          taskSomeIdToTypeValue(taskTypeId as TaskTypeId)
+          taskSomeIdToTypeValue(taskTypeId as TaskTypeId),
         );
       }
     }
@@ -330,7 +301,7 @@ export class TaskMonitor extends BaseMonitor {
       const taskConfigId = itemData.taskTypeId as TaskConfig;
       taskConfig = this.stateBuilder.getTaskConfig(
         taskSomeIdToTypeValue(taskConfigId),
-        taskConfigId.taskConfigVersion
+        taskConfigId.taskConfigVersion,
       );
     }
 
@@ -351,7 +322,7 @@ export class TaskMonitor extends BaseMonitor {
       const taskRunTypeId = taskSomeIdToTypeValue(taskRunConfigId);
       taskConfig = this.stateBuilder.getTaskConfig(
         taskRunTypeId,
-        taskRunConfigId.taskConfigVersion
+        taskRunConfigId.taskConfigVersion,
       );
     }
 
@@ -387,13 +358,13 @@ export class TaskMonitor extends BaseMonitor {
     this.screen.key(["escape", "q", "C-c"], () => process.exit(0));
 
     this.taskPoolList.on("select", (_, selectedIndex) =>
-      this.onPoolSelect(selectedIndex)
+      this.onPoolSelect(selectedIndex),
     );
     this.taskVersionsList.on("select", (_, selectedIndex) =>
-      this.onVersionSelect(selectedIndex)
+      this.onVersionSelect(selectedIndex),
     );
     this.taskRunList.on("select", (_, selectedIndex) =>
-      this.onTaskRunSelect(selectedIndex)
+      this.onTaskRunSelect(selectedIndex),
     );
 
     // Add this to the setupEventHandlers method
@@ -495,7 +466,7 @@ export class TaskMonitor extends BaseMonitor {
       this.taskPoolList.select(this.taskPoolListSelectedIndex);
     }
     this.taskPoolList.setItems(
-      this.taskPoolListItemsData.map((it) => it.itemContent)
+      this.taskPoolListItemsData.map((it) => it.itemContent),
     );
 
     this.updateTaskVersionsList(false);
@@ -513,7 +484,7 @@ export class TaskMonitor extends BaseMonitor {
         this.taskPoolListItemsData[this.taskPoolListSelectedIndex];
       if (!itemData) {
         throw new Error(
-          `Missing data for selected pool on index:${this.taskPoolListSelectedIndex}`
+          `Missing data for selected pool on index:${this.taskPoolListSelectedIndex}`,
         );
       }
 
@@ -522,7 +493,7 @@ export class TaskMonitor extends BaseMonitor {
         // List versions
         const taskPool = this.stateBuilder.getTaskPool(
           taskPoolTypeId.taskKind,
-          taskPoolTypeId.taskType
+          taskPoolTypeId.taskType,
         );
         if (taskPool) {
           const hasMultipleVersions = taskPool.versions.length > 1;
@@ -548,7 +519,7 @@ export class TaskMonitor extends BaseMonitor {
                 taskTypeId,
                 itemContent: st.versionTaskPoolStats(
                   st.versionNum(taskConfigVersion),
-                  poolStats
+                  poolStats,
                 ),
               });
             });
@@ -557,10 +528,10 @@ export class TaskMonitor extends BaseMonitor {
     }
 
     this.taskVersionsList.setItems(
-      this.taskVersionsListItemsData.map((it) => it.itemContent)
+      this.taskVersionsListItemsData.map((it) => it.itemContent),
     );
     this.taskVersionsList.setContent(
-      this.taskVersionsListItemsData.length ? "" : TASK_VERSION_DEFAULT_TEXT
+      this.taskVersionsListItemsData.length ? "" : TASK_VERSION_DEFAULT_TEXT,
     );
     this.updateTaskList(false);
     if (shouldRender) {
@@ -614,13 +585,13 @@ export class TaskMonitor extends BaseMonitor {
 
           if (aTaskRunId.taskConfigVersion != bTaskRunId.taskConfigVersion) {
             return Math.sign(
-              aTaskRunId.taskConfigVersion - bTaskRunId.taskConfigVersion
+              aTaskRunId.taskConfigVersion - bTaskRunId.taskConfigVersion,
             );
           }
 
           const comp = aTaskRunId.taskType.localeCompare(bTaskRunId.taskType);
           if (comp === 0) {
-            return Math.sign(aTaskRunId.taskRunNum - bTaskRunId.taskRunNum);
+            return Math.sign(bTaskRunId.taskRunNum - aTaskRunId.taskRunNum);
           } else {
             return comp;
           }
@@ -634,10 +605,10 @@ export class TaskMonitor extends BaseMonitor {
     }
 
     this.taskRunList.setItems(
-      this.taskRunListItemsData.map((it) => it.itemContent)
+      this.taskRunListItemsData.map((it) => it.itemContent),
     );
     this.taskRunList.setContent(
-      this.taskRunListItemsData.length ? "" : TASK_RUN_LIST_DEFAULT_TEXT
+      this.taskRunListItemsData.length ? "" : TASK_RUN_LIST_DEFAULT_TEXT,
     );
     if (shouldRender) {
       this.screen.render();
@@ -677,7 +648,7 @@ export class TaskMonitor extends BaseMonitor {
 
   private updateTaskRunDetails(
     taskRunInfo?: TaskRunInfo,
-    shouldRender = true
+    shouldRender = true,
   ): void {
     if (!taskRunInfo) {
       this.taskRunDetail.setContent(TASK_RUN_DETAIL_DEFAULT_TEXT);
@@ -736,7 +707,7 @@ export class TaskMonitor extends BaseMonitor {
           `${st.input(taskRunInput)}`,
           "",
           history.at(-1)?.output
-            ? `${st.label("Output")}:${st.output(String(history.at(-1)?.output))}`
+            ? `${st.label("Output")}: \n${st.output(String(history.at(-1)?.output))}`
             : null,
           "",
           "",
@@ -750,6 +721,7 @@ export class TaskMonitor extends BaseMonitor {
       case TaskRunDetailTab.TRAJECTORY:
         if (currentTrajectory && currentTrajectory.length > 0) {
           content = currentTrajectory
+            .sort(sortByObjectDateStringProperty("timestamp", "desc"))
             .map((entry) => {
               return [
                 `${st.timestamp(entry.timestamp)} - ${st.label(entry.key)} - ${st.agentId(stringToAgent(entry.agentId))}`,
@@ -766,6 +738,7 @@ export class TaskMonitor extends BaseMonitor {
       case TaskRunDetailTab.HISTORY:
         if (history && history.length > 0) {
           content = history
+            .sort(sortByObjectDateStringProperty("timestamp", "desc"))
             .map((entry, index) => {
               return [
                 `${st.label("Run")} ${st.num(entry.runNumber)}/${entry.maxRuns || "∞"} - ${st.timestamp(entry.timestamp)} - ${st.taskRunStatus(entry.terminalStatus)}`,
@@ -801,15 +774,13 @@ export class TaskMonitor extends BaseMonitor {
   }
 
   reset(shouldRender = true): void {
+    super.reset(false);
+
     // Reset selections
     this.taskPoolListSelectedIndex = null;
 
     // Update content
     this.updateTaskPoolsList(false);
-
-    // Reset log box
-    this.logBox.setContent("");
-    this.logBox.log("Reading initial state from log...");
 
     // Render
     if (shouldRender) {
