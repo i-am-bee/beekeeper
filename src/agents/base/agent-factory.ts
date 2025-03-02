@@ -1,6 +1,6 @@
 import { BaseToolsFactory } from "@/base/tools-factory.js";
 import { AgentKindEnum } from "../registry/dto.js";
-import { Switches } from "@/index.js";
+import { Switches } from "@/runtime/factory.js";
 
 export interface CreateAgentInput {
   agentKind: AgentKindEnum;
@@ -17,5 +17,9 @@ export abstract class BaseAgentFactory<TAgent> {
     toolsFactory: BaseToolsFactory,
     switches?: Switches,
   ): TAgent;
-  abstract runAgent(agent: TAgent, prompt: string): Promise<string>;
+  abstract runAgent(
+    agent: TAgent,
+    prompt: string,
+    onUpdate: (key: string, value: string) => void,
+  ): Promise<string>;
 }

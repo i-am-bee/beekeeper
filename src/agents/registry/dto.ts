@@ -106,7 +106,6 @@ export const AgentSchema = z.object({
    * Used for pool management to track available agents
    */
   inUse: z.boolean().default(false),
-  instance: z.any(),
 });
 export type Agent = z.infer<typeof AgentSchema>;
 export type AgentWithInstance<TAgentInstance> = Omit<Agent, "instance"> & {

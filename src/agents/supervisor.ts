@@ -1,16 +1,17 @@
+import { BaseToolsFactory, ToolFactoryMethod } from "@/base/tools-factory.js";
+import { Switches } from "@/runtime/factory.js";
+import { CreateTaskConfig } from "@/tasks/manager/dto.js";
 import { TaskManager } from "@tasks/manager/manager.js";
 import {
   TaskManagerTool,
   TOOL_NAME as taskManagerToolName,
 } from "@tasks/tool.js";
 import { WorkspaceManager } from "@workspaces/manager/manager.js";
-import { BaseToolsFactory, ToolFactoryMethod } from "@/base/tools-factory.js";
 import { AgentRegistry } from "./registry/index.js";
 import {
   AgentRegistryTool,
   TOOL_NAME as agentRegistryToolName,
 } from "./registry/tool.js";
-import { Switches } from "@/index.js";
 
 export enum AgentTypes {
   BOSS = "boss",
@@ -120,3 +121,20 @@ export class Workdir {
     );
   }
 }
+
+export const PROCESS_AND_PLAN_TASK_NAME = `process_input_and_plan`;
+
+export const getProcessAndPlanTaskConfig = (agentConfigVersion: number) =>
+  ({
+    agentKind: "supervisor",
+    agentType: AgentTypes.BOSS,
+    agentConfigVersion: agentConfigVersion,
+    concurrencyMode: "EXCLUSIVE",
+    intervalMs: 0,
+    runImmediately: true,
+    taskKind: "supervisor",
+    taskType: PROCESS_AND_PLAN_TASK_NAME,
+    description:
+      "Takes input, decomposes the problem into subtasks, and for each subtask: first creates or finds suitable agent configurations, then creates corresponding taskConfigs with established dependencies between related tasks. Finally initiates execution by running the first planned task. Operates with exclusive concurrency to ensure consistent agent-task pairing and dependency management.",
+    taskConfigInput: "Any kind of text input",
+  }) satisfies CreateTaskConfig;

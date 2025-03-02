@@ -41,6 +41,9 @@
       ],
       "@ui/*": [
         "./src/ui/*"
+      ],
+      "@runtime/*": [
+        "./src/runtime/*"
       ]
     },
     "typeRoots": [

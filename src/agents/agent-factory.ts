@@ -1,6 +1,6 @@
 import { BaseToolsFactory } from "@/base/tools-factory.js";
 import { getChatLLM } from "@/helpers/llm.js";
-import { Switches } from "@/index.js";
+import { Switches } from "@/runtime/factory.js";
 import { BeeAgent } from "beeai-framework/agents/bee/agent";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
@@ -34,6 +34,11 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
                   supervisor.SUPERVISOR_INSTRUCTIONS(input.agentId, switches);
               }),
           },
+          execution: {
+            maxIterations: 100,
+            maxRetriesPerStep: 2,
+            totalMaxRetries: 10,
+          },
         });
       }
       case "operator":
@@ -51,23 +56,27 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
                 config.defaults.instructions = generalInstructions;
               }),
           },
+          execution: {
+            maxIterations: 8,
+            maxRetriesPerStep: 2,
+            totalMaxRetries: 10,
+          },
         });
       default:
         throw new Error(`Undefined agent kind agentKind:${input.agentKind}`);
     }
   }
 
-  async runAgent(agent: BeeAgent, prompt: string): Promise<string> {
-    const resp = await agent.run(
-      { prompt },
-      {
-        execution: {
-          maxIterations: 8,
-          maxRetriesPerStep: 2,
-          totalMaxRetries: 10,
-        },
-      },
-    );
+  async runAgent(
+    agent: BeeAgent,
+    prompt: string,
+    onUpdate: (key: string, value: string) => void,
+  ): Promise<string> {
+    const resp = await agent.run({ prompt }).observe((emitter) => {
+      emitter.on("update", async ({ update }) => {
+        onUpdate(update.key, update.value);
+      });
+    });
 
     return resp.result.text;
   }

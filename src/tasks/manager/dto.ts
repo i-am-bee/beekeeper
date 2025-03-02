@@ -2,7 +2,6 @@ import {
   AgentConfigVersionValueSchema,
   AgentIdValueSchema,
   AgentKindEnumSchema,
-  AgentNumValueSchema,
   AgentTypeValueSchema,
 } from "@/agents/registry/dto.js";
 import { DateStringSchema } from "@/base/dto.js";
@@ -97,8 +96,7 @@ export const TaskConfigSchema = z
       .describe("Identifier of who owns/manages this task"),
     agentKind: AgentKindEnumSchema,
     agentType: AgentTypeValueSchema,
-    agentNum: AgentNumValueSchema,
-    agentVersion: AgentConfigVersionValueSchema,
+    agentConfigVersion: AgentConfigVersionValueSchema,
     concurrencyMode: TaskConcurrencyModeEnumSchema,
     maxRepeats: z
       .number()
@@ -110,6 +108,13 @@ export const TaskConfigSchema = z
   .describe("Represents a periodic task configuration.");
 
 export type TaskConfig = z.infer<typeof TaskConfigSchema>;
+
+export const CreateTaskConfigSchema = TaskConfigSchema.omit({
+  taskConfigVersion: true,
+  taskConfigId: true,
+  ownerAgentId: true,
+});
+export type CreateTaskConfig = z.infer<typeof CreateTaskConfigSchema>;
 
 export const TaskConfigOwnedResourceSchema = z.object({
   taskConfig: TaskConfigSchema,
@@ -126,6 +131,20 @@ export const TaskRunTerminalStatusEnumSchema = z.enum([
 ]);
 export type TaskRunTerminalStatusEnum = z.infer<
   typeof TaskRunTerminalStatusEnumSchema
+>;
+
+export const TaskRunTrajectoryEntrySchema = z.object({
+  timestamp: DateStringSchema,
+  agentId: AgentIdValueSchema,
+  key: z.string(),
+  value: z
+    .string()
+    .describe(
+      "The content of the trajectory entry, containing agent thought processes, tool calls, or execution steps",
+    ),
+});
+export type TaskRunTrajectoryEntry = z.infer<
+  typeof TaskRunTrajectoryEntrySchema
 >;
 
 export const TaskRunHistoryEntrySchema = z
@@ -154,6 +173,7 @@ export const TaskRunHistoryEntrySchema = z
       .string()
       .nullable()
       .describe("ID of agent that executed the task, if occupied"),
+    trajectory: z.array(TaskRunTrajectoryEntrySchema),
     executionTimeMs: z
       .number()
       .describe("How long the task execution took in milliseconds"),
@@ -237,6 +257,11 @@ export const TaskRunSchema = z
       .number()
       .int()
       .describe("Number of times this task has been successfully executed"),
+    currentTrajectory: z
+      .array(TaskRunTrajectoryEntrySchema)
+      .describe(
+        "Sequential log of the task execution process, containing entries with agent thought processes, tool calls, and execution steps with their timestamps",
+      ),
     history: z
       .array(TaskRunHistoryEntrySchema)
       .describe("History of task executions"),

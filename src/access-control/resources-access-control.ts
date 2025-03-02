@@ -179,6 +179,13 @@ export class ResourcesAccessControl {
     this.registry.resources.set(resourceId, resourcePermissions);
   }
 
+  hasResource(resourceId: ResourceId, ownerId: UserId, actingUserId: UserId) {
+    this.logger.debug({ resourceId, ownerId, actingUserId }, `hasResource`);
+
+    const resource = this.getResourcePermissions(resourceId, false);
+    return resource && resource.ownerId === ownerId;
+  }
+
   removeResource(resourceId: ResourceId, actingUserId: UserId) {
     this.logger.info({ resourceId, actingUserId }, `removeResource`);
     this.checkPermission(resourceId, actingUserId, WRITE_ONLY_ACCESS, false);

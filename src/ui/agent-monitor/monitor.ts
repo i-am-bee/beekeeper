@@ -28,7 +28,6 @@ const AGENT_VERSION_DEFAULT_TEXT = "Select pool to view versions";
 const AGENT_TEMPLATE_DETAIL_DEFAULT_TEXT =
   "Select agent pool to view agent config detail";
 const AGENT_DETAIL_DEFAULT_TEXT = "Select agent to view agent detail";
-// const AGENT_LIFECYCLE_HISTORY_DEFAULT_TEXT = "Select agent to view lifecycle events";
 
 export class AgentMonitor extends BaseMonitor {
   private stateBuilder: AgentStateBuilder;
@@ -55,13 +54,7 @@ export class AgentMonitor extends BaseMonitor {
 
   private agentConfigDetail: blessed.Widgets.BoxElement;
   private agentDetail: blessed.Widgets.BoxElement;
-  // private lifecycleHistory: blessed.Widgets.BoxElement;
   private logBox: blessed.Widgets.Log;
-
-  private lifecycleEvents = new Map<
-    string,
-    { timestamp: string; event: string; success: boolean; error?: string }[]
-  >();
 
   constructor(arg: ParentInput | ScreenInput) {
     super(arg);
@@ -189,24 +182,6 @@ export class AgentMonitor extends BaseMonitor {
       scrollbar: st.UIConfig.scrollbar,
     });
 
-    // // Right column - Lifecycle History (30%)
-    // this.lifecycleHistory = blessed.box({
-    //   parent: this.parent,
-    //   width: "30%",
-    //   height: "90%",
-    //   left: "70%",
-    //   top: 0,
-    //   border: { type: "line" },
-    //   label: " Lifecycle Events ",
-    //   content: AGENT_LIFECYCLE_HISTORY_DEFAULT_TEXT,
-    //   tags: true,
-    //   scrollable: true,
-    //   mouse: true,
-    //   keys: true,
-    //   vi: true,
-    //   scrollbar: st.UIConfig.scrollbar,
-    // });
-
     // Bottom - Live Updates
     this.logBox = blessed.log({
       parent: this.parent,
@@ -307,8 +282,7 @@ export class AgentMonitor extends BaseMonitor {
       this.agentPoolList,
       this.agentList,
       this.agentConfigDetail,
-      this.agentDetail,
-      // this.lifecycleHistory,
+      this.agentDetail,      
     ].forEach((component) => {
       component.on("mouse", (data) => {
         if (data.action === "wheelup") {
@@ -603,50 +577,12 @@ export class AgentMonitor extends BaseMonitor {
       `${st.label("Id")}: ${st.agentId(stringToAgent(agent.agentId))}`,
       `${st.label("In Use")}: ${st.bool(agent.inUse, "busy_idle")}`,
       `${st.label("Is destroyed")}: ${st.bool(agent.isDestroyed, "inverse_color")}`,
-      // ...(agent.assignedTaskConfig
-      //   ? [
-      //       "",
-      //       `${st.label("Task")}: ${st.taskId(agent.assignedTaskConfig.id)}`,
-      //       `${st.label("Description")}:`,
-      //       `${st.desc(agent.assignedTaskConfig.description)}`,
-      //       `${st.label("Input")}:`,
-      //       `${st.input(agent.assignedTaskConfig.input)}`,
-      //     ]
-      //   : []),
     ].join("\n");
     this.agentDetail.setContent(details);
     if (shouldRender) {
       this.screen.render();
     }
   }
-
-  // private updateLifecycleHistory(agentId?: string, shouldRender = true): void {
-  //   if (!agentId) {
-  //     this.lifecycleHistory.setContent(AGENT_LIFECYCLE_HISTORY_DEFAULT_TEXT);
-  //     if (shouldRender) {
-  //       this.screen.render();
-  //     }
-  //     return;
-  //   }
-
-  //   const events = this.lifecycleEvents.get(agentId) || [];
-  //   const content = events.length
-  //     ? events
-  //         .map(
-  //           ({ timestamp, event, success, error }) =>
-  //             `${st.timestamp(timestamp)} ` +
-  //             `${st.eventType(event)} ` +
-  //             `${st.bool(success)}` +
-  //             (error ? `\n  ${st.error(error)}` : ""),
-  //         )
-  //         .join("\n")
-  //     : "No lifecycle events recorded";
-
-  //   this.lifecycleHistory.setContent(content);
-  //   if (shouldRender) {
-  //     this.screen.render();
-  //   }
-  // }
 
   public async start(dirPath?: string): Promise<void> {
     const logPath = join(dirPath ?? process.cwd(), "state", "agent_state.log");

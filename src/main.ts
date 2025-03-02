@@ -1,7 +1,8 @@
 import "dotenv/config";
 import { FrameworkError } from "beeai-framework";
 import { createConsoleReader } from "./helpers/reader.js";
-import { createBeeSupervisor } from "./index.js";
+import { createRuntime } from "@/runtime/factory.js";
+import { RuntimeOutputMethod } from "@/runtime/runtime.js";
 
 const args = process.argv.slice(2);
 const workspace = args[0] && args[0].length ? args[0] : undefined;
@@ -10,7 +11,7 @@ const restoreWorkspace = !!workspace;
 const reader = createConsoleReader({
   fallback: "What is the current weather in Las Vegas?",
 });
-const supervisorAgent = await createBeeSupervisor({
+const runtime = await createRuntime({
   workspace,
   switches: {
     agentRegistry: { restoration: restoreWorkspace },
@@ -18,31 +19,22 @@ const supervisorAgent = await createBeeSupervisor({
   },
   outputDirPath: "./output",
 });
+
+const output: RuntimeOutputMethod = async (output) => {
+  let role;
+  if (output.agent) {
+    role = `🤖 [${output.agent.agentId}] `;
+  } else {
+    role = `📋 [${output.taskRun.taskRunId}] `;
+  }
+
+  // reader.write(`Agent 🤖 :`, response.result.text);
+  reader.write(role, output.text);
+};
+
 for await (const { prompt } of reader) {
   try {
-    const response = await supervisorAgent
-      .run(
-        {
-          prompt,
-        },
-        {
-          execution: {
-            maxIterations: 100,
-            maxRetriesPerStep: 2,
-            totalMaxRetries: 10,
-          },
-        },
-      )
-      .observe((emitter) => {
-        emitter.on("update", (data, meta) => {
-          reader.write(
-            `${(meta.creator as any).input.meta.name} 🤖 (${data.update.key}) :`,
-            data.update.value,
-          );
-        });
-      });
-
-    reader.write(`Agent 🤖 :`, response.result.text);
+    await runtime.run(prompt, output);
   } catch (error) {
     reader.write(`Error`, FrameworkError.ensure(error).dump());
   }

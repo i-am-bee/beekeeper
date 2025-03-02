@@ -29,7 +29,18 @@ const TASK_CONFIG_DETAIL_DEFAULT_TEXT =
 const TASK_VERSION_DEFAULT_TEXT = "Select pool to view versions";
 const TASK_RUN_LIST_DEFAULT_TEXT = "Select pool to view tasks";
 const TASK_RUN_DETAIL_DEFAULT_TEXT = "Select task run to view task run detail";
-// const TASK_LIFECYCLE_HISTORY_DEFAULT_TEXT = "Select task run to view lifecycle events";
+
+enum TaskRunDetailTab {
+  DETAIL = "detail",
+  TRAJECTORY = "trajectory",
+  HISTORY = "history",
+}
+
+const TAB_LABELS = {
+  [TaskRunDetailTab.DETAIL]: "Detail",
+  [TaskRunDetailTab.TRAJECTORY]: "Trajectory",
+  [TaskRunDetailTab.HISTORY]: "History",
+};
 
 export class TaskMonitor extends BaseMonitor {
   private stateBuilder: TaskStateBuilder;
@@ -55,7 +66,14 @@ export class TaskMonitor extends BaseMonitor {
   private taskRunListSelectedIndex: number | null = null;
 
   private taskConfigDetail: blessed.Widgets.BoxElement;
+
+  private currentTaskRunDetailTab: TaskRunDetailTab = TaskRunDetailTab.DETAIL;
   private taskRunDetail: blessed.Widgets.BoxElement;
+
+  private detailTabButton: blessed.Widgets.ButtonElement;
+  private trajectoryTabButton: blessed.Widgets.ButtonElement;
+  private historyTabButton: blessed.Widgets.ButtonElement;
+
   private logBox: blessed.Widgets.Log;
 
   constructor(arg: ParentInput | ScreenInput) {
@@ -188,6 +206,82 @@ export class TaskMonitor extends BaseMonitor {
       scrollbar: st.UIConfig.scrollbar,
     });
 
+    // Tab buttons at the top of taskRunDetail
+    this.detailTabButton = blessed.button({
+      parent: this.taskRunDetail,
+      mouse: true,
+      keys: true,
+      shrink: true,
+      padding: {
+        left: 1,
+        right: 1,
+      },
+      left: 1,
+      top: 0,
+      name: "detailTab",
+      content: TAB_LABELS[TaskRunDetailTab.DETAIL],
+      style: {
+        bg: "blue",
+        focus: {
+          bg: "blue",
+        },
+        hover: {
+          bg: "blue",
+        },
+      },
+      hidden: true,
+    });
+
+    this.trajectoryTabButton = blessed.button({
+      parent: this.taskRunDetail,
+      mouse: true,
+      keys: true,
+      shrink: true,
+      padding: {
+        left: 1,
+        right: 1,
+      },
+      left: 10, // Fixed position instead of dynamic calculation
+      top: 0,
+      name: "trajectoryTab",
+      content: TAB_LABELS[TaskRunDetailTab.TRAJECTORY],
+      style: {
+        bg: "grey",
+        focus: {
+          bg: "blue",
+        },
+        hover: {
+          bg: "blue",
+        },
+      },
+      hidden: true,
+    });
+
+    this.historyTabButton = blessed.button({
+      parent: this.taskRunDetail,
+      mouse: true,
+      keys: true,
+      shrink: true,
+      padding: {
+        left: 1,
+        right: 1,
+      },
+      left: 23, // Fixed position instead of dynamic calculation
+      top: 0,
+      name: "historyTab",
+      content: TAB_LABELS[TaskRunDetailTab.HISTORY],
+      style: {
+        bg: "grey",
+        focus: {
+          bg: "blue",
+        },
+        hover: {
+          bg: "blue",
+        },
+      },
+      hidden: true,
+    });
+
     // Bottom - Live Updates
     this.logBox = blessed.log({
       parent: this.parent,
@@ -217,7 +311,7 @@ export class TaskMonitor extends BaseMonitor {
       const taskTypeId = itemData.taskTypeId;
       if ((taskTypeId as TaskTypeId).taskType) {
         taskConfig = this.stateBuilder.getTaskConfig(
-          taskSomeIdToTypeValue(taskTypeId as TaskTypeId),
+          taskSomeIdToTypeValue(taskTypeId as TaskTypeId)
         );
       }
     }
@@ -236,7 +330,7 @@ export class TaskMonitor extends BaseMonitor {
       const taskConfigId = itemData.taskTypeId as TaskConfig;
       taskConfig = this.stateBuilder.getTaskConfig(
         taskSomeIdToTypeValue(taskConfigId),
-        taskConfigId.taskConfigVersion,
+        taskConfigId.taskConfigVersion
       );
     }
 
@@ -257,7 +351,7 @@ export class TaskMonitor extends BaseMonitor {
       const taskRunTypeId = taskSomeIdToTypeValue(taskRunConfigId);
       taskConfig = this.stateBuilder.getTaskConfig(
         taskRunTypeId,
-        taskRunConfigId.taskConfigVersion,
+        taskRunConfigId.taskConfigVersion
       );
     }
 
@@ -267,18 +361,69 @@ export class TaskMonitor extends BaseMonitor {
     this.updateTaskRunDetails((itemData && itemData.taskRun) || undefined);
   }
 
+  private onTabSelect(tab: TaskRunDetailTab): void {
+    this.currentTaskRunDetailTab = tab;
+
+    // Update tab button styles
+    this.detailTabButton.style.bg =
+      tab === TaskRunDetailTab.DETAIL ? "blue" : "grey";
+    this.trajectoryTabButton.style.bg =
+      tab === TaskRunDetailTab.TRAJECTORY ? "blue" : "grey";
+    this.historyTabButton.style.bg =
+      tab === TaskRunDetailTab.HISTORY ? "blue" : "grey";
+
+    // Re-render the current task run with the new selected tab
+    if (this.taskRunListSelectedIndex != null) {
+      const itemData = this.taskRunListItemsData[this.taskRunListSelectedIndex];
+      if (itemData) {
+        this.updateTaskRunDetails(itemData.taskRun);
+      }
+    }
+
+    this.screen.render();
+  }
+
   private setupEventHandlers() {
     this.screen.key(["escape", "q", "C-c"], () => process.exit(0));
 
     this.taskPoolList.on("select", (_, selectedIndex) =>
-      this.onPoolSelect(selectedIndex),
+      this.onPoolSelect(selectedIndex)
     );
     this.taskVersionsList.on("select", (_, selectedIndex) =>
-      this.onVersionSelect(selectedIndex),
+      this.onVersionSelect(selectedIndex)
     );
     this.taskRunList.on("select", (_, selectedIndex) =>
-      this.onTaskRunSelect(selectedIndex),
+      this.onTaskRunSelect(selectedIndex)
     );
+
+    // Add this to the setupEventHandlers method
+    this.detailTabButton.on("press", () => {
+      this.onTabSelect(TaskRunDetailTab.DETAIL);
+    });
+
+    this.trajectoryTabButton.on("press", () => {
+      this.onTabSelect(TaskRunDetailTab.TRAJECTORY);
+    });
+
+    this.historyTabButton.on("press", () => {
+      this.onTabSelect(TaskRunDetailTab.HISTORY);
+    });
+
+    // Add keyboard shortcuts for tab switching
+    this.screen.key(["1"], () => {
+      this.onTabSelect(TaskRunDetailTab.DETAIL);
+      this.screen.render();
+    });
+
+    this.screen.key(["2"], () => {
+      this.onTabSelect(TaskRunDetailTab.TRAJECTORY);
+      this.screen.render();
+    });
+
+    this.screen.key(["3"], () => {
+      this.onTabSelect(TaskRunDetailTab.HISTORY);
+      this.screen.render();
+    });
 
     // Mouse scrolling for all components
     [
@@ -350,7 +495,7 @@ export class TaskMonitor extends BaseMonitor {
       this.taskPoolList.select(this.taskPoolListSelectedIndex);
     }
     this.taskPoolList.setItems(
-      this.taskPoolListItemsData.map((it) => it.itemContent),
+      this.taskPoolListItemsData.map((it) => it.itemContent)
     );
 
     this.updateTaskVersionsList(false);
@@ -368,7 +513,7 @@ export class TaskMonitor extends BaseMonitor {
         this.taskPoolListItemsData[this.taskPoolListSelectedIndex];
       if (!itemData) {
         throw new Error(
-          `Missing data for selected pool on index:${this.taskPoolListSelectedIndex}`,
+          `Missing data for selected pool on index:${this.taskPoolListSelectedIndex}`
         );
       }
 
@@ -377,7 +522,7 @@ export class TaskMonitor extends BaseMonitor {
         // List versions
         const taskPool = this.stateBuilder.getTaskPool(
           taskPoolTypeId.taskKind,
-          taskPoolTypeId.taskType,
+          taskPoolTypeId.taskType
         );
         if (taskPool) {
           const hasMultipleVersions = taskPool.versions.length > 1;
@@ -403,7 +548,7 @@ export class TaskMonitor extends BaseMonitor {
                 taskTypeId,
                 itemContent: st.versionTaskPoolStats(
                   st.versionNum(taskConfigVersion),
-                  poolStats,
+                  poolStats
                 ),
               });
             });
@@ -412,10 +557,10 @@ export class TaskMonitor extends BaseMonitor {
     }
 
     this.taskVersionsList.setItems(
-      this.taskVersionsListItemsData.map((it) => it.itemContent),
+      this.taskVersionsListItemsData.map((it) => it.itemContent)
     );
     this.taskVersionsList.setContent(
-      this.taskVersionsListItemsData.length ? "" : TASK_VERSION_DEFAULT_TEXT,
+      this.taskVersionsListItemsData.length ? "" : TASK_VERSION_DEFAULT_TEXT
     );
     this.updateTaskList(false);
     if (shouldRender) {
@@ -469,7 +614,7 @@ export class TaskMonitor extends BaseMonitor {
 
           if (aTaskRunId.taskConfigVersion != bTaskRunId.taskConfigVersion) {
             return Math.sign(
-              aTaskRunId.taskConfigVersion - bTaskRunId.taskConfigVersion,
+              aTaskRunId.taskConfigVersion - bTaskRunId.taskConfigVersion
             );
           }
 
@@ -489,10 +634,10 @@ export class TaskMonitor extends BaseMonitor {
     }
 
     this.taskRunList.setItems(
-      this.taskRunListItemsData.map((it) => it.itemContent),
+      this.taskRunListItemsData.map((it) => it.itemContent)
     );
     this.taskRunList.setContent(
-      this.taskRunListItemsData.length ? "" : TASK_RUN_LIST_DEFAULT_TEXT,
+      this.taskRunListItemsData.length ? "" : TASK_RUN_LIST_DEFAULT_TEXT
     );
     if (shouldRender) {
       this.screen.render();
@@ -513,7 +658,7 @@ export class TaskMonitor extends BaseMonitor {
       `${st.label("Version")}:  ${st.versionNum(taskConfig.taskConfigVersion)}`,
       `${st.label("Task Kind")}:  ${st.taskKind(taskConfig.taskKind)}`,
       `${st.label("Task Type")}:  ${st.taskType(taskConfig.taskType)}`,
-      `${st.label("Required Agent")}:  ${st.agentId({ agentKind: taskConfig.agentKind, agentType: taskConfig.agentType, agentNum: taskConfig.agentNum, agentConfigVersion: taskConfig.agentVersion })}`,
+      `${st.label("Required Agent")}:  ${st.agentId({ agentKind: taskConfig.agentKind, agentType: taskConfig.agentType, agentConfigVersion: taskConfig.agentConfigVersion })}`,
       `${st.label("Max Repeats")}:  ${st.num(taskConfig.maxRepeats || 0)}`,
       `${st.label("Interval ms")}:  ${st.num(taskConfig.intervalMs)}`,
       `${st.label("Concurrency Mode")}:  ${st.concurrencyMode(taskConfig.concurrencyMode)}`,
@@ -532,15 +677,23 @@ export class TaskMonitor extends BaseMonitor {
 
   private updateTaskRunDetails(
     taskRunInfo?: TaskRunInfo,
-    shouldRender = true,
+    shouldRender = true
   ): void {
     if (!taskRunInfo) {
       this.taskRunDetail.setContent(TASK_RUN_DETAIL_DEFAULT_TEXT);
+      this.detailTabButton.hide();
+      this.trajectoryTabButton.hide();
+      this.historyTabButton.hide();
       if (shouldRender) {
         this.screen.render();
       }
       return;
     }
+
+    this.taskRunDetail.setContent("");
+    this.detailTabButton.show();
+    this.trajectoryTabButton.show();
+    this.historyTabButton.show();
 
     const {
       taskRunId,
@@ -554,36 +707,94 @@ export class TaskMonitor extends BaseMonitor {
       nextRunAt,
       history,
       taskRunInput,
+      currentTrajectory,
     } = taskRunInfo.taskRun;
 
     const { isDestroyed } = taskRunInfo;
 
-    const details = [
-      `${st.label("Id")}: ${st.taskRunId(stringToTaskRun(taskRunId))} (${st.label(taskRunId)})`,
-      `${st.label("In Use")}: ${st.bool(isTaskRunActiveStatus(status), "busy_idle")}`,
-      `${st.label("Status")}: ${st.taskRunStatus(status)}`,
-      `${st.label("Is Destroyed")}: ${st.bool(isDestroyed, "inverse_color")}`,
-      `${st.label("Is Occupied")}:  ${st.bool(isOccupied)}${currentAgentId ? st.agentId(stringToAgent(currentAgentId)) : ""}`,
-      `${st.label("Owner")}:  ${st.agentId(stringToAgent(ownerAgentId))}`,
-      `${st.label("Completed Runs")}:  ${st.num(completedRuns)}`,
-      `${st.label("Error Count")}:  ${st.num(errorCount, true)}`,
-      lastRunAt ? `${st.label("Last Run")}:  ${st.timestamp(lastRunAt)}` : null,
-      nextRunAt ? `${st.label("Next Run")}:  ${st.timestamp(nextRunAt)}` : null,
-      "",
-      `${st.label("Input")}:`,
-      `${st.input(taskRunInput)}`,
-      "",
-      history.at(-1)?.output
-        ? `${st.label("Output")}: \n${st.output(String(history.at(-1)?.output))}`
-        : null,
-      "",
-      "",
-      history.at(-1)?.error
-        ? `${st.label("Error")}: \n${st.error(String(history.at(-1)?.error))}`
-        : null,
-      "",
-    ].join("\n");
-    this.taskRunDetail.setContent(details);
+    let content = "";
+
+    switch (this.currentTaskRunDetailTab) {
+      case TaskRunDetailTab.DETAIL:
+        content = [
+          `${st.label("Id")}: ${st.taskRunId(stringToTaskRun(taskRunId))} (${st.label(taskRunId)})`,
+          `${st.label("In Use")}: ${st.bool(isTaskRunActiveStatus(status), "busy_idle")}`,
+          `${st.label("Status")}: ${st.taskRunStatus(status)}`,
+          `${st.label("Is Destroyed")}: ${st.bool(isDestroyed, "inverse_color")}`,
+          `${st.label("Is Occupied")}:  ${st.bool(isOccupied)}${currentAgentId ? st.agentId(stringToAgent(currentAgentId)) : ""}`,
+          `${st.label("Owner")}:  ${st.agentId(stringToAgent(ownerAgentId))}`,
+          `${st.label("Completed Runs")}:  ${st.num(completedRuns)}`,
+          `${st.label("Error Count")}:  ${st.num(errorCount, true)}`,
+          lastRunAt
+            ? `${st.label("Last Run")}:  ${st.timestamp(lastRunAt)}`
+            : null,
+          nextRunAt
+            ? `${st.label("Next Run")}:  ${st.timestamp(nextRunAt)}`
+            : null,
+          "",
+          `${st.label("Input")}:`,
+          `${st.input(taskRunInput)}`,
+          "",
+          history.at(-1)?.output
+            ? `${st.label("Output")}:${st.output(String(history.at(-1)?.output))}`
+            : null,
+          "",
+          "",
+          history.at(-1)?.error
+            ? `${st.label("Error")}: \n${st.error(String(history.at(-1)?.error))}`
+            : null,
+          "",
+        ].join("\n");
+        break;
+
+      case TaskRunDetailTab.TRAJECTORY:
+        if (currentTrajectory && currentTrajectory.length > 0) {
+          content = currentTrajectory
+            .map((entry) => {
+              return [
+                `${st.timestamp(entry.timestamp)} - ${st.label(entry.key)} - ${st.agentId(stringToAgent(entry.agentId))}`,
+                `${st.output(entry.value)}`,
+                "---",
+              ].join("\n");
+            })
+            .join("\n");
+        } else {
+          content = "No trajectory entries available.";
+        }
+        break;
+
+      case TaskRunDetailTab.HISTORY:
+        if (history && history.length > 0) {
+          content = history
+            .map((entry, index) => {
+              return [
+                `${st.label("Run")} ${st.num(entry.runNumber)}/${entry.maxRuns || "∞"} - ${st.timestamp(entry.timestamp)} - ${st.taskRunStatus(entry.terminalStatus)}`,
+                `${st.label("Agent")}: ${entry.agentId ? st.agentId(stringToAgent(entry.agentId)) : "None"}`,
+                `${st.label("Execution Time")}: ${st.num(entry.executionTimeMs)}ms`,
+                entry.output
+                  ? `${st.label("Output")}: \n${st.output(String(entry.output))}`
+                  : null,
+                entry.error
+                  ? `${st.label("Error")}: \n${st.error(entry.error)}`
+                  : null,
+                entry.trajectory && entry.trajectory.length > 0
+                  ? `${st.label("Trajectory Entries")}: ${st.num(entry.trajectory.length)}`
+                  : null,
+                index < history.length - 1 ? "-------------------" : "",
+              ]
+                .filter(Boolean)
+                .join("\n");
+            })
+            .join("\n");
+        } else {
+          content = "No history entries available.";
+        }
+        break;
+    }
+
+    // Add padding for content to appear below the tab buttons
+    this.taskRunDetail.setContent("\n\n" + content);
+
     if (shouldRender) {
       this.screen.render();
     }

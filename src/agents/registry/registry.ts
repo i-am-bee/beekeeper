@@ -960,7 +960,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       config,
       inUse: false,
       instance,
-    } satisfies Agent;
+    } satisfies AgentWithInstance<typeof instance>;
     this.agents.set(agentId, agent);
 
     const pool = this.getAgentTypeVersionSetsArray(agentKind, agentType);
