@@ -47,7 +47,7 @@ export function getChatLLM(
     provider = parseEnv(
       "LLM_BACKEND",
       z.nativeEnum(Providers),
-      Providers.OLLAMA,
+      Providers.OPENAI,
     );
   }
 
