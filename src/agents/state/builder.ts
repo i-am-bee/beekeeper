@@ -210,7 +210,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
     const agentConfigVersions = this.state.agentConfigs.get(agentType);
     if (!agentConfigVersions) {
       throw new Error(
-        `Config versions not found for agent pool type: ${agentType}`
+        `Config versions not found for agent pool type: ${agentType}`,
       );
     }
 
@@ -225,17 +225,17 @@ export class AgentStateBuilder extends BaseStateBuilder<
     // Remove the config
     if (!agentConfigTypePool) {
       throw new Error(
-        `Agent config pool type: ${agentType} was not found for destruction`
+        `Agent config pool type: ${agentType} was not found for destruction`,
       );
     }
 
     const agentConfigTypeVersionIndex = agentConfigTypePool.findIndex(
       (version) =>
-        version.agentConfigVersion === agentConfigId.agentConfigVersion
+        version.agentConfigVersion === agentConfigId.agentConfigVersion,
     );
     if (agentConfigTypeVersionIndex < 0) {
       throw new Error(
-        `Agent config version: ${agentConfigId.agentConfigVersion} of type: ${agentType} was not found for destruction`
+        `Agent config version: ${agentConfigId.agentConfigVersion} of type: ${agentType} was not found for destruction`,
       );
     }
     agentConfigTypePool.splice(agentConfigTypeVersionIndex, 1);
@@ -249,18 +249,18 @@ export class AgentStateBuilder extends BaseStateBuilder<
     const agentKindPool = this.state.agentPools.get(agentConfigId.agentKind);
     if (!agentKindPool) {
       throw new Error(
-        `Agent pool kind: ${agentConfigId.agentKind} was not found for destruction`
+        `Agent pool kind: ${agentConfigId.agentKind} was not found for destruction`,
       );
     }
 
     const agentTypePool = agentKindPool.get(agentConfigId.agentType);
     if (!agentTypePool) {
       throw new Error(
-        `Agent pool kind: ${agentConfigId.agentKind} type: ${agentConfigId.agentType} was not found for destruction`
+        `Agent pool kind: ${agentConfigId.agentKind} type: ${agentConfigId.agentType} was not found for destruction`,
       );
     }
     const agentTypeVersionIndex = agentTypePool.versions.findIndex(
-      ([version]) => version === agentConfigId.agentConfigVersion
+      ([version]) => version === agentConfigId.agentConfigVersion,
     );
     if (agentTypeVersionIndex >= 0) {
       agentTypePool.versions.splice(agentTypeVersionIndex, 1);
@@ -274,7 +274,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
   private handlePoolChange(data: AgentPoolChangeEvent): void {
     const agentTypeId = stringToAgentType(data.agentTypeId);
     const pool = this.state.agentPools.get(
-      agentSomeIdToKindValue(agentTypeId) as AgentKindEnum
+      agentSomeIdToKindValue(agentTypeId) as AgentKindEnum,
     );
     if (!pool) {
       throw new Error(`Missing pool for type: ${data.agentTypeId}`);
@@ -306,7 +306,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
       | AgentCreateEvent
       | AgentAcquireEvent
       | AgentReleaseEvent
-      | AgentDestroyEvent
+      | AgentDestroyEvent,
   ): void {
     const { agentId } = data;
 
@@ -368,7 +368,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
 
     if (agent.assignments.has(assignmentId)) {
       throw new Error(
-        `Assignment ${assignmentId} already exists for agent ${agentId}`
+        `Assignment ${assignmentId} already exists for agent ${agentId}`,
       );
     }
 
@@ -391,7 +391,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
 
     if (!agent.assignments.has(assignmentId)) {
       throw new Error(
-        `Assignment ${assignmentId} not found for agent ${agentId}`
+        `Assignment ${assignmentId} not found for agent ${agentId}`,
       );
     }
 
@@ -409,7 +409,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
     const assignment = agent.assignments.get(assignmentId);
     if (!assignment) {
       throw new Error(
-        `Assignment ${assignmentId} not found for agent ${agentId}`
+        `Assignment ${assignmentId} not found for agent ${agentId}`,
       );
     }
 
@@ -426,7 +426,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
 
   getAgentConfig(
     agentTypeId: string,
-    agentVersion?: number
+    agentVersion?: number,
   ): AgentConfig | undefined {
     const versions = this.state.agentConfigs.get(agentTypeId);
     if (!versions) {
@@ -439,14 +439,14 @@ export class AgentStateBuilder extends BaseStateBuilder<
   }
 
   private getAgentPoolsMap(
-    agentKindId: AgentKindEnum
+    agentKindId: AgentKindEnum,
   ): Map<string, AgentPool> | undefined {
     return this.state.agentPools.get(agentKindId);
   }
 
   getAgentPool(
     agentKind: AgentKindEnum,
-    agentType: string
+    agentType: string,
   ): AgentPool | undefined {
     const map = this.getAgentPoolsMap(agentKind);
     return map?.get(agentType);
@@ -462,7 +462,7 @@ export class AgentStateBuilder extends BaseStateBuilder<
 
   getAgentAssignment(
     agentId: string,
-    assignmentId: string
+    assignmentId: string,
   ): Assignment | undefined {
     const agent = this.state.agents.get(agentId);
     return agent?.assignments.get(assignmentId);

@@ -7,13 +7,13 @@ export function taskRunOutput(taskRun: TaskRun, checkTerminalStatus = true) {
     (checkTerminalStatus && record.terminalStatus !== "COMPLETED")
   ) {
     throw new Error(
-      `Missing completed record of taskRunId:${taskRun.taskRunId}`
+      `Missing completed record of taskRunId:${taskRun.taskRunId}`,
     );
   }
   const output = record.output;
   if (!output) {
     throw new Error(
-      `Missing output on completed record of taskRunId:${taskRun.taskRunId}`
+      `Missing output on completed record of taskRunId:${taskRun.taskRunId}`,
     );
   }
   return String(output);
@@ -22,20 +22,20 @@ export function taskRunOutput(taskRun: TaskRun, checkTerminalStatus = true) {
 export function taskRunInteractionResponse(taskRun: TaskRun) {
   if (taskRun.taskRunKind != "interaction") {
     throw new Error(
-      `Can't get interaction response from \`${taskRun.taskRunKind}\` kind of task run: ${taskRun.taskRunId} `
+      `Can't get interaction response from \`${taskRun.taskRunKind}\` kind of task run: ${taskRun.taskRunId} `,
     );
   }
 
   if (taskRun.interactionStatus != "COMPLETED") {
     throw new Error(
-      `Can't get interaction response from uncompleted task run: ${taskRun.taskRunId} `
+      `Can't get interaction response from uncompleted task run: ${taskRun.taskRunId} `,
     );
   }
 
   const response = taskRun.response;
   if (!response) {
     throw new Error(
-      `Missing response on completed task run interaction:${taskRun.taskRunId}`
+      `Missing response on completed task run interaction:${taskRun.taskRunId}`,
     );
   }
 
@@ -50,7 +50,7 @@ export function taskRunError(taskRun: TaskRun) {
   const error = record.error;
   if (!error) {
     throw new Error(
-      `Missing error on failed record of taskRunId:${taskRun.taskRunId}`
+      `Missing error on failed record of taskRunId:${taskRun.taskRunId}`,
     );
   }
   return error;

@@ -283,7 +283,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       const taskTypeId = itemData.taskTypeId;
       if ((taskTypeId as TaskTypeId).taskType) {
         taskConfig = this.stateBuilder.getTaskConfig(
-          taskSomeIdToTypeValue(taskTypeId as TaskTypeId)
+          taskSomeIdToTypeValue(taskTypeId as TaskTypeId),
         );
       }
     }
@@ -302,7 +302,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       const taskConfigId = itemData.taskTypeId as TaskConfig;
       taskConfig = this.stateBuilder.getTaskConfig(
         taskSomeIdToTypeValue(taskConfigId),
-        taskConfigId.taskConfigVersion
+        taskConfigId.taskConfigVersion,
       );
     }
 
@@ -323,7 +323,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       const taskRunTypeId = taskSomeIdToTypeValue(taskRunConfigId);
       taskConfig = this.stateBuilder.getTaskConfig(
         taskRunTypeId,
-        taskRunConfigId.taskConfigVersion
+        taskRunConfigId.taskConfigVersion,
       );
     }
 
@@ -359,13 +359,13 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     this.screen.key(["escape", "q", "C-c"], () => process.exit(0));
 
     this.taskPoolList.on("select", (_, selectedIndex) =>
-      this.onPoolSelect(selectedIndex)
+      this.onPoolSelect(selectedIndex),
     );
     this.taskVersionsList.on("select", (_, selectedIndex) =>
-      this.onVersionSelect(selectedIndex)
+      this.onVersionSelect(selectedIndex),
     );
     this.taskRunList.on("select", (_, selectedIndex) =>
-      this.onTaskRunSelect(selectedIndex)
+      this.onTaskRunSelect(selectedIndex),
     );
 
     // Add this to the setupEventHandlers method
@@ -467,7 +467,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       this.taskPoolList.select(this.taskPoolListSelectedIndex);
     }
     this.taskPoolList.setItems(
-      this.taskPoolListItemsData.map((it) => it.itemContent)
+      this.taskPoolListItemsData.map((it) => it.itemContent),
     );
 
     this.updateTaskVersionsList(false);
@@ -485,7 +485,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
         this.taskPoolListItemsData[this.taskPoolListSelectedIndex];
       if (!itemData) {
         throw new Error(
-          `Missing data for selected pool on index:${this.taskPoolListSelectedIndex}`
+          `Missing data for selected pool on index:${this.taskPoolListSelectedIndex}`,
         );
       }
 
@@ -494,7 +494,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
         // List versions
         const taskPool = this.stateBuilder.getTaskPool(
           taskPoolTypeId.taskKind,
-          taskPoolTypeId.taskType
+          taskPoolTypeId.taskType,
         );
         if (taskPool) {
           const hasMultipleVersions = taskPool.versions.length > 1;
@@ -520,7 +520,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
                 taskTypeId,
                 itemContent: st.versionTaskPoolStats(
                   st.versionNum(taskConfigVersion),
-                  poolStats
+                  poolStats,
                 ),
               });
             });
@@ -529,10 +529,10 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     }
 
     this.taskVersionsList.setItems(
-      this.taskVersionsListItemsData.map((it) => it.itemContent)
+      this.taskVersionsListItemsData.map((it) => it.itemContent),
     );
     this.taskVersionsList.setContent(
-      this.taskVersionsListItemsData.length ? "" : TASK_VERSION_DEFAULT_TEXT
+      this.taskVersionsListItemsData.length ? "" : TASK_VERSION_DEFAULT_TEXT,
     );
     this.updateTaskList(false);
     if (shouldRender) {
@@ -586,7 +586,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
 
           if (aTaskRunId.taskConfigVersion != bTaskRunId.taskConfigVersion) {
             return Math.sign(
-              aTaskRunId.taskConfigVersion - bTaskRunId.taskConfigVersion
+              aTaskRunId.taskConfigVersion - bTaskRunId.taskConfigVersion,
             );
           }
 
@@ -606,10 +606,10 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     }
 
     this.taskRunList.setItems(
-      this.taskRunListItemsData.map((it) => it.itemContent)
+      this.taskRunListItemsData.map((it) => it.itemContent),
     );
     this.taskRunList.setContent(
-      this.taskRunListItemsData.length ? "" : TASK_RUN_LIST_DEFAULT_TEXT
+      this.taskRunListItemsData.length ? "" : TASK_RUN_LIST_DEFAULT_TEXT,
     );
     if (shouldRender) {
       this.screen.render();
@@ -649,7 +649,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
 
   private updateTaskRunDetails(
     taskRunInfo?: TaskRunInfo,
-    shouldRender = true
+    shouldRender = true,
   ): void {
     if (!taskRunInfo) {
       this.taskRunDetail.setContent(TASK_RUN_DETAIL_DEFAULT_TEXT);

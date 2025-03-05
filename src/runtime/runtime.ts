@@ -83,14 +83,14 @@ export class Runtime {
 
     this.logger.info(
       { input, start, timeout, timeoutMs: this.timeoutMs },
-      "Starting processing finish task run"
+      "Starting processing finish task run",
     );
 
     const getAgent = (taskRun: TaskRun) => {
       const agentId = taskRun.currentAgentId;
       if (!agentId) {
         throw new Error(
-          `Missing current agent id on taskRun:${taskRun.taskRunId}`
+          `Missing current agent id on taskRun:${taskRun.taskRunId}`,
         );
       }
       return this.agentRegistry.getAgent(agentId);
@@ -136,7 +136,7 @@ export class Runtime {
             PROCESS_AND_PLAN_TASK_NAME,
             "interaction",
             input,
-            this.supervisor.agentId
+            this.supervisor.agentId,
           );
           taskRunId = taskRun.taskRunId;
         }
@@ -145,23 +145,23 @@ export class Runtime {
         if (restMs <= 0) {
           this.logger.error(
             { taskRunId },
-            "Timeout waiting for finish supervisor run"
+            "Timeout waiting for finish supervisor run",
           );
           throw new Error(
-            `Timeout waiting for finish supervisor run ${taskRunId}`
+            `Timeout waiting for finish supervisor run ${taskRunId}`,
           );
         }
 
         const runningTaskRuns = this.taskManager.findTaskRunsOwnedBy(
           this.supervisor.agentId,
-          this.supervisor.agentId
+          this.supervisor.agentId,
         );
         const unfinished = runningTaskRuns.filter(
-          (tr) => !isTaskRunTerminationStatus(tr.status)
+          (tr) => !isTaskRunTerminationStatus(tr.status),
         );
         if (!unfinished.length) {
           this.logger.debug(
-            `There are ${unfinished.length} unfinished task. Closing loop.`
+            `There are ${unfinished.length} unfinished task. Closing loop.`,
           );
           const taskRun = this.taskManager.getTaskRun(taskRunId, RUNTIME_USER);
           const response = taskRunInteractionResponse(taskRun);
@@ -174,13 +174,13 @@ export class Runtime {
           return;
         } else {
           this.logger.debug(
-            `There are ${unfinished.length} unfinished tasks. Keeping loop...`
+            `There are ${unfinished.length} unfinished tasks. Keeping loop...`,
           );
         }
 
         // Wait for the polling interval before checking again
         await new Promise((resolve) =>
-          setTimeout(resolve, this.pollingIntervalMs)
+          setTimeout(resolve, this.pollingIntervalMs),
         );
       }
     } finally {

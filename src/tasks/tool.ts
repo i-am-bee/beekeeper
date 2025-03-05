@@ -90,7 +90,7 @@ export const DestroyTaskConfigSchema = z
     actingAgentId: ActingAgentIdValueSchema,
   })
   .describe(
-    "Destroy an existing task configuration with all related task runs."
+    "Destroy an existing task configuration with all related task runs.",
   );
 
 export const GetPoolStatsSchema = z
@@ -101,7 +101,7 @@ export const GetPoolStatsSchema = z
     actingAgentId: ActingAgentIdValueSchema,
   })
   .describe(
-    "Get statistics about the task run's pool for a specific task configuration kind and type"
+    "Get statistics about the task run's pool for a specific task configuration kind and type",
   );
 
 export const CreateTaskRunSchema = z
@@ -115,7 +115,7 @@ export const CreateTaskRunSchema = z
     blockedByTaskRunIds: z
       .array(TaskRunIdValueSchema)
       .describe(
-        "IDs of task runs that blocks this task run and will whose outputs this task receive"
+        "IDs of task runs that blocks this task run and will whose outputs this task receive",
       ),
   })
   .describe("Creates a new task run from task configuration.");
@@ -265,7 +265,7 @@ export class TaskManagerTool extends Tool<
         data = this.taskManager.createTaskConfig(
           taskConfig,
           actingAgentId,
-          actingAgentId
+          actingAgentId,
         );
         break;
       }
@@ -274,7 +274,7 @@ export class TaskManagerTool extends Tool<
         data = this.taskManager.getTaskConfig(
           taskKind,
           taskType,
-          actingAgentId
+          actingAgentId,
         );
         break;
       }
@@ -282,7 +282,7 @@ export class TaskManagerTool extends Tool<
         const { update: config, taskKind, taskType, actingAgentId } = input;
         data = this.taskManager.updateTaskConfig(
           { ...config, taskKind, taskType },
-          actingAgentId
+          actingAgentId,
         );
         break;
       }
@@ -291,7 +291,7 @@ export class TaskManagerTool extends Tool<
         data = this.taskManager.destroyTaskConfig(
           taskKind,
           taskType,
-          actingAgentId
+          actingAgentId,
         );
         break;
       }
@@ -321,45 +321,45 @@ export class TaskManagerTool extends Tool<
           {
             originTaskRunId,
             blockedByTaskRunIds,
-          }
+          },
         );
         break;
       }
       case "scheduleStartTaskRun":
         data = this.taskManager.scheduleStartTaskRun(
           input.taskRunId,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
       case "scheduleStartSimultaneousTaskRuns":
         data = this.taskManager.scheduleStartMultipleTaskRuns(
           input.taskRunIds,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
       case "stopTaskRun":
         data = this.taskManager.stopTaskRun(
           input.taskRunId,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
       case "removeTaskRun":
         data = this.taskManager.destroyTaskRun(
           input.taskRunId,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
       case "getTaskRun":
         data = this.taskManager.getTaskRun(
           input.taskRunId,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
       case "addBlockingTaskRuns":
         data = this.taskManager.addBlockingTaskRuns(
           input.taskRunId,
           input.blockingTaskRunIds,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
       case "getAllTaskRuns":
@@ -368,13 +368,13 @@ export class TaskManagerTool extends Tool<
       case "isTaskRunOccupied":
         data = this.taskManager.isTaskRunOccupied(
           input.taskRunId,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
       case "getTaskRunHistory":
         data = this.taskManager.getTaskRunHistory(
           input.taskRunId,
-          input.actingAgentId
+          input.actingAgentId,
         );
         break;
     }

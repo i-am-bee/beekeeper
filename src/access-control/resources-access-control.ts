@@ -28,10 +28,10 @@ export class PermissionError extends Error {
   constructor(
     public userId: string,
     public requiredPermission: Permission,
-    public resourceOwnerId: string
+    public resourceOwnerId: string,
   ) {
     super(
-      `User ${userId} does not have ${requiredPermission} permission for resource owned by ${resourceOwnerId}`
+      `User ${userId} does not have ${requiredPermission} permission for resource owned by ${resourceOwnerId}`,
     );
     this.name = "PermissionError";
   }
@@ -60,7 +60,7 @@ export class ResourcesAccessControl {
       requestedIds.forEach((requestedId) => {
         if (requestedId === id) {
           throw new Error(
-            `${requestedId} is reserved for system purpose please chose another`
+            `${requestedId} is reserved for system purpose please chose another`,
           );
         }
       });
@@ -69,7 +69,7 @@ export class ResourcesAccessControl {
 
   public getResourcePermissionsByAdmin(
     resourceId: ResourceId,
-    actingUserId: UserId
+    actingUserId: UserId,
   ) {
     this.checkPermission(REGISTRY_RESOURCE, actingUserId, ["read"]);
     return clone(this.getResourcePermissions(resourceId));
@@ -79,7 +79,7 @@ export class ResourcesAccessControl {
     const resourcePermissions = this.registry.resources.get(resourceId);
     if (!resourcePermissions && throwError) {
       throw new Error(
-        `Resource permissions for resourceId:${resourceId} was not found`
+        `Resource permissions for resourceId:${resourceId} was not found`,
       );
     }
     return resourcePermissions;
@@ -87,13 +87,13 @@ export class ResourcesAccessControl {
 
   private destroyResourcePermissions(
     resourceId: ResourceId,
-    throwError = true
+    throwError = true,
   ) {
     this.logger.info({ resourceId }, `destroyResourcePermissions`);
     const resourcePermissions = this.registry.resources.has(resourceId);
     if (!resourcePermissions && throwError) {
       throw new Error(
-        `Resource permissions for resourceId:${resourceId} was not found for destruction`
+        `Resource permissions for resourceId:${resourceId} was not found for destruction`,
       );
     }
     this.registry.resources.delete(resourceId);
@@ -107,11 +107,11 @@ export class ResourcesAccessControl {
     resourceId: ResourceId,
     userId: UserId,
     permissions: Permission[],
-    actingUserId: UserId
+    actingUserId: UserId,
   ) {
     this.logger.info(
       { resourceId, userId, permissions, actingUserId },
-      `createPermissions`
+      `createPermissions`,
     );
     this.checkReservedConstants(resourceId, userId);
     this.checkPermission(resourceId, actingUserId, ["write"]);
@@ -124,11 +124,11 @@ export class ResourcesAccessControl {
     resourceId: ResourceId,
     userId: UserId,
     actingUserId: UserId,
-    permissions?: Permission[]
+    permissions?: Permission[],
   ) {
     this.logger.info(
       { resourceId, userId, permissions, actingUserId },
-      `removePermissions`
+      `removePermissions`,
     );
     this.checkPermission(resourceId, actingUserId, WRITE_ONLY_ACCESS);
 
@@ -154,11 +154,11 @@ export class ResourcesAccessControl {
     resourceId: ResourceId,
     ownerId: UserId,
     actingUserId: UserId,
-    parentResourceId?: ResourceId
+    parentResourceId?: ResourceId,
   ) {
     this.logger.info(
       { resourceId, ownerId, actingUserId, parentResourceId },
-      `createResource`
+      `createResource`,
     );
     this.checkReservedConstants(resourceId, ownerId);
     if (parentResourceId) {
@@ -166,14 +166,14 @@ export class ResourcesAccessControl {
         parentResourceId,
         actingUserId,
         WRITE_ONLY_ACCESS,
-        false
+        false,
       );
     }
 
     let resourcePermissions = this.getResourcePermissions(resourceId, false);
     if (resourcePermissions) {
       throw new Error(
-        `Resource permissions for resourceId: ${resourceId} already exist`
+        `Resource permissions for resourceId: ${resourceId} already exist`,
       );
     }
     resourcePermissions = {
@@ -200,11 +200,11 @@ export class ResourcesAccessControl {
     resourceId: ResourceId,
     userId: UserId,
     requestedPermissions: Permission[],
-    throwError = true
+    throwError = true,
   ) {
     const resourcePermissions = this.getResourcePermissions(
       resourceId,
-      throwError
+      throwError,
     )!;
 
     if (this.isAdmin(userId)) {
@@ -227,7 +227,7 @@ export class ResourcesAccessControl {
         throw new PermissionError(
           userId,
           permission,
-          resourcePermissions.ownerId
+          resourcePermissions.ownerId,
         );
       }
     });
@@ -239,7 +239,7 @@ export class ResourcesAccessControl {
   hasPermission(
     resourceId: ResourceId,
     userId: UserId,
-    requestedPermissions: Permission[]
+    requestedPermissions: Permission[],
   ): boolean {
     try {
       this.checkPermission(resourceId, userId, requestedPermissions);

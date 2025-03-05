@@ -98,7 +98,7 @@ export type TaskRunUpdateEvent = z.infer<typeof TaskRunUpdateEventSchema>;
 export const TaskRunDestroyEventSchema = BaseTaskRunLifecycleEventSchema.extend(
   {
     kind: z.literal(TaskEventKindEnum.enum.task_run_destroy),
-  }
+  },
 );
 export type TaskRunDestroyEvent = z.infer<typeof TaskRunDestroyEventSchema>;
 

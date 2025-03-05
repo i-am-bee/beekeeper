@@ -11,7 +11,7 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
   createAgent<TCreateInput extends CreateAgentInput = CreateAgentInput>(
     input: TCreateInput,
     toolsFactory: BaseToolsFactory,
-    switches?: Switches
+    switches?: Switches,
   ) {
     const llm = getChatLLM(input.agentKind);
     const generalInstructions = `You are a ${input.agentKind} kind of agent (agentId=${input.agentId}, agentType=${input.agentType}). ${input.instructions}`;
@@ -31,10 +31,7 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
             system: (template) =>
               template.fork((config) => {
                 config.defaults.instructions =
-                  supervisor.SUPERVISOR_INSTRUCTIONS(
-                    input.agentId,
-                    switches
-                  );
+                  supervisor.SUPERVISOR_INSTRUCTIONS(input.agentId, switches);
               }),
           },
           execution: {
@@ -73,7 +70,7 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
   async runAgent(
     agent: BeeAgent,
     prompt: string,
-    onUpdate: (key: string, value: string) => void
+    onUpdate: (key: string, value: string) => void,
   ): Promise<string> {
     const resp = await agent.run({ prompt }).observe((emitter) => {
       emitter.on("update", async ({ update }) => {

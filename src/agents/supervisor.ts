@@ -1,6 +1,9 @@
 import { BaseToolsFactory, ToolFactoryMethod } from "@/base/tools-factory.js";
 import { Switches } from "@/runtime/factory.js";
-import { CreateTaskConfig, TaskRunKindEnumSchema } from "@/tasks/manager/dto.js";
+import {
+  CreateTaskConfig,
+  TaskRunKindEnumSchema,
+} from "@/tasks/manager/dto.js";
 import { TaskManager } from "@tasks/manager/manager.js";
 import {
   TaskManagerTool,
@@ -19,7 +22,7 @@ export enum AgentTypes {
 
 export const SUPERVISOR_INSTRUCTIONS = (
   agentId: string,
-  switches?: Switches
+  switches?: Switches,
 ) => `You are a supervisor AI assistant (your agentId:${agentId}) who manages a task-driven multi-agent platform which consisting of two main systems: agent registry and task manager.
 
 **Systems**
@@ -124,7 +127,7 @@ export class ToolsFactory extends BaseToolsFactory {
   constructor(
     protected registry: AgentRegistry<any>,
     protected taskManager: TaskManager,
-    protected workdir: string
+    protected workdir: string,
   ) {
     super();
   }
@@ -142,7 +145,7 @@ export class Workdir {
 
   static getWorkdirPath() {
     const workdirPath = WorkspaceManager.getInstance().getWorkspacePath(
-      Workdir.getWorkspacePathInput()
+      Workdir.getWorkspacePathInput(),
     );
 
     return workdirPath;
@@ -158,7 +161,7 @@ export class Workdir {
   static registerWorkdir(supervisorId: string) {
     WorkspaceManager.getInstance().registerResource(
       Workdir.getWorkspacePathInput(),
-      supervisorId
+      supervisorId,
     );
   }
 }
