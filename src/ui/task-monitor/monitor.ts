@@ -712,7 +712,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
             : null,
           `${st.label("Run Kind")}: ${taskRunKind}`,
           interactionStatus
-            ? `${st.label("Interaction State")}: ${interactionStatus}`
+            ? `${st.label("Interaction State")}: ${st.taskRunInteractionStatus(interactionStatus)}`
             : null,
           `${st.label("In Use")}: ${st.bool(isTaskRunActiveStatus(status), "busy_idle")}`,
           `${st.label("Status")}: ${st.taskRunStatus(status)}`,

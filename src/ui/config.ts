@@ -15,6 +15,7 @@ import {
 } from "@/agents/registry/dto.js";
 import { AgentInfo } from "@/agents/state/builder.js";
 import {
+  InteractionTaskRunStatusEnum,
   TaskConfigPoolStats,
   TaskKindEnum,
   TaskKindEnumSchema,
@@ -419,5 +420,9 @@ export function versionTaskPoolStats(
 }
 
 export function taskRunStatus(status: TaskRunStatusEnum) {
+  return applyStatusStyle(status);
+}
+
+export function taskRunInteractionStatus(status: InteractionTaskRunStatusEnum) {
   return applyStatusStyle(status);
 }

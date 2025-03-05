@@ -65,8 +65,9 @@ export class Runtime {
     try {
       this._isRunning = true;
       this.logger.info("Starting runtime process...");
-      await this.waitUntilTaskRunFinish(input, output);
+      const response = await this.waitUntilTaskRunFinish(input, output);
       this.logger.info("Process completed successfully");
+      return response;
     } catch (error) {
       this.logger.error(error, "Error in runtime process:");
       throw error;
@@ -100,7 +101,7 @@ export class Runtime {
       outputMethod({
         kind: "progress",
         taskRun,
-        text: `Starting task`,
+        text: `Starting task \`${taskRun.taskType}\`\n- ${taskRun.config.description}`,
       });
     };
     this.taskManager.on("task_run:start", onTaskRunStart);
@@ -171,13 +172,12 @@ export class Runtime {
             agent: this.supervisor,
             text: response,
           });
-          return;
+          return response;
         } else {
           this.logger.debug(
             `There are ${unfinished.length} unfinished tasks. Keeping loop...`,
           );
         }
-
         // Wait for the polling interval before checking again
         await new Promise((resolve) =>
           setTimeout(resolve, this.pollingIntervalMs),

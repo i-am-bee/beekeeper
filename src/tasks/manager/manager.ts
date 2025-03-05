@@ -1177,7 +1177,15 @@ ${taskRunInput}`
       this.releaseTaskRunOccupancy(taskRunId, actingAgentId);
     }
 
-    if (taskRun.taskRunKind === "automatic") {
+    if (taskRun.taskRunKind === "interaction") {
+      if (!taskRun.blockingTaskRunIds.length) {
+        // Bypass response
+        this._updateTaskRun(taskRunId, taskRun, {
+          interactionStatus: "COMPLETED",
+          response: taskRunOutput(taskRun, false),
+        });
+      }
+    } else if (taskRun.taskRunKind === "automatic") {
       if (taskRun.blockingTaskRunIds.length > 0) {
         // Run blocking task runs
 
