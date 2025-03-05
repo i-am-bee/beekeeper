@@ -145,7 +145,7 @@ export class TaskStateBuilder extends BaseStateBuilder<
   }
 
   private handleTaskRunLifecycle(
-    data: TaskRunCreateEvent | TaskRunUpdateEvent | TaskRunDestroyEvent,
+    data: TaskRunCreateEvent | TaskRunUpdateEvent | TaskRunDestroyEvent
   ): void {
     const { taskRunId } = data;
 
@@ -170,7 +170,7 @@ export class TaskStateBuilder extends BaseStateBuilder<
         const taskRunInfo = this.state.taskRuns.get(taskRunId);
         if (!taskRunInfo) {
           throw new Error(
-            `Task run info ${taskRunId} doesn't exist for update`,
+            `Task run info ${taskRunId} doesn't exist for update`
           );
         }
 
@@ -178,7 +178,13 @@ export class TaskStateBuilder extends BaseStateBuilder<
         if (modifiedUpdate.currentTrajectory) {
           modifiedUpdate.currentTrajectory =
             taskRunInfo.taskRun.currentTrajectory.concat(
-              modifiedUpdate.currentTrajectory,
+              modifiedUpdate.currentTrajectory
+            );
+        }
+        if (modifiedUpdate.blockedByTaskRunIds) {
+          modifiedUpdate.blockedByTaskRunIds =
+            taskRunInfo.taskRun.blockedByTaskRunIds.concat(
+              modifiedUpdate.blockedByTaskRunIds
             );
         }
 
@@ -189,7 +195,7 @@ export class TaskStateBuilder extends BaseStateBuilder<
         const taskRunInfo = this.state.taskRuns.get(taskRunId);
         if (!taskRunInfo) {
           throw new Error(
-            `Task run info ${taskRunId} doesn't exist for destroy`,
+            `Task run info ${taskRunId} doesn't exist for destroy`
           );
         }
         taskRunInfo.isDestroyed = true;
@@ -201,7 +207,7 @@ export class TaskStateBuilder extends BaseStateBuilder<
   handlePoolChange(data: TaskPoolChangeEvent) {
     const taskTypeId = stringToTaskType(data.taskTypeId);
     const pool = this.state.taskRunPools.get(
-      taskSomeIdToKindValue(taskTypeId) as TaskKindEnum,
+      taskSomeIdToKindValue(taskTypeId) as TaskKindEnum
     );
     if (!pool) {
       throw new Error(`Missing pool for type: ${data.taskTypeId}`);
@@ -242,7 +248,7 @@ export class TaskStateBuilder extends BaseStateBuilder<
     const taskConfigsVersions = this.state.taskConfigs.get(taskConfigId);
     if (!taskConfigsVersions) {
       throw new Error(
-        `Task config versions not found for task type: ${taskTypeId}`,
+        `Task config versions not found for task type: ${taskTypeId}`
       );
     }
     taskConfigsVersions.push(config);
@@ -302,7 +308,7 @@ export class TaskStateBuilder extends BaseStateBuilder<
 
   getTaskConfig(
     taskTypeId: string,
-    taskConfigVersion?: number,
+    taskConfigVersion?: number
   ): TaskConfig | undefined {
     const versions = this.state.taskConfigs.get(taskTypeId);
     if (!versions) {
@@ -315,14 +321,14 @@ export class TaskStateBuilder extends BaseStateBuilder<
   }
 
   private getTaskPoolsMap(
-    agentKindId: TaskKindEnum,
+    agentKindId: TaskKindEnum
   ): Map<string, TaskPool> | undefined {
     return this.state.taskRunPools.get(agentKindId);
   }
 
   getTaskPool(
     agentKind: TaskKindEnum,
-    agentType: string,
+    agentType: string
   ): TaskPool | undefined {
     const map = this.getTaskPoolsMap(agentKind);
     return map?.get(agentType);

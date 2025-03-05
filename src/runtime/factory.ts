@@ -58,7 +58,7 @@ export async function createRuntime({
       async onCreate(
         config,
         agentId,
-        toolsFactory,
+        toolsFactory
       ): Promise<{
         agentId: string;
         instance: ReturnType<typeof _agentFactory.createAgent>;
@@ -79,7 +79,7 @@ export async function createRuntime({
             tools,
           },
           toolsFactory,
-          switches,
+          switches
         );
 
         return { agentId, instance };
@@ -97,7 +97,7 @@ export async function createRuntime({
         agentKind,
         agentType,
         agentConfigVersion,
-        availableCount,
+        availableCount
       );
     },
   });
@@ -113,13 +113,13 @@ export async function createRuntime({
         onAgentUpdate,
         onAgentComplete,
         onAgentError,
-      },
+      }
     ) => {
       let agent;
       try {
         agent = await registry.acquireAgent(
           taskRun.config.agentKind,
-          taskRun.config.agentType,
+          taskRun.config.agentType
         );
       } catch (err) {
         console.error(err);
@@ -138,11 +138,11 @@ export async function createRuntime({
             value,
             taskRun.taskRunId,
             agent.agentId,
-            taskManager,
+            taskManager
           );
         })
         .then((resp) =>
-          onAgentComplete(resp, taskRun.taskRunId, agent.agentId, taskManager),
+          onAgentComplete(resp, taskRun.taskRunId, agent.agentId, taskManager)
         )
         .catch((err) => {
           onAgentError(err, taskRun.taskRunId, agent.agentId, taskManager);
@@ -159,7 +159,7 @@ export async function createRuntime({
       new supervisor.ToolsFactory(
         registry,
         taskManager,
-        supervisor.Workdir.getWorkdirPath().validPath,
+        supervisor.Workdir.getWorkdirPath().validPath
       ),
     ],
     ["operator", new operator.ToolsFactory()],
@@ -170,7 +170,7 @@ export async function createRuntime({
   if (
     !registry.isAgentConfigExists(
       AgentKindEnumSchema.Enum.supervisor,
-      supervisor.AgentTypes.BOSS,
+      supervisor.AgentTypes.BOSS
     )
   ) {
     registry.createAgentConfig({
@@ -194,7 +194,7 @@ export async function createRuntime({
 
   const agent = await registry.acquireAgent(
     AgentKindEnumSchema.Enum.supervisor,
-    supervisor.AgentTypes.BOSS,
+    supervisor.AgentTypes.BOSS
   );
 
   const { agentId: supervisorAgentId } = agent;
@@ -205,13 +205,13 @@ export async function createRuntime({
     !taskManager.findTaskConfig(
       "supervisor",
       supervisor.PROCESS_AND_PLAN_TASK_NAME,
-      supervisorAgentId,
+      supervisorAgentId
     )
   ) {
     taskManager.createTaskConfig(
       supervisor.getProcessAndPlanTaskConfig(agent.agentConfigVersion),
       supervisorAgentId,
-      supervisorAgentId,
+      supervisorAgentId
     );
   }
 
@@ -242,6 +242,6 @@ export async function createRuntime({
     taskManager,
     pollingIntervalMs: 3000,
     supervisor: agent as AgentWithInstance<BeeAgent>,
-    timeoutMs: 5 * 60_000,
+    timeoutMs: 15 * 60_000, // 15 min
   });
 }

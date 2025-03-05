@@ -30,6 +30,7 @@ export type TaskManagerToolResultData =
   | void
   | boolean
   | TaskConfig
+  | TaskConfig[]
   | [TaskConfigPoolStats, [number, TaskConfigPoolStats][]]
   | TaskRun
   | TaskRun[]
@@ -56,7 +57,7 @@ export const CreateTaskConfigSchema = z
 export const GetTaskConfigSchema = z
   .object({
     method: z.literal("getTaskConfig"),
-    taskKind: z.literal(TaskKindEnumSchema.Enum.operator),
+    taskKind: TaskKindEnumSchema,
     taskType: TaskTypeValueSchema,
     actingAgentId: ActingAgentIdValueSchema,
   })
@@ -65,7 +66,7 @@ export const GetTaskConfigSchema = z
 export const UpdateTaskConfigSchema = z
   .object({
     method: z.literal("updateTaskConfig"),
-    taskKind: z.literal(TaskKindEnumSchema.Enum.operator),
+    taskKind: TaskKindEnumSchema,
     taskType: TaskTypeValueSchema,
     update: TaskConfigSchema.partial().pick({
       taskConfigInput: true,
@@ -84,34 +85,47 @@ export const UpdateTaskConfigSchema = z
 export const DestroyTaskConfigSchema = z
   .object({
     method: z.literal("destroyTaskConfig"),
-    taskKind: z.literal(TaskKindEnumSchema.Enum.operator),
+    taskKind: TaskKindEnumSchema,
     taskType: TaskTypeValueSchema,
     actingAgentId: ActingAgentIdValueSchema,
   })
   .describe(
-    "Destroy an existing task configuration with all related task runs.",
+    "Destroy an existing task configuration with all related task runs."
   );
 
 export const GetPoolStatsSchema = z
   .object({
     method: z.literal("getPoolStats"),
-    taskKind: z.literal(TaskKindEnumSchema.Enum.operator),
+    taskKind: TaskKindEnumSchema,
     taskType: TaskTypeValueSchema,
     actingAgentId: ActingAgentIdValueSchema,
   })
   .describe(
-    "Get statistics about the task run's pool for a specific task configuration kind and type",
+    "Get statistics about the task run's pool for a specific task configuration kind and type"
   );
 
 export const CreateTaskRunSchema = z
   .object({
     method: z.literal("createTaskRun"),
-    taskKind: z.literal(TaskKindEnumSchema.Enum.operator),
+    taskKind: TaskKindEnumSchema,
     taskType: TaskTypeValueSchema,
-    taskRunInput: z.string().describe(`Task input specific for the run.`),
     actingAgentId: ActingAgentIdValueSchema,
+    taskRunInput: z.string().describe(`Task input specific for the run.`),
+    originTaskRunId: TaskRunIdValueSchema,
+    blockedByTaskRunIds: z
+      .array(TaskRunIdValueSchema)
+      .describe(
+        "IDs of task runs that blocks this task run and will whose outputs this task receive"
+      ),
   })
   .describe("Creates a new task run from task configuration.");
+
+export const GetAllTaskConfigsSchema = z
+  .object({
+    method: z.literal("getAllTaskConfigs"),
+    actingAgentId: ActingAgentIdValueSchema,
+  })
+  .describe("Gets all created task configs.");
 
 export const ScheduleStartTaskRunSchema = z
   .object({
@@ -120,6 +134,14 @@ export const ScheduleStartTaskRunSchema = z
     actingAgentId: ActingAgentIdValueSchema,
   })
   .describe("Starts a task run.");
+
+export const ScheduleStartSimultaneousTaskRunsSchema = z
+  .object({
+    method: z.literal("scheduleStartSimultaneousTaskRuns"),
+    taskRunIds: z.array(TaskRunIdValueSchema),
+    actingAgentId: ActingAgentIdValueSchema,
+  })
+  .describe("Simultaneous start of multiple task runs.");
 
 export const StopTaskRunSchema = z
   .object({
@@ -144,6 +166,17 @@ export const GetTaskRunSchema = z
     actingAgentId: ActingAgentIdValueSchema,
   })
   .describe("Gets current state of the task run.");
+
+export const AddBlockingTaskRunsSchema = z
+  .object({
+    method: z.literal("addBlockingTaskRuns"),
+    taskRunId: TaskRunIdValueSchema,
+    blockingTaskRunIds: z
+      .array(TaskRunIdValueSchema)
+      .describe("Array of depending task runs."),
+    actingAgentId: ActingAgentIdValueSchema,
+  })
+  .describe("Add blocking task run.");
 
 export const GetAllTaskRunsSchema = z
   .object({
@@ -208,12 +241,15 @@ export class TaskManagerTool extends Tool<
       CreateTaskConfigSchema,
       UpdateTaskConfigSchema,
       GetTaskConfigSchema,
+      GetAllTaskConfigsSchema,
       DestroyTaskConfigSchema,
       GetPoolStatsSchema,
       CreateTaskRunSchema,
       ScheduleStartTaskRunSchema,
+      ScheduleStartSimultaneousTaskRunsSchema,
       StopTaskRunSchema,
       RemoveTaskRunSchema,
+      AddBlockingTaskRunsSchema,
       GetTaskRunSchema,
       GetAllTaskRunsSchema,
       IsTaskRunOccupiedSchema,
@@ -229,7 +265,7 @@ export class TaskManagerTool extends Tool<
         data = this.taskManager.createTaskConfig(
           taskConfig,
           actingAgentId,
-          actingAgentId,
+          actingAgentId
         );
         break;
       }
@@ -238,7 +274,7 @@ export class TaskManagerTool extends Tool<
         data = this.taskManager.getTaskConfig(
           taskKind,
           taskType,
-          actingAgentId,
+          actingAgentId
         );
         break;
       }
@@ -246,7 +282,7 @@ export class TaskManagerTool extends Tool<
         const { update: config, taskKind, taskType, actingAgentId } = input;
         data = this.taskManager.updateTaskConfig(
           { ...config, taskKind, taskType },
-          actingAgentId,
+          actingAgentId
         );
         break;
       }
@@ -255,47 +291,75 @@ export class TaskManagerTool extends Tool<
         data = this.taskManager.destroyTaskConfig(
           taskKind,
           taskType,
-          actingAgentId,
+          actingAgentId
         );
         break;
       }
+      case "getAllTaskConfigs":
+        data = this.taskManager.getAllTaskConfigs(input.actingAgentId);
+        break;
       case "getPoolStats": {
         const { taskKind, taskType, actingAgentId } = input;
         data = this.taskManager.getPoolStats(taskKind, taskType, actingAgentId);
         break;
       }
       case "createTaskRun": {
-        const { taskKind, taskType, taskRunInput, actingAgentId } = input;
-        data = this.taskManager.createTaskRun(
+        const {
           taskKind,
           taskType,
           taskRunInput,
           actingAgentId,
+          originTaskRunId,
+          blockedByTaskRunIds,
+        } = input;
+        data = this.taskManager.createTaskRun(
+          taskKind,
+          taskType,
+          "automatic",
+          taskRunInput,
+          actingAgentId,
+          {
+            originTaskRunId,
+            blockedByTaskRunIds,
+          }
         );
         break;
       }
       case "scheduleStartTaskRun":
         data = this.taskManager.scheduleStartTaskRun(
           input.taskRunId,
-          input.actingAgentId,
+          input.actingAgentId
+        );
+        break;
+      case "scheduleStartSimultaneousTaskRuns":
+        data = this.taskManager.scheduleStartMultipleTaskRuns(
+          input.taskRunIds,
+          input.actingAgentId
         );
         break;
       case "stopTaskRun":
         data = this.taskManager.stopTaskRun(
           input.taskRunId,
-          input.actingAgentId,
+          input.actingAgentId
         );
         break;
       case "removeTaskRun":
         data = this.taskManager.destroyTaskRun(
           input.taskRunId,
-          input.actingAgentId,
+          input.actingAgentId
         );
         break;
       case "getTaskRun":
         data = this.taskManager.getTaskRun(
           input.taskRunId,
-          input.actingAgentId,
+          input.actingAgentId
+        );
+        break;
+      case "addBlockingTaskRuns":
+        data = this.taskManager.addBlockingTaskRuns(
+          input.taskRunId,
+          input.blockingTaskRunIds,
+          input.actingAgentId
         );
         break;
       case "getAllTaskRuns":
@@ -304,13 +368,13 @@ export class TaskManagerTool extends Tool<
       case "isTaskRunOccupied":
         data = this.taskManager.isTaskRunOccupied(
           input.taskRunId,
-          input.actingAgentId,
+          input.actingAgentId
         );
         break;
       case "getTaskRunHistory":
         data = this.taskManager.getTaskRunHistory(
           input.taskRunId,
-          input.actingAgentId,
+          input.actingAgentId
         );
         break;
     }

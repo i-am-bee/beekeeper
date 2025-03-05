@@ -1,5 +1,7 @@
 import { z } from "zod";
 import {
+  AutomaticTaskRunSchema,
+  InteractionTaskRunSchema,
   TaskConfigIdValueSchema,
   TaskConfigPoolStatsSchema,
   TaskConfigSchema,
@@ -85,14 +87,18 @@ export type TaskRunCreateEvent = z.infer<typeof TaskRunCreateEventSchema>;
 
 export const TaskRunUpdateEventSchema = BaseTaskRunLifecycleEventSchema.extend({
   kind: z.literal(TaskEventKindEnum.enum.task_run_update),
-  taskRun: TaskRunSchema.omit({ history: true }).partial(),
+  taskRun: z.union([
+    InteractionTaskRunSchema.omit({ history: true }).partial(),
+    AutomaticTaskRunSchema.omit({ history: true }).partial(),
+  ]),
 });
+
 export type TaskRunUpdateEvent = z.infer<typeof TaskRunUpdateEventSchema>;
 
 export const TaskRunDestroyEventSchema = BaseTaskRunLifecycleEventSchema.extend(
   {
     kind: z.literal(TaskEventKindEnum.enum.task_run_destroy),
-  },
+  }
 );
 export type TaskRunDestroyEvent = z.infer<typeof TaskRunDestroyEventSchema>;
 

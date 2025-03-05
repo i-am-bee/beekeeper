@@ -8,7 +8,7 @@ import { DateStringSchema } from "@/base/dto.js";
 import { z } from "zod";
 
 export const TaskKindEnumSchema = AgentKindEnumSchema.describe(
-  "Specifies the kind of a task in the system.  A 'supervisor' kind of tasks are executed by supervisor kind of agents, while a 'operator' handles tasks managed by operators.",
+  "Specifies the kind of a task in the system.  A 'supervisor' kind of tasks are executed by supervisor kind of agents, while a 'operator' handles tasks managed by operators."
 );
 export type TaskKindEnum = z.infer<typeof TaskKindEnumSchema>;
 
@@ -19,10 +19,10 @@ export const TaskKindValueSchema = z
       Object.values(TaskKindEnumSchema.enum).includes(value as TaskKindEnum),
     {
       message: `Task kind must be one of: ${Object.values(TaskKindEnumSchema.enum).join(", ")}`,
-    },
+    }
   )
   .describe(
-    "Specifies the kind of a task in the system.  A 'supervisor' kind of tasks are executed by supervisor kind of agents, while a 'operator' handles tasks managed by operators.",
+    "Specifies the kind of a task in the system.  A 'supervisor' kind of tasks are executed by supervisor kind of agents, while a 'operator' handles tasks managed by operators."
   );
 export type TaskKindValue = z.infer<typeof TaskKindValueSchema>;
 
@@ -39,7 +39,7 @@ export type TaskRunNumValue = z.infer<typeof TaskRunNumValueSchema>;
 export const TaskConfigIdValueSchema = z
   .string()
   .describe(
-    "Unique task config id composed of '{taskKind}:{taskType}:{version}' e.g: 'task:poem_generation:1' or 'task:web_scrap:3'",
+    "Unique task config id composed of '{taskKind}:{taskType}:{version}' e.g: 'task:poem_generation:1' or 'task:web_scrap:3'"
   );
 export type TaskConfigIdValue = z.infer<typeof TaskConfigIdValueSchema>;
 
@@ -53,7 +53,7 @@ export type TaskConfigVersionValue = z.infer<
 export const TaskConcurrencyModeEnumSchema = z
   .enum(["EXCLUSIVE", "PARALLEL"])
   .describe(
-    "Defines whether multiple instances of the task can run simultaneously. EXCLUSIVE allows only one instance to run at a time, while PARALLEL allows multiple concurrent executions",
+    "Defines whether multiple instances of the task can run simultaneously. EXCLUSIVE allows only one instance to run at a time, while PARALLEL allows multiple concurrent executions"
   );
 export type TaskConcurrencyModeEnum = z.infer<
   typeof TaskConcurrencyModeEnumSchema
@@ -70,7 +70,7 @@ export const TaskConfigSchema = z
     taskConfigInput: z
       .string()
       .describe(
-        "Task config input should serves as a template for task run input for derived task runs.",
+        "Task config input should serves as a template for task run input for derived task runs."
       ),
     description: z
       .string()
@@ -84,7 +84,7 @@ export const TaskConfigSchema = z
     maxRetries: z
       .number()
       .describe(
-        "Maximum number of retry attempts if task execution fails. undefined if no retries.",
+        "Maximum number of retry attempts if task execution fails. undefined if no retries."
       )
       .nullish(),
     retryDelayMs: z
@@ -101,7 +101,7 @@ export const TaskConfigSchema = z
     maxRepeats: z
       .number()
       .describe(
-        "Maximum number of times the task can execute. If not set, the task can run indefinitely",
+        "Maximum number of times the task can execute. If not set, the task can run indefinitely"
       )
       .nullish(),
   })
@@ -140,7 +140,7 @@ export const TaskRunTrajectoryEntrySchema = z.object({
   value: z
     .string()
     .describe(
-      "The content of the trajectory entry, containing agent thought processes, tool calls, or execution steps",
+      "The content of the trajectory entry, containing agent thought processes, tool calls, or execution steps"
     ),
 });
 export type TaskRunTrajectoryEntry = z.infer<
@@ -157,7 +157,7 @@ export const TaskRunHistoryEntrySchema = z
     maxRuns: z
       .number()
       .describe(
-        "Maximum number of times this task should execute. Undefined means infinite runs.",
+        "Maximum number of times this task should execute. Undefined means infinite runs."
       )
       .nullish(),
     retryAttempt: z
@@ -166,7 +166,7 @@ export const TaskRunHistoryEntrySchema = z
     maxRepeats: z
       .number()
       .describe(
-        "Maximum number of retry attempts if task execution fails. undefined if no retries.",
+        "Maximum number of retry attempts if task execution fails. undefined if no retries."
       )
       .nullish(),
     agentId: z
@@ -197,42 +197,43 @@ export type TaskRunStatusEnum = z.infer<typeof TaskRunStatusEnumSchema>;
 export const TaskRunIdValueSchema = z
   .string()
   .describe(
-    "Unique task run id composed of '{taskKind}:{taskType}[{instanceNum}]:{version}' e.g: 'task:poem_generation[1]:1' or 'task:web_scrap[2]:3'",
+    "Unique task run id composed of '{taskKind}:{taskType}[{instanceNum}]:{version}' e.g: 'task:poem_generation[1]:1' or 'task:web_scrap[2]:3'"
   );
 export type TaskRunIdValue = z.infer<typeof TaskRunIdValueSchema>;
 
-export const TaskRunSchema = z
+export const BaseTaskRunSchema = z
   .object({
     taskKind: TaskKindEnumSchema,
     taskType: TaskTypeValueSchema,
     taskRunId: TaskRunIdValueSchema,
+    originTaskRunId: TaskRunIdValueSchema,
     taskRunNum: TaskRunNumValueSchema,
     taskConfigVersion: TaskConfigVersionValueSchema,
     taskRunInput: z
       .string()
       .describe(
-        "Input data specific for this task run should follow task config input of the related task config.",
+        "Input data specific for this task run should follow task config input of the related task config."
       ),
     config: TaskConfigSchema,
     status: TaskRunStatusEnumSchema.describe("The status of the task."),
     isOccupied: z
       .boolean()
       .describe(
-        "Indicates if the task is currently being operated on by an agent",
+        "Indicates if the task is currently being operated on by an agent"
       ),
     occupiedSince: DateStringSchema.optional()
       .nullable()
       .describe(
-        "Timestamp when the task was marked as occupied. undefined if not occupied",
+        "Timestamp when the task was marked as occupied. undefined if not occupied"
       ),
     startRunAt: DateStringSchema.optional().describe(
-      "Timestamp of the execution start.",
+      "Timestamp of the execution start."
     ),
     lastRunAt: DateStringSchema.optional().describe(
-      "Timestamp of the last successful execution",
+      "Timestamp of the last successful execution"
     ),
     nextRunAt: DateStringSchema.optional().describe(
-      "Expected timestamp of the next scheduled execution",
+      "Expected timestamp of the next scheduled execution"
     ),
     errorCount: z
       .number()
@@ -241,17 +242,17 @@ export const TaskRunSchema = z
     currentRetryAttempt: z
       .number()
       .describe(
-        "Current retry count. Maximum retries configured via maxRepeats",
+        "Current retry count. Maximum retries configured via maxRepeats"
       ),
     ownerAgentId: AgentIdValueSchema.describe(
-      "ID of the agent who owns/manages this task",
+      "ID of the agent who owns/manages this task"
     ),
     currentAgentId: z
       .string()
       .optional()
       .nullable()
       .describe(
-        "ID of the agent currently operating on the task. undefined if not occupied",
+        "ID of the agent currently operating on the task. undefined if not occupied"
       ),
     completedRuns: z
       .number()
@@ -260,7 +261,7 @@ export const TaskRunSchema = z
     currentTrajectory: z
       .array(TaskRunTrajectoryEntrySchema)
       .describe(
-        "Sequential log of the task execution process, containing entries with agent thought processes, tool calls, and execution steps with their timestamps",
+        "Sequential log of the task execution process, containing entries with agent thought processes, tool calls, and execution steps with their timestamps"
       ),
     history: z
       .array(TaskRunHistoryEntrySchema)
@@ -269,11 +270,69 @@ export const TaskRunSchema = z
       .number()
       .optional()
       .describe(
-        "Maximum number of history entries to keep. Undefined means keep all history.",
+        "Maximum number of history entries to keep. Undefined means keep all history."
+      ),
+    isDependent: z
+      .boolean()
+      .describe(
+        `Indicates if it depends on another task run so then is not possible to start it manually. `
+      ),
+    blockedByTaskRunIds: z
+      .array(TaskRunIdValueSchema)
+      .describe(
+        "IDs of task runs that are blocking this task run and will provide its output."
+      ),
+    blockingTaskRunIds: z
+      .array(TaskRunIdValueSchema)
+      .describe(
+        "IDs of task runs that are blocked by this task run and will receive its output."
       ),
   })
   .describe("Represents the current status and execution state of a task");
+export type BaseTaskRun = z.infer<typeof BaseTaskRunSchema>;
 
+export const TaskRunKindEnumSchema = z
+  .enum(["interaction", "automatic"])
+  .describe(
+    "Specifies the kind of a task run in the system. An 'interaction' kind of task runs are these that carry the user input and through them is response back. An 'automatic' kind tasks runs are intern."
+  );
+export type TaskRunKindEnum = z.infer<typeof TaskRunKindEnumSchema>;
+
+export const InteractionTaskRunStatusEnumSchema = z.enum([
+  "PENDING",
+  "COMPLETED",
+]);
+export type InteractionTaskRunStatusEnum = z.infer<
+  typeof InteractionTaskRunStatusEnumSchema
+>;
+
+export const InteractionTaskRunSchema = BaseTaskRunSchema.extend({
+  taskRunKind: z
+    .literal(TaskRunKindEnumSchema.enum.interaction)
+    .describe(
+      "Specifies this as an interaction task run that processes user input and generates responses"
+    ),
+  interactionStatus: InteractionTaskRunStatusEnumSchema,
+  response: z
+    .string()
+    .optional()
+    .describe("The response content that will be sent back to the user"),
+});
+export type InteractionTaskRun = z.infer<typeof InteractionTaskRunSchema>;
+
+export const AutomaticTaskRunSchema = BaseTaskRunSchema.extend({
+  taskRunKind: z
+    .literal(TaskRunKindEnumSchema.enum.automatic)
+    .describe(
+      "Specifies this as an automatic task run for internal system operations"
+    ),
+});
+export type AutomaticTaskRun = z.infer<typeof AutomaticTaskRunSchema>;
+
+export const TaskRunSchema = z.discriminatedUnion("taskRunKind", [
+  InteractionTaskRunSchema,
+  AutomaticTaskRunSchema,
+]);
 export type TaskRun = z.infer<typeof TaskRunSchema>;
 
 export const TaskConfigPoolStatsSchema = z
@@ -304,7 +363,7 @@ const ACTIVE_STATUSES = [
 type ActiveStatus = (typeof ACTIVE_STATUSES)[number];
 
 export const isTaskRunActiveStatus = (
-  status: TaskRunStatusEnum,
+  status: TaskRunStatusEnum
 ): status is ActiveStatus => ACTIVE_STATUSES.includes(status as ActiveStatus);
 
 const TERMINATION_STATUSES = [
@@ -315,11 +374,11 @@ const TERMINATION_STATUSES = [
 type TerminationStatus = (typeof TERMINATION_STATUSES)[number];
 
 export const isTaskRunTerminationStatus = (
-  status: TaskRunStatusEnum,
+  status: TaskRunStatusEnum
 ): status is TerminationStatus =>
   TERMINATION_STATUSES.includes(status as TerminationStatus);
 
 export const ActingAgentIdValueSchema = AgentIdValueSchema.describe(
-  "ID of the agent performing this operation.",
+  "ID of the agent performing this operation."
 );
 export type ActingAgentIdValue = z.infer<typeof ActingAgentIdValueSchema>;

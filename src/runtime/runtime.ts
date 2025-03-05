@@ -2,12 +2,17 @@ import { AgentWithInstance } from "@/agents/registry/dto.js";
 import { AgentRegistry } from "@/agents/registry/registry.js";
 import { PROCESS_AND_PLAN_TASK_NAME } from "@/agents/supervisor.js";
 import { isTaskRunTerminationStatus, TaskRun } from "@/tasks/manager/dto.js";
-import { taskRunError, taskRunOutput } from "@/tasks/manager/helpers.js";
+import {
+  taskRunInteractionResponse as taskRunInteractionResponse,
+  taskRunError,
+  taskRunOutput,
+} from "@/tasks/manager/helpers.js";
 import { TaskManager } from "@/tasks/manager/manager.js";
 import { Logger } from "beeai-framework";
 import { BeeAgent } from "beeai-framework/agents/bee/agent";
 import { RuntimeOutput } from "./dto.js";
 
+export const RUNTIME_USER = "runtime_user";
 export type RuntimeOutputMethod = (output: RuntimeOutput) => Promise<void>;
 
 export interface RuntimeConfig {
@@ -48,6 +53,8 @@ export class Runtime {
     this.timeoutMs = timeoutMs;
     this.taskManager = taskManager;
     this.supervisor = supervisor;
+
+    this.taskManager.addAdmin(RUNTIME_USER);
   }
 
   async run(input: string, output: RuntimeOutputMethod) {
@@ -59,7 +66,7 @@ export class Runtime {
       this._isRunning = true;
       this.logger.info("Starting runtime process...");
       await this.waitUntilTaskRunFinish(input, output);
-      return "Process completed successfully";
+      this.logger.info("Process completed successfully");
     } catch (error) {
       this.logger.error(error, "Error in runtime process:");
       throw error;
@@ -76,14 +83,14 @@ export class Runtime {
 
     this.logger.info(
       { input, start, timeout, timeoutMs: this.timeoutMs },
-      "Starting processing finish task run",
+      "Starting processing finish task run"
     );
 
     const getAgent = (taskRun: TaskRun) => {
       const agentId = taskRun.currentAgentId;
       if (!agentId) {
         throw new Error(
-          `Missing current agent id on taskRun:${taskRun.taskRunId}`,
+          `Missing current agent id on taskRun:${taskRun.taskRunId}`
         );
       }
       return this.agentRegistry.getAgent(agentId);
@@ -127,8 +134,9 @@ export class Runtime {
           const taskRun = this.taskManager.createTaskRun(
             "supervisor",
             PROCESS_AND_PLAN_TASK_NAME,
+            "interaction",
             input,
-            this.supervisor.agentId,
+            this.supervisor.agentId
           );
           taskRunId = taskRun.taskRunId;
         }
@@ -137,31 +145,42 @@ export class Runtime {
         if (restMs <= 0) {
           this.logger.error(
             { taskRunId },
-            "Timeout waiting for finish supervisor run",
+            "Timeout waiting for finish supervisor run"
           );
           throw new Error(
-            `Timeout waiting for finish supervisor run ${taskRunId}`,
+            `Timeout waiting for finish supervisor run ${taskRunId}`
           );
         }
 
         const runningTaskRuns = this.taskManager.findTaskRunsOwnedBy(
           this.supervisor.agentId,
-          this.supervisor.agentId,
+          this.supervisor.agentId
         );
         const unfinished = runningTaskRuns.filter(
-          (tr) => !isTaskRunTerminationStatus(tr.status),
+          (tr) => !isTaskRunTerminationStatus(tr.status)
         );
         if (!unfinished.length) {
-          const taskRun = this.taskManager.getTaskRun(
-            taskRunId,
-            this.supervisor.agentId,
+          this.logger.debug(
+            `There are ${unfinished.length} unfinished task. Closing loop.`
           );
-          return taskRunOutput(taskRun);
+          const taskRun = this.taskManager.getTaskRun(taskRunId, RUNTIME_USER);
+          const response = taskRunInteractionResponse(taskRun);
+          outputMethod({
+            kind: "final",
+            taskRun,
+            agent: this.supervisor,
+            text: response,
+          });
+          return;
+        } else {
+          this.logger.debug(
+            `There are ${unfinished.length} unfinished tasks. Keeping loop...`
+          );
         }
 
         // Wait for the polling interval before checking again
         await new Promise((resolve) =>
-          setTimeout(resolve, this.pollingIntervalMs),
+          setTimeout(resolve, this.pollingIntervalMs)
         );
       }
     } finally {

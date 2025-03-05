@@ -1,16 +1,16 @@
+import { DateStringSchema } from "@/base/dto.js";
 import {
-  TaskRunHistoryEntrySchema,
-  TaskRunSchema,
+  BaseTaskRunSchema,
+  TaskRunHistoryEntrySchema
 } from "@/tasks/manager/dto.js";
 import { z } from "zod";
 import {
-  AgentConfigSchema,
-  AvailableToolSchema,
-  AgentConfigPoolStatsSchema,
   AgentConfigIdValueSchema,
+  AgentConfigPoolStatsSchema,
+  AgentConfigSchema,
   AgentTypeValueSchema,
+  AvailableToolSchema,
 } from "../registry/dto.js";
-import { DateStringSchema } from "@/base/dto.js";
 
 // Base schemas
 export const AgentEventKindEnum = z.enum([
@@ -135,7 +135,7 @@ export type HistoryEntryCreateEvent<THistoryEntry extends z.ZodType> = z.infer<
 
 // Task-specific Assignment Events
 export const TaskAssignedEventSchema = AssignedEventSchema(
-  TaskRunSchema,
+  BaseTaskRunSchema,
 ).extend({
   assignmentKind: z.literal(AssignmentKindEnum.enum.task),
 });
