@@ -10,7 +10,7 @@ import {
 import { TaskManager } from "@/tasks/manager/manager.js";
 import { Logger } from "beeai-framework";
 import { BeeAgent } from "beeai-framework/agents/bee/agent";
-import { RuntimeOutput } from "./dto.js";
+import { RuntimeOutput } from "@/runtime/dto.js";
 
 export const RUNTIME_USER = "runtime_user";
 export type RuntimeOutputMethod = (output: RuntimeOutput) => Promise<void>;
@@ -57,7 +57,7 @@ export class Runtime {
     this.taskManager.addAdmin(RUNTIME_USER);
   }
 
-  async run(input: string, output: RuntimeOutputMethod) {
+  async run(input: string, output: RuntimeOutputMethod, signal?: AbortSignal) {
     this.logger.info("Try to start runtime process...");
     if (this._isRunning) {
       throw new Error(`Runtime is already running`);
@@ -65,7 +65,7 @@ export class Runtime {
     try {
       this._isRunning = true;
       this.logger.info("Starting runtime process...");
-      const response = await this.waitUntilTaskRunFinish(input, output);
+      const response = await this.waitUntilTaskRunFinish(input, output, signal);
       this.logger.info("Process completed successfully");
       return response;
     } catch (error) {
@@ -77,7 +77,7 @@ export class Runtime {
   }
 
   async waitUntilTaskRunFinish(...args: Parameters<typeof this.run>) {
-    const [input, outputMethod] = args;
+    const [input, outputMethod, signal] = args;
     const start = new Date();
     const timeout = new Date(start.getTime() + this.timeoutMs);
     const timeoutTime = timeout.getTime();
@@ -143,6 +143,11 @@ export class Runtime {
     try {
       let taskRunId;
       while (true) {
+        if (signal?.aborted) {
+          this.logger.error({ taskRunId, signal }, "Operation aborted");
+          throw new Error(`Operation aborted`);
+        }
+
         if (!taskRunId) {
           const taskRun = this.taskManager.createTaskRun(
             "supervisor",
@@ -191,9 +196,29 @@ export class Runtime {
           );
         }
         // Wait for the polling interval before checking again
-        await new Promise((resolve) =>
-          setTimeout(resolve, this.pollingIntervalMs),
-        );
+        await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(resolve, this.pollingIntervalMs);
+
+          if (signal) {
+            // Listen for abort events
+            signal.addEventListener(
+              "abort",
+              () => {
+                clearTimeout(timeoutId);
+                this.logger.error({ signal }, "Operation aborted");
+                reject(new Error("Operation aborted"));
+              },
+              { once: true },
+            );
+
+            // Check if already aborted
+            if (signal.aborted) {
+              clearTimeout(timeoutId);
+              this.logger.error({ signal }, "Operation aborted");
+              reject(new Error("Operation aborted"));
+            }
+          }
+        });
       }
     } finally {
       this.taskManager.off("task_run:start", onTaskRunStart);

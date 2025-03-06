@@ -125,6 +125,7 @@ export type TaskConfigOwnedResource = z.infer<
 >;
 
 export const TaskRunTerminalStatusEnumSchema = z.enum([
+  "ABORTED",
   "STOPPED",
   "FAILED",
   "COMPLETED",
@@ -188,6 +189,7 @@ export const TaskRunStatusEnumSchema = z.enum([
   "EXECUTING",
   "PENDING",
   "AWAITING_AGENT",
+  "ABORTED",
   "STOPPED",
   "FAILED",
   "COMPLETED",

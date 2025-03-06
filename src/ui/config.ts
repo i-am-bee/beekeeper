@@ -166,6 +166,15 @@ export const UIConfig = {
       hover: { bg: UIColors.blue.blue },
     },
   },
+  input: {
+    fg: UIColors.white.white,
+    bg: "black",
+    focus: {
+      border: {
+        fg: UIColors.green.green,
+      },
+    },
+  },
 
   scrollbar: {
     ch: " ",

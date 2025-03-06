@@ -49,5 +49,6 @@ export abstract class WorkspaceRestorable {
     resource: WorkspaceResource,
     line: string,
     actingAgentId: AgentIdValue,
+    signal?: AbortSignal,
   ): void;
 }

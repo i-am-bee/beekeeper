@@ -51,7 +51,7 @@
     "url": "https://github.com/i-am-bee/beeai-supervisor/issues"
   },
   "scripts": {
-    "start": "cross-env NODE_ENV=production BEE_FRAMEWORK_LOG_LEVEL=error node --no-warnings dist/main.js",
+    "start": "cross-env NODE_ENV=production BEE_FRAMEWORK_LOG_LEVEL=error node --no-warnings dist/main.js -c",
     "start:dev": "tsx --inspect --no-warnings src/main.js",
     "monitor": "cross-env NODE_ENV=production BEE_FRAMEWORK_LOG_LEVEL=error node --no-warnings dist/ui/main.js",
     "monitor:dev": "tsx --inspect --no-warnings src/ui/main.js",

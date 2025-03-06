@@ -21,5 +21,6 @@ export abstract class BaseAgentFactory<TAgent> {
     agent: TAgent,
     prompt: string,
     onUpdate: (key: string, value: string) => void,
+    signal?: AbortSignal,
   ): Promise<string>;
 }

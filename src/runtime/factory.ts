@@ -28,6 +28,7 @@ export interface CreateRuntimeConfig {
   workspace?: string;
   switches?: Switches;
   outputDirPath?: string;
+  signal?: AbortSignal;
 }
 
 export async function createRuntime({
@@ -36,13 +37,14 @@ export async function createRuntime({
   workspace,
   switches,
   outputDirPath,
+  signal,
 }: CreateRuntimeConfig): Promise<Runtime> {
   // Reset audit logs
   AgentStateLogger.init(outputDirPath);
   TaskStateLogger.init(outputDirPath);
 
   // Setup workspace
-  WorkspaceManager.init(workspace ?? "default", outputDirPath);
+  WorkspaceManager.init(workspace ?? "default", { dirPath: outputDirPath });
 
   let _agentFactory = agentFactory;
   if (_agentFactory == null) {
@@ -140,6 +142,7 @@ export async function createRuntime({
             agent.agentId,
             taskManager,
           );
+          signal;
         })
         .then((resp) =>
           onAgentComplete(resp, taskRun.taskRunId, agent.agentId, taskManager),
@@ -151,6 +154,7 @@ export async function createRuntime({
           registry.releaseAgent(agent.agentId);
         });
     },
+    signal,
   });
 
   await registry.registerToolsFactories([

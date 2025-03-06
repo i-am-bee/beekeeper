@@ -18,7 +18,7 @@ import { AgentStateLogger } from "@agents/state/logger.js";
 import { TaskStateLogger } from "@tasks/state/logger.js";
 import { WorkspaceResource } from "@workspaces/manager/index.js";
 import { WorkspaceRestorable } from "@workspaces/restore/index.js";
-import { FrameworkError } from "beeai-framework";
+import { AbortError, FrameworkError } from "beeai-framework";
 import { clone, isNonNullish, omit } from "remeda";
 import {
   taskConfigIdToValue,
@@ -50,9 +50,11 @@ import {
 } from "./dto.js";
 import EventEmitter from "events";
 import { taskRunOutput } from "./helpers.js";
+import { AbortScope } from "@/utils/abort-scope.js";
 
 export type TaskRunRuntime = TaskRun & {
   intervalId: NodeJS.Timeout | null;
+  abortScope: AbortScope | null;
 };
 
 const TASK_MANAGER_RESOURCE = "task_manager";
@@ -119,6 +121,7 @@ export interface TaskManagerConfig {
   onTaskStart: OnTaskStart;
   options?: TaskMangerOptions;
   switches?: TaskManagerSwitches;
+  signal?: AbortSignal;
 }
 
 const BLOCKING_TASK_OUTPUT_PLACEHOLDER = "${blocking_task_output}";
@@ -135,7 +138,7 @@ export class TaskManager extends WorkspaceRestorable {
     taskRunId: TaskRunIdValue;
     actingAgentId: AgentIdValue;
   }[] = [];
-  private taskStartIntervalId: NodeJS.Timeout | null = null;
+  private isTaskProcessingActive = false;
   private awaitingTasksForAgents: {
     taskRunId: TaskRunIdValue;
     agentTypeId: string;
@@ -148,12 +151,14 @@ export class TaskManager extends WorkspaceRestorable {
   private options: TaskMangerOptions;
   private _switches: TaskManagerSwitches;
   private emitter = new EventEmitter();
+  private abortScope: AbortScope;
 
-  constructor({ onTaskStart, options, switches }: TaskManagerConfig) {
+  constructor({ onTaskStart, options, switches, signal }: TaskManagerConfig) {
     super(TASK_MANAGER_CONFIG_PATH, TASK_MANAGER_USER);
     this.logger.info("Initializing TaskManager");
     this.stateLogger = TaskStateLogger.getInstance();
     this.agentStateLogger = AgentStateLogger.getInstance();
+    this.abortScope = new AbortScope(signal);
 
     this.onTaskStart = onTaskStart;
 
@@ -188,13 +193,192 @@ export class TaskManager extends WorkspaceRestorable {
     );
     this._switches = { restoration: true, ...clone(switches) };
 
-    this.taskStartIntervalId = setInterval(async () => {
+    this.startTaskProcessing();
+  }
+
+  startTaskProcessing(): void {
+    // Don't start if already processing
+    if (this.isTaskProcessingActive) {
+      this.logger.debug("Task processing already active");
+      return;
+    }
+
+    this.logger.debug("Starting task processing");
+    this.isTaskProcessingActive = true;
+
+    // Start new interval using the abort scope
+    this.abortScope.setInterval(async () => {
       try {
-        await this.processNextStartTask(); // Your async function
+        // The interval won't run if the scope is aborted
+        await this.processNextStartTask();
       } catch (err) {
-        this.logger.error(err, "Process next start task error");
+        if (err instanceof AbortError) {
+          this.logger.info("Task processing aborted");
+          this.stopTaskProcessing();
+        } else {
+          this.logger.error(err, "Process next start task error");
+        }
       }
-    }, 100); // Runs every 100ms (0.1 second)
+    }, 100);
+  }
+
+  async processNextStartTask() {
+    // Check if aborted before proceeding
+    this.abortScope.checkIsAborted();
+
+    if (!this.scheduledTasksToStart.length) {
+      return;
+    }
+
+    const { taskRunId, actingAgentId } = this.scheduledTasksToStart.shift()!;
+
+    this.logger.info(
+      { taskRunId, actingAgentId },
+      "Starting scheduled task run",
+    );
+
+    const taskRun = this.getTaskRun(taskRunId, actingAgentId, FULL_ACCESS);
+    if (taskRun.status === "EXECUTING") {
+      this.logger.warn({ taskRunId }, "Task is already executing");
+      throw new Error(`Task ${taskRunId} is already executing`);
+    }
+
+    try {
+      // Create a task-specific abort scope as a child of the main scope
+      const taskScope = new AbortScope(this.abortScope.getSignal());
+
+      // Store the task scope for later reference if needed
+      taskRun.abortScope = taskScope;
+
+      if (taskRun.config.runImmediately || !taskRun.config.intervalMs) {
+        this.logger.debug({ taskRunId }, "Executing task immediately");
+        await this.executeTask(taskRunId, actingAgentId);
+      }
+
+      if (
+        taskRun.config.intervalMs &&
+        (taskRun.config.maxRepeats == null ||
+          taskRun.completedRuns < taskRun.config.maxRepeats)
+      ) {
+        this.logger.debug(
+          {
+            taskRunId,
+            intervalMs: taskRun.config.intervalMs,
+          },
+          "Setting up task interval",
+        );
+
+        // Use the task scope to create the interval
+        taskRun.intervalId = taskScope.setInterval(async () => {
+          try {
+            await this.executeTask(taskRunId, actingAgentId);
+          } catch (err) {
+            this.logger.error(
+              { err, taskRunId, actingAgentId },
+              "Error executing scheduled task",
+            );
+          }
+        }, taskRun.config.intervalMs);
+
+        // Set up abortion handler
+        const originalAbort = taskScope.abort.bind(taskScope);
+        taskScope.abort = () => {
+          this.logger.debug({ taskRunId }, "Aborting task interval");
+
+          // Call the original abort first to clear intervals
+          originalAbort();
+
+          // Update task status
+          this._updateTaskRun(taskRunId, taskRun, {
+            status: "ABORTED",
+            nextRunAt: undefined,
+          });
+
+          // Add history entry for the abortion
+          this.addHistoryEntry(taskRunId, actingAgentId, {
+            timestamp: new Date(),
+            terminalStatus: "ABORTED",
+            runNumber: taskRun.completedRuns,
+            maxRuns: taskRun.config.maxRepeats,
+            retryAttempt: taskRun.currentRetryAttempt,
+            maxRepeats: taskRun.config.maxRepeats,
+            agentId: actingAgentId,
+            trajectory: clone(taskRun.currentTrajectory),
+            executionTimeMs: taskRun.startRunAt
+              ? Date.now() - taskRun.startRunAt?.getTime()
+              : -1,
+          });
+        };
+
+        // Update task status
+        this._updateTaskRun(taskRunId, taskRun, {
+          status: "PENDING",
+          nextRunAt: new Date(Date.now() + taskRun.config.intervalMs),
+        });
+      }
+
+      this.logger.info({ taskRunId }, "Task started successfully");
+    } catch (err) {
+      if (err instanceof AbortError) {
+        this.logger.info({ taskRunId }, "Task start aborted");
+
+        // Make sure we clean up properly even on abort
+        if (taskRun.intervalId) {
+          clearInterval(taskRun.intervalId);
+          taskRun.intervalId = null;
+        }
+
+        if (taskRun.abortScope) {
+          taskRun.abortScope.dispose();
+          taskRun.abortScope = null;
+        }
+
+        // Update status to aborted
+        this._updateTaskRun(taskRunId, taskRun, {
+          status: "ABORTED",
+          nextRunAt: undefined,
+        });
+
+        // Add history entry for the abortion
+        this.addHistoryEntry(taskRunId, actingAgentId, {
+          timestamp: new Date(),
+          terminalStatus: "ABORTED",
+          runNumber: taskRun.completedRuns,
+          maxRuns: taskRun.config.maxRepeats,
+          retryAttempt: taskRun.currentRetryAttempt,
+          maxRepeats: taskRun.config.maxRepeats,
+          agentId: actingAgentId,
+          trajectory: clone(taskRun.currentTrajectory),
+          executionTimeMs: taskRun.startRunAt
+            ? Date.now() - taskRun.startRunAt?.getTime()
+            : -1,
+        });
+      } else {
+        this.logger.error(
+          { err, taskRunId, actingAgentId },
+          "Failed to start task",
+        );
+
+        // Clean up on error
+        if (taskRun.abortScope) {
+          taskRun.abortScope.dispose();
+          taskRun.abortScope = null;
+        }
+      }
+
+      throw err;
+    }
+  }
+
+  stopTaskProcessing(): void {
+    if (this.isTaskProcessingActive) {
+      this.logger.debug("Stopping task processing");
+      this.isTaskProcessingActive = false;
+
+      // No need to call dispose() here as that would remove the parent signal listener
+      // Just abort the current operations, but keep the abortScope alive
+      this.abortScope.abort();
+    }
   }
 
   public addAdmin(adminId: string) {
@@ -227,6 +411,9 @@ export class TaskManager extends WorkspaceRestorable {
   }
 
   restore(actingAgentId: AgentIdValue): void {
+    // Check if aborted
+    this.abortScope.checkIsAborted();
+
     if (this.switches.restoration === false) {
       this.logger.warn(`Skipping restoration`);
       return;
@@ -240,6 +427,9 @@ export class TaskManager extends WorkspaceRestorable {
     actingAgentId: AgentIdValue,
   ): void {
     this.logger.info(`Restoring previous state from ${resource.path}`);
+    // Check if aborted
+    this.abortScope.checkIsAborted();
+
     let parsed;
     try {
       parsed = JSON.parse(line);
@@ -247,6 +437,7 @@ export class TaskManager extends WorkspaceRestorable {
       this.logger.error(e);
       throw new Error(`Failed to parse JSON: ${line}`);
     }
+
     const taskConfigResult = TaskConfigOwnedResourceSchema.safeParse(parsed);
     if (taskConfigResult.success) {
       this.createTaskConfig(
@@ -718,6 +909,14 @@ export class TaskManager extends WorkspaceRestorable {
     actingAgentId: AgentIdValue,
   ) {
     const { taskKind, taskType } = update;
+    this.logger.info(
+      {
+        taskKind,
+        taskType,
+        actingAgentId,
+      },
+      "Update task config",
+    );
 
     const config = this.getTaskConfig(
       taskKind,
@@ -765,7 +964,7 @@ export class TaskManager extends WorkspaceRestorable {
     taskType: TaskTypeValue,
     actingAgentId: AgentIdValue,
   ): void {
-    this.logger.trace(
+    this.logger.info(
       { taskKind, taskType, actingAgentId },
       "Destroying agent configuration",
     );
@@ -969,6 +1168,7 @@ export class TaskManager extends WorkspaceRestorable {
     }
 
     this.taskRuns.set(taskRunId, {
+      abortScope: new AbortScope(this.abortScope.getSignal()),
       intervalId: null,
       ...taskRun,
     });
@@ -1087,54 +1287,6 @@ export class TaskManager extends WorkspaceRestorable {
     }
   }
 
-  async processNextStartTask() {
-    if (!this.scheduledTasksToStart.length) {
-      return;
-    }
-    const { taskRunId, actingAgentId } = this.scheduledTasksToStart.shift()!;
-
-    this.logger.info(
-      { taskRunId, actingAgentId },
-      "Starting scheduled task run",
-    );
-
-    const taskRun = this.getTaskRun(taskRunId, actingAgentId, FULL_ACCESS);
-    if (taskRun.status === "EXECUTING") {
-      this.logger.warn({ taskRunId }, "Task is already executing");
-      throw new Error(`Task ${taskRunId} is already executing`);
-    }
-
-    if (taskRun.config.runImmediately || !taskRun.config.intervalMs) {
-      this.logger.debug({ taskRunId }, "Executing task immediately");
-      await this.executeTask(taskRunId, actingAgentId);
-    }
-
-    if (
-      taskRun.config.intervalMs &&
-      (taskRun.config.maxRepeats == null ||
-        taskRun.completedRuns < taskRun.config.maxRepeats)
-    ) {
-      this.logger.debug(
-        {
-          taskRunId,
-          intervalMs: taskRun.config.intervalMs,
-        },
-        "Setting up task interval",
-      );
-      const self = this;
-      taskRun.intervalId = setInterval(async () => {
-        self.executeTask(taskRunId, actingAgentId);
-      }, taskRun.config.intervalMs);
-
-      this._updateTaskRun(taskRunId, taskRun, {
-        status: "PENDING",
-        nextRunAt: new Date(Date.now() + taskRun.config.intervalMs),
-      });
-    }
-
-    this.logger.info({ taskRunId }, "Task started successfully");
-  }
-
   private composeTaskRunInput(context: string, input: string) {
     return `${context}${TASK_INPUT_DELIMITER}\n${input}`;
   }
@@ -1182,7 +1334,12 @@ export class TaskManager extends WorkspaceRestorable {
       return;
     }
 
-    if (taskRun.intervalId) {
+    // Use the task's abortScope to handle interval clearing
+    if (taskRun.abortScope) {
+      this.logger.debug({ taskRunId }, "Aborting task via AbortScope");
+      taskRun.abortScope.abort();
+    } else if (taskRun.intervalId) {
+      // Fallback for tasks that don't have abortScope
       this.logger.debug({ taskRunId }, "Clearing task interval");
       clearInterval(taskRun.intervalId);
       taskRun.intervalId = null;
@@ -1293,6 +1450,12 @@ export class TaskManager extends WorkspaceRestorable {
         "Releasing task occupancy before removal",
       );
       this.releaseTaskRunOccupancy(taskRunId, actingAgentId);
+    }
+
+    if (taskRun.abortScope) {
+      this.logger.debug({ taskRunId }, "Disposing task abort scope");
+      taskRun.abortScope.dispose();
+      taskRun.abortScope = null;
     }
 
     const {
@@ -1456,7 +1619,9 @@ export class TaskManager extends WorkspaceRestorable {
         },
         "Setting occupancy timeout",
       );
-      setTimeout(() => {
+
+      // Use the task's abort scope for the timeout
+      taskRun.abortScope?.setTimeout(() => {
         this.releaseTaskRunOccupancy(taskRunId, TASK_MANAGER_USER);
       }, this.options.occupancyTimeoutMs);
     }
@@ -1680,6 +1845,13 @@ export class TaskManager extends WorkspaceRestorable {
     this.ac.checkPermission(taskRunId, actingAgentId, READ_EXECUTE_ACCESS);
 
     const taskRun = this.getTaskRun(taskRunId, actingAgentId);
+
+    // Check if the task's abort scope is already aborted
+    if (taskRun.abortScope?.isAborted()) {
+      this.logger.info({ taskRunId }, "Task execution aborted before start");
+      return;
+    }
+
     const retryAttempt = taskRun.currentRetryAttempt;
     if (retryAttempt > 0) {
       this.logger.debug(
@@ -1704,173 +1876,269 @@ export class TaskManager extends WorkspaceRestorable {
       );
       return;
     }
+
+    const executionController =
+      taskRun.abortScope?.createChildController() || new AbortController();
+    const executionSignal = executionController.signal;
+
     const startAt = new Date();
     const startTime = startAt.getTime();
 
-    this._updateTaskRun(taskRunId, taskRun, {
-      status: "EXECUTING",
-      startRunAt: startAt,
-      lastRunAt: startAt,
-      nextRunAt:
-        taskRun.config.maxRepeats != null &&
-        taskRun.completedRuns < taskRun.config.maxRepeats
-          ? new Date(Date.now() + taskRun.config.intervalMs)
-          : undefined,
-    });
+    try {
+      this._updateTaskRun(taskRunId, taskRun, {
+        status: "EXECUTING",
+        startRunAt: startAt,
+        lastRunAt: startAt,
+        nextRunAt:
+          taskRun.config.maxRepeats != null &&
+          taskRun.completedRuns < taskRun.config.maxRepeats
+            ? new Date(Date.now() + taskRun.config.intervalMs)
+            : undefined,
+      });
 
-    this.emit("task_run:start", clone(taskRun));
+      this.emit("task_run:start", clone(taskRun));
 
-    this.logger.debug(
-      {
-        taskRunId,
-        lastRunAt: taskRun.lastRunAt,
-        nextRunAt: taskRun.nextRunAt,
-      },
-      "Executing task callback",
-    );
-
-    const emit = this.emit.bind(this);
-    await this.onTaskStart(taskRun, this, {
-      onAwaitingAgentAcquired(taskRunId, taskManager) {
-        taskManager.setTaskRunAwaitingAgent(taskRunId);
-      },
-      onAgentAcquired(taskRunId, agentId, taskManager) {
-        taskManager.setTaskRunOccupied(taskRunId, agentId);
-      },
-      onAgentUpdate(key, value, taskRunId, agentId, taskManager) {
-        const taskRun = taskManager.getTaskRun(
+      this.logger.debug(
+        {
           taskRunId,
-          agentId,
-          READ_WRITE_ACCESS,
-        );
-        taskManager._updateTaskRun(taskRunId, taskRun, {
-          currentTrajectory: [{ timestamp: new Date(), agentId, key, value }],
-        });
-        emit("task_run:trajectory_update", clone(taskRun));
-      },
-      onAgentComplete(output, taskRunId, agentId, taskManager) {
-        const taskRun = taskManager.getTaskRun(
-          taskRunId,
-          agentId,
-          READ_WRITE_ACCESS,
-        );
-        const trajectory = clone(taskRun.currentTrajectory);
-        taskManager._updateTaskRun(taskRunId, taskRun, {
-          completedRuns: taskRun.completedRuns + 1,
-          currentTrajectory: [],
-        });
+          lastRunAt: taskRun.lastRunAt,
+          nextRunAt: taskRun.nextRunAt,
+        },
+        "Executing task callback",
+      );
 
-        // Record history entry
-        taskManager.addHistoryEntry(taskRunId, agentId, {
+      const emit = this.emit.bind(this);
+
+      // Check for abortion before proceeding
+      if (executionSignal.aborted) {
+        throw new AbortError();
+      }
+      // Wrap the onTaskStart call with abort handling
+      await Promise.race([
+        this.onTaskStart(taskRun, this, {
+          onAwaitingAgentAcquired(taskRunId, taskManager) {
+            // Check if aborted before making state changes
+            if (executionSignal.aborted) {
+              throw new AbortError();
+            }
+            taskManager.setTaskRunAwaitingAgent(taskRunId);
+          },
+          onAgentAcquired(taskRunId, agentId, taskManager) {
+            // Check if aborted before making state changes
+            if (executionSignal.aborted) {
+              throw new AbortError();
+            }
+            taskManager.setTaskRunOccupied(taskRunId, agentId);
+          },
+          onAgentUpdate(key, value, taskRunId, agentId, taskManager) {
+            // Check if aborted before making state changes
+            if (executionSignal.aborted) {
+              throw new AbortError();
+            }
+            const taskRun = taskManager.getTaskRun(
+              taskRunId,
+              agentId,
+              READ_WRITE_ACCESS,
+            );
+            taskManager._updateTaskRun(taskRunId, taskRun, {
+              currentTrajectory: [
+                { timestamp: new Date(), agentId, key, value },
+              ],
+            });
+            emit("task_run:trajectory_update", clone(taskRun));
+          },
+          onAgentComplete(output, taskRunId, agentId, taskManager) {
+            // Check if aborted before making state changes
+            if (executionSignal.aborted) {
+              throw new AbortError();
+            }
+
+            const taskRun = taskManager.getTaskRun(
+              taskRunId,
+              agentId,
+              READ_WRITE_ACCESS,
+            );
+            const trajectory = clone(taskRun.currentTrajectory);
+            taskManager._updateTaskRun(taskRunId, taskRun, {
+              completedRuns: taskRun.completedRuns + 1,
+              currentTrajectory: [],
+            });
+
+            // Record history entry
+            taskManager.addHistoryEntry(taskRunId, agentId, {
+              timestamp: new Date(),
+              terminalStatus: "COMPLETED",
+              output,
+              runNumber: taskRun.completedRuns,
+              maxRuns: taskRun.config.maxRepeats,
+              retryAttempt: taskRun.currentRetryAttempt,
+              maxRepeats: taskRun.config.maxRepeats,
+              agentId: agentId,
+              trajectory,
+              executionTimeMs: Date.now() - startTime,
+            });
+
+            emit("task_run:complete", clone(taskRun));
+
+            taskManager.logger.debug(
+              {
+                taskRunId,
+                completedRuns: taskRun.completedRuns,
+                maxRuns: taskRun.config.maxRepeats,
+              },
+              "Task executed successfully",
+            );
+
+            // Check if we've reached maxRuns
+            if (
+              !taskRun.config.maxRepeats ||
+              (taskRun.config.maxRepeats &&
+                taskRun.completedRuns >= taskRun.config.maxRepeats)
+            ) {
+              taskManager.stopTaskRun(taskRunId, agentId);
+              taskManager.logger.info(
+                {
+                  taskRunId,
+                  completedRuns: taskRun.completedRuns,
+                  maxRuns: taskRun.config.maxRepeats,
+                },
+                "Task reached maximum runs and has been stopped",
+              );
+            } else {
+              taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
+            }
+          },
+          async onAgentError(err, taskRunId, agentId, taskManager) {
+            // Check if aborted before making state changes
+            if (executionSignal.aborted) {
+              throw new AbortError();
+            }
+
+            let error;
+            if (err instanceof FrameworkError) {
+              error = err.explain();
+            } else {
+              error = err instanceof Error ? err.message : String(err);
+            }
+
+            const taskRun = taskManager.getTaskRun(taskRunId, agentId);
+            const trajectory = clone(taskRun.currentTrajectory);
+
+            taskManager._updateTaskRun(taskRunId, taskRun, {
+              errorCount: taskRun.errorCount + 1,
+              completedRuns: taskRun.completedRuns + 1,
+              currentTrajectory: [],
+            });
+            const retryAttempt = taskRun.currentRetryAttempt;
+
+            // Record history entry
+            taskManager.addHistoryEntry(taskRunId, agentId, {
+              timestamp: new Date(),
+              terminalStatus: "FAILED",
+              error,
+              runNumber: taskRun.completedRuns,
+              maxRuns: taskRun.config.maxRepeats,
+              retryAttempt,
+              maxRepeats: taskRun.config.maxRepeats,
+              agentId: agentId,
+              trajectory,
+              executionTimeMs: Date.now() - startTime,
+            });
+
+            emit("task_run:error", clone(taskRun));
+
+            taskManager.logger.error(
+              {
+                taskRunId,
+                runNumber: taskRun.completedRuns,
+                maxRuns: taskRun.config.maxRepeats,
+                retryAttempt,
+                maxRepeats: taskRun.config.maxRepeats,
+                errorCount: taskRun.errorCount,
+                error,
+              },
+              `Task execution failed ${error}`,
+            );
+
+            if (taskManager.options.errorHandler) {
+              taskManager.options.errorHandler(err as Error, taskRunId);
+            }
+
+            taskManager.logger.debug(
+              { taskRunId },
+              "Releasing task occupancy before removal",
+            );
+            taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
+            if (taskRun.config.maxRetries) {
+              if (retryAttempt >= taskRun.config.maxRetries) {
+                taskManager.stopTaskRun(taskRunId, taskRun.config.ownerAgentId);
+              } else {
+                taskManager._updateTaskRun(taskRunId, taskRun, {
+                  currentRetryAttempt: retryAttempt + 1,
+                });
+              }
+            }
+          },
+        }),
+        // Create a promise that rejects when the abort signal is triggered
+        new Promise<never>((_, reject) => {
+          executionSignal.addEventListener(
+            "abort",
+            () => {
+              reject(new AbortError("Task execution aborted"));
+            },
+            { once: true },
+          );
+        }),
+      ]);
+    } catch (err) {
+      if (err instanceof AbortError) {
+        this.logger.info({ taskRunId }, "Task execution aborted");
+
+        // Record abortion in task history
+        this.addHistoryEntry(taskRunId, actingAgentId, {
           timestamp: new Date(),
-          terminalStatus: "COMPLETED",
-          output,
+          terminalStatus: "ABORTED",
+          error: "Task execution aborted",
           runNumber: taskRun.completedRuns,
           maxRuns: taskRun.config.maxRepeats,
           retryAttempt: taskRun.currentRetryAttempt,
           maxRepeats: taskRun.config.maxRepeats,
-          agentId: agentId,
-          trajectory,
+          agentId: actingAgentId,
+          trajectory: clone(taskRun.currentTrajectory || []),
           executionTimeMs: Date.now() - startTime,
         });
 
-        emit("task_run:complete", clone(taskRun));
-
-        taskManager.logger.debug(
-          {
-            taskRunId,
-            completedRuns: taskRun.completedRuns,
-            maxRuns: taskRun.config.maxRepeats,
-          },
-          "Task executed successfully",
-        );
-
-        // Check if we've reached maxRuns
-        if (
-          !taskRun.config.maxRepeats ||
-          (taskRun.config.maxRepeats &&
-            taskRun.completedRuns >= taskRun.config.maxRepeats)
-        ) {
-          taskManager.stopTaskRun(taskRunId, agentId);
-          taskManager.logger.info(
-            {
-              taskRunId,
-              completedRuns: taskRun.completedRuns,
-              maxRuns: taskRun.config.maxRepeats,
-            },
-            "Task reached maximum runs and has been stopped",
-          );
-        } else {
-          taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
-        }
-      },
-      async onAgentError(err, taskRunId, agentId, taskManager) {
-        let error;
-        if (err instanceof FrameworkError) {
-          error = err.explain();
-        } else {
-          error = err instanceof Error ? err.message : String(err);
-        }
-
-        const taskRun = taskManager.getTaskRun(taskRunId, agentId);
-        const trajectory = clone(taskRun.currentTrajectory);
-
-        taskManager._updateTaskRun(taskRunId, taskRun, {
-          errorCount: taskRun.errorCount + 1,
-          completedRuns: taskRun.completedRuns + 1,
-          currentTrajectory: [],
-        });
-        const retryAttempt = taskRun.currentRetryAttempt;
-
-        // Record history entry
-        taskManager.addHistoryEntry(taskRunId, agentId, {
-          timestamp: new Date(),
-          terminalStatus: "FAILED",
-          error,
-          runNumber: taskRun.completedRuns,
-          maxRuns: taskRun.config.maxRepeats,
-          retryAttempt,
-          maxRepeats: taskRun.config.maxRepeats,
-          agentId: agentId,
-          trajectory,
-          executionTimeMs: Date.now() - startTime,
+        // Update task status to reflect abortion
+        this._updateTaskRun(taskRunId, taskRun, {
+          status: "ABORTED",
+          nextRunAt: undefined,
         });
 
-        emit("task_run:error", clone(taskRun));
-
-        taskManager.logger.error(
-          {
-            taskRunId,
-            runNumber: taskRun.completedRuns,
-            maxRuns: taskRun.config.maxRepeats,
-            retryAttempt,
-            maxRepeats: taskRun.config.maxRepeats,
-            errorCount: taskRun.errorCount,
-            error,
-          },
-          `Task execution failed ${error}`,
-        );
-
-        if (taskManager.options.errorHandler) {
-          taskManager.options.errorHandler(err as Error, taskRunId);
+        // Release any resources
+        if (taskRun.isOccupied) {
+          this.releaseTaskRunOccupancy(taskRunId, actingAgentId);
+        }
+      } else {
+        // Forward error to error handler
+        if (this.options.errorHandler) {
+          this.options.errorHandler(err as Error, taskRunId);
         }
 
-        taskManager.logger.debug(
-          { taskRunId },
-          "Releasing task occupancy before removal",
+        // Log the error
+        this.logger.error(
+          { err, taskRunId, actingAgentId },
+          "Unexpected error during task execution",
         );
-        taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
-        if (taskRun.config.maxRetries) {
-          if (retryAttempt >= taskRun.config.maxRetries) {
-            taskManager.stopTaskRun(taskRunId, taskRun.config.ownerAgentId);
-          } else {
-            taskManager._updateTaskRun(taskRunId, taskRun, {
-              currentRetryAttempt: retryAttempt + 1,
-            });
-          }
-        }
-      },
-    });
+      }
+
+      // Rethrow for upstream handlers
+      throw err;
+    } finally {
+      // No manual cleanup needed - the child controller will be properly
+      // garbage collected once this function exits, and if we need to
+      // abort it explicitly, that's already handled in the catch blocks
+    }
   }
 
   /**
@@ -1946,10 +2214,27 @@ export class TaskManager extends WorkspaceRestorable {
   }
 
   destroy() {
-    this.logger.debug("Destroy");
-    if (this.taskStartIntervalId) {
-      clearInterval(this.taskStartIntervalId);
-      this.taskStartIntervalId = null;
+    this.logger.debug("Destroying TaskManager");
+
+    // Stop task processing first
+    this.stopTaskProcessing();
+
+    // Dispose of the main abort scope
+    this.abortScope.dispose();
+
+    // Clean up all task-specific abort scopes
+    for (const taskRun of this.taskRuns.values()) {
+      if (taskRun.abortScope) {
+        taskRun.abortScope.dispose();
+        taskRun.abortScope = null;
+      }
     }
+
+    // Clear collections
+    this.taskRuns.clear();
+    this.scheduledTasksToStart = [];
+    this.awaitingTasksForAgents = [];
+
+    // Additional cleanup...
   }
 }

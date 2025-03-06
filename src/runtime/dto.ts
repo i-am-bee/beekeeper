@@ -1,6 +1,6 @@
+import { z } from "zod";
 import { AgentSchema } from "@/agents/registry/dto.js";
 import { TaskRunSchema } from "@/tasks/manager/dto.js";
-import { z } from "zod";
 
 export const BaseRuntimeOutputSchema = z.object({
   agent: AgentSchema.optional(),
