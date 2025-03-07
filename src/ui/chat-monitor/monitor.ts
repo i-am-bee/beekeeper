@@ -1,37 +1,33 @@
-import { BaseStateBuilder } from "@/base/state/base-state-builder.js";
-import { Runtime } from "@/runtime/runtime.js";
 import blessed from "neo-blessed";
+import { BaseMonitor, ParentInput, ScreenInput } from "../base/monitor.js";
 import * as chatStyles from "./config.js";
+import * as st from "../config.js";
+import { Runtime } from "@/runtime/runtime.js";
 import { ChatRuntimeHandler } from "./runtime-handler.js";
-import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
-import { ParentInput, ScreenInput } from "../base/monitor.js";
 
-export class ChatMonitor extends BaseMonitorWithStatus<
-  BaseStateBuilder<any, any>
-> {
+export class ChatMonitor extends BaseMonitor {
   private chatBox: blessed.Widgets.BoxElement;
   private inputBox: blessed.Widgets.TextareaElement;
   private messagesBox: blessed.Widgets.BoxElement;
+  private sendButton: blessed.Widgets.ButtonElement;
   private abortButton: blessed.Widgets.ButtonElement;
   private messages: { role: string; content: string; timestamp: Date }[] = [];
   private runtimeHandler: ChatRuntimeHandler;
   private isProcessing = false;
+  private lastInputValue = ""; // Track the last value
+  private inputValueCheckInterval: NodeJS.Timeout | null = null;
 
-  constructor(
-    arg: ParentInput | ScreenInput,
-    runtime: Runtime,
-    stateBuilder?: BaseStateBuilder<any, any>,
-  ) {
-    super(arg, stateBuilder, { label: " Chat Monitor " });
+  constructor(arg: ParentInput | ScreenInput, runtime: Runtime) {
+    super(arg);
     this.runtimeHandler = new ChatRuntimeHandler(runtime, {
       onMessage: (role, content) => this.addMessage(role, content),
-      onStatus: (status) => this.statusBar.log(status),
+      onStatus: (status) => this.addMessage("System", status),
       onStateChange: (isProcessing) => this.setProcessingState(isProcessing),
     });
 
     // Main chat container
     this.chatBox = blessed.box({
-      parent: this.contentBox,
+      parent: this.parent,
       width: "100%",
       height: "100%",
       left: 0,
@@ -54,33 +50,42 @@ export class ChatMonitor extends BaseMonitorWithStatus<
     this.inputBox = blessed.textarea({
       parent: this.chatBox,
       width: "100%-12", // Make room for abort button
-      height: 3,
+      height: 5,
       left: 0,
-      bottom: 0,
+      top: "100%-5",
       ...chatStyles.getInputBoxStyle(),
+      scrollbar: st.UIConfig.scrollbar,
     });
 
-    // Abort button
-    this.abortButton = blessed.button({
+    // Send/abort button
+    this.sendButton = blessed.button({
       parent: this.chatBox,
       width: 10,
       height: 3,
-      right: 0,
-      bottom: 0,
-      ...chatStyles.getAbortButtonStyle(),
+      left: "100%-11",
+      top: "100%-4",
+      ...chatStyles.getSendButtonStyle(true),
       tags: true,
       mouse: true,
     });
 
+    this.abortButton = blessed.button({
+      parent: this.chatBox,
+      width: 10,
+      height: 3,
+      left: "50%-5",
+      top: "100%-4",
+      ...chatStyles.getAbortButtonStyle(),
+      tags: true,
+      mouse: true,
+      hidden: true,
+    });
+
     this.setupEventHandlers();
-    this.screen.render();
+    this.setProcessingState(false);
   }
 
   private setupEventHandlers() {
-    // Focus input box by default
-    this.inputBox.focus();
-
-    // Send message on Enter, support multiline with Shift+Enter
     this.inputBox.key("enter", async (ch, key) => {
       // Check if Shift key is pressed
       if (key.shift) {
@@ -90,13 +95,11 @@ export class ChatMonitor extends BaseMonitorWithStatus<
         return;
       }
 
-      const message = this.inputBox.getValue();
-      if (message.trim()) {
-        await this.sendMessage(message);
-        this.inputBox.clearValue();
-        this.screen.render();
-      }
+      this.onSendMessage();
     });
+
+    // Send button handler
+    this.sendButton.on("press", this.onSendMessage.bind(this));
 
     // Abort button handler
     this.abortButton.on("press", () => {
@@ -139,6 +142,17 @@ export class ChatMonitor extends BaseMonitorWithStatus<
     });
   }
 
+  private onSendMessage() {
+    const message = this.inputBox.getValue();
+    if (message.trim()) {
+      this.sendMessage(message).finally(() => {
+        this.setProcessingState(false);
+      });
+      this.inputBox.clearValue();
+      this.setProcessingState(true);
+    }
+  }
+
   private async sendMessage(message: string) {
     // Add user message to chat
     this.addMessage("You", message);
@@ -157,12 +171,10 @@ export class ChatMonitor extends BaseMonitorWithStatus<
     // Format and display all messages
     const formattedMessages = this.messages
       .map((msg) => {
-        return (
-          chatStyles.formatCompleteMessage(
-            msg.timestamp,
-            msg.role,
-            msg.content,
-          ) + "\n"
+        return chatStyles.formatCompleteMessage(
+          msg.timestamp,
+          msg.role,
+          msg.content
         );
       })
       .join("\n");
@@ -173,15 +185,29 @@ export class ChatMonitor extends BaseMonitorWithStatus<
   }
 
   private setProcessingState(isProcessing: boolean) {
+    if (this.isProcessing !== isProcessing) {
+      if (isProcessing) {
+        this.stopInputValueMonitoring();
+        this.inputBox.hide();
+        this.sendButton.hide();
+        this.abortButton.show();
+        this.abortButton.focus();
+      } else {
+        this.inputBox.show();
+        this.sendButton.show();
+        this.abortButton.hide();
+        if (!this.inputValueCheckInterval) {
+          this.startInputValueMonitoring();
+        }
+      }
+    }
+
     this.isProcessing = isProcessing;
 
-    // Update UI to reflect processing state
-    this.inputBox.enableInput();
-
-    // Update abort button
-    const buttonStyle = chatStyles.getAbortButtonStyle(isProcessing);
-    this.abortButton.style = buttonStyle.style;
-    this.abortButton.setContent(buttonStyle.content);
+    // Update send button
+    const disabled = !isProcessing && this.inputBox.getContent().length === 0;
+    const buttonStyle = chatStyles.getSendButtonStyle(disabled);
+    this.sendButton.style = buttonStyle.style;
 
     if (!isProcessing) {
       this.inputBox.focus();
@@ -208,15 +234,12 @@ export class ChatMonitor extends BaseMonitorWithStatus<
 
     switch (type) {
       case "error":
-        this.statusBar.log(`Error: ${message}`);
         this.addMessage(source || "System", `Error: ${message}`);
         break;
       case "info":
-        this.statusBar.log(message);
         this.addMessage(source || "System", message);
         break;
       case "warning":
-        this.statusBar.log(`Warning: ${message}`);
         this.addMessage(source || "System", `Warning: ${message}`);
         break;
       default:
@@ -228,26 +251,54 @@ export class ChatMonitor extends BaseMonitorWithStatus<
   }
 
   reset(shouldRender = true): void {
-    super.reset(false);
+    // super.reset(false);
     this.messages = [];
     this.updateMessagesDisplay();
     this.inputBox.clearValue();
+
+    // Restart input value monitoring
+    this.stopInputValueMonitoring();
+    this.startInputValueMonitoring();
 
     if (shouldRender) {
       this.screen.render();
     }
   }
 
+  // Method to start monitoring the input value for changes
+  private startInputValueMonitoring() {
+    // Clear any existing interval
+    if (this.inputValueCheckInterval) {
+      clearInterval(this.inputValueCheckInterval);
+    }
+
+    // Set initial value
+    this.lastInputValue = this.inputBox.getValue();
+
+    // Check for changes every 100ms
+    this.inputValueCheckInterval = setInterval(() => {
+      const currentValue = this.inputBox.getValue();
+      if (currentValue !== this.lastInputValue) {
+        this.lastInputValue = currentValue;
+        this.setProcessingState(false);
+      }
+    }, 100);
+  }
+
+  // Method to stop monitoring the input value
+  private stopInputValueMonitoring() {
+    if (this.inputValueCheckInterval) {
+      clearInterval(this.inputValueCheckInterval);
+      this.inputValueCheckInterval = null;
+    }
+  }
+
   // Method to initialize and start the chat monitor
   public async start(): Promise<void> {
-    this.statusBar.log(
-      "Chat monitor started. Type your message and press Enter to send.",
-    );
-
     // Add welcome messages with keyboard shortcuts
     this.addMessage(
       "System",
-      "Chat monitor initialized. You can communicate with the runtime/supervisor agent here.",
+      "Chat monitor initialized. You can communicate with the runtime/supervisor agent here."
     );
     this.addMessage("System", "Keyboard shortcuts:");
     this.addMessage("System", "- Enter: Send message");
@@ -258,7 +309,9 @@ export class ChatMonitor extends BaseMonitorWithStatus<
     this.addMessage("System", "- Ctrl+L: Clear chat history");
     this.addMessage("System", "- Ctrl+C or q: Quit application");
 
-    this.inputBox.focus();
+    // Start monitoring input value changes
+    this.startInputValueMonitoring();
+
     this.screen.render();
   }
 }

@@ -1,3 +1,4 @@
+import { UIColors } from "../colors.js";
 import * as st from "../config.js";
 
 /**
@@ -59,7 +60,7 @@ export function formatRole(role: string): string {
 export function formatCompleteMessage(
   timestamp: Date | string,
   role: string,
-  content: string,
+  content: string
 ): string {
   const formattedTimestamp = st.timestamp(timestamp);
   const formattedRole = formatRole(role);
@@ -118,28 +119,39 @@ export function getInputBoxStyle() {
 
 /**
  * Get UI styling for the abort button
- * @param isProcessing Whether the system is currently processing
+ * @param isAbort Whether the system is currently processing
  * @returns Object with UI configuration for the abort button
  */
-export function getAbortButtonStyle(isProcessing = false) {
+export function getSendButtonStyle(disabled = false) {
   return {
-    content: isProcessing ? " RUNNING " : " ABORT ",
+    content: "SEND",
     align: "center" as any,
     valign: "middle" as any,
-    border: st.UIConfig.borders as any,
     style: {
-      bg: isProcessing ? "yellow" : "red",
-      fg: isProcessing ? "black" : "white",
+      fg: disabled ? UIColors.gray.cool_gray : UIColors.white.white,
+      bg: disabled ? UIColors.gray.gray : UIColors.blue.blue,
       focus: {
-        bg: isProcessing ? "yellow" : "red",
-        bold: true,
+        bg: disabled ? UIColors.gray.gray : UIColors.blue.cyan,
       },
       hover: {
-        bg: isProcessing ? "yellow" : "red",
-        bold: true,
+        bg: disabled ? UIColors.gray.gray : UIColors.blue.cyan,
       },
-      border: {
-        fg: isProcessing ? "yellow" : "red",
+    },
+  };
+}
+export function getAbortButtonStyle() {
+  return {
+    content: "ABORT",
+    align: "center" as any,
+    valign: "middle" as any,
+    style: {
+      fg: UIColors.white.white,
+      bg: UIColors.red.dark_red,
+      focus: {
+        bg: UIColors.red.electric_red,
+      },
+      hover: {
+        bg: UIColors.red.red,
       },
     },
   };
