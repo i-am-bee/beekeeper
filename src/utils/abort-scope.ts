@@ -16,16 +16,24 @@ export class AbortScope {
   private childControllers = new Set<AbortController>();
   private aborted = false;
   private parentSignalHandler?: () => void;
+  private parentSignal?: AbortSignal;
+  private onAbort?: () => void;
 
-  constructor(private parentSignal?: AbortSignal) {
-    if (parentSignal?.aborted) {
+  constructor(options?: { parentSignal?: AbortSignal; onAbort?: () => void }) {
+    if (options?.parentSignal?.aborted) {
       this.aborted = true;
-    } else if (parentSignal) {
+    } else if (options?.parentSignal) {
       this.parentSignalHandler = () => this.abort();
-      parentSignal.addEventListener("abort", this.parentSignalHandler, {
-        once: true,
-      });
+      options?.parentSignal.addEventListener(
+        "abort",
+        this.parentSignalHandler,
+        {
+          once: true,
+        }
+      );
     }
+
+    this.onAbort = options?.onAbort;
   }
 
   getSignal(): AbortSignal {
@@ -39,7 +47,7 @@ export class AbortScope {
     ...args: any[]
   ): NodeJS.Timeout {
     if (this.aborted) {
-      return null as unknown as NodeJS.Timeout;
+      throw new Error(`Set interval on aborted scope attempt`);
     }
 
     const id = setInterval(callback, ms, ...args);
@@ -53,7 +61,7 @@ export class AbortScope {
     ...args: any[]
   ): NodeJS.Timeout {
     if (this.aborted) {
-      return null as unknown as NodeJS.Timeout;
+      throw new Error(`Set timeout on aborted scope attempt`);
     }
 
     const id = setTimeout(
@@ -62,7 +70,7 @@ export class AbortScope {
         callback(...callbackArgs);
       },
       ms,
-      ...args,
+      ...args
     );
 
     this.timeouts.add(id);
@@ -95,13 +103,7 @@ export class AbortScope {
     return controller;
   }
 
-  abort(): void {
-    if (this.aborted) {
-      return;
-    }
-
-    this.aborted = true;
-
+  clean(): void {
     // Clear all intervals
     for (const id of this.intervals) {
       clearInterval(id);
@@ -121,12 +123,26 @@ export class AbortScope {
     this.childControllers.clear();
   }
 
+  abort(manualAbort = false): void {
+    if (this.aborted) {
+      throw new Error(`Abort on already aborted scope attempt`);
+    }
+
+    this.aborted = true;
+    this.clean();
+
+    if (!manualAbort) {
+      this.onAbort?.();
+    }
+  }
+
   isAborted(): boolean {
     return this.aborted;
   }
 
-  checkIsAborted(): void {
+  checkIsAborted(onAborted?: () => void): void {
     if (this.isAborted()) {
+      onAborted?.();
       throw new AbortError();
     }
   }
@@ -135,8 +151,8 @@ export class AbortScope {
     operation: () => Promise<T>,
     options?: {
       operationName?: string;
-      logger?: Logger;
-    },
+      logger: Logger;
+    }
   ): Promise<T> {
     const logger = options?.logger;
     const opName = options?.operationName || "operation";
@@ -200,5 +216,11 @@ export class AbortScope {
     }
 
     this.abort(); // Clean up all resources
+    this.onAbort = undefined;
+  }
+
+  reset(): void {
+    this.clean();
+    this.aborted = false;
   }
 }

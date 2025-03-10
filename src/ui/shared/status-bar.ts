@@ -176,15 +176,6 @@ export class StatusBar extends EventEmitter {
       this.hideLogBox();
     });
 
-    // ESC key also hides the log box if it's open
-    this.screen.key(["escape"], () => {
-      if (this.isLogBoxVisible) {
-        this.hideLogBox();
-        return false; // Prevent this from bubbling up to other handlers
-      }
-      return true; // Allow the event to bubble up if log box isn't visible
-    });
-
     // Mouse scrolling for log content
     this.logContentBox.on("mouse", (data) => {
       if (data.action === "wheelup") {

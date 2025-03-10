@@ -1,20 +1,83 @@
-import "dotenv/config";
-import { FrameworkError } from "beeai-framework";
-import { createConsoleReader } from "./helpers/reader.js";
 import { createRuntime } from "@/runtime/factory.js";
 import { RuntimeOutputMethod } from "@/runtime/runtime.js";
+import { FrameworkError, Logger, LoggerLevelType } from "beeai-framework";
+import "dotenv/config";
+import path from "node:path";
+import { parse } from "ts-command-line-args";
+import { createConsoleReader } from "./helpers/reader.js";
 import { ChatMonitor } from "./ui/chat-monitor/monitor.js";
+import { createWriteStream } from "node:fs";
+import { ensureDirectoryExistsSafe } from "./utils/file.js";
+import { getEnv } from "beeai-framework/internals/env";
+
+// Parse command line arguments
+const { chat: useChatMonitor, workspace } = parse<CLIArguments>({
+  chat: { type: Boolean, alias: "c", optional: true },
+  workspace: { type: String, alias: "w", optional: true },
+});
+const restoreWorkspace = !!workspace;
+
+const OUTPUT_DIR = "./output";
+
+const logger = useChatMonitor
+  ? new Logger(
+      {
+        name: "app",
+        level: (getEnv("BEE_FRAMEWORK_LOG_LEVEL") as LoggerLevelType) || "info",
+      },
+      Logger.createRaw(
+        {},
+        createWriteStream(
+          path.join(
+            ensureDirectoryExistsSafe(".", path.join(OUTPUT_DIR, "logs")),
+            "app.log"
+          ),
+          {
+            flags: "w",
+          }
+        )
+      )
+    )
+  : Logger.root.child({ name: "app" });
+
+let abortController: AbortController;
+
+interface CLIArguments {
+  workspace?: string;
+  chat?: boolean;
+}
+
+async function shutdown(signal?: string) {
+  logger.info(
+    `\nReceived ${signal || "shutdown"} signal. Starting graceful shutdown...`
+  );
+
+  // Set a timeout to force exit if graceful shutdown takes too long
+  const forceExitTimeout = setTimeout(() => {
+    logger.error("Forcing exit after timeout");
+    process.exit(1);
+  }, 60 * 1000); // 1 minute
+
+  try {
+    // Abort any ongoing operations
+    if (abortController && !abortController.signal.aborted) {
+      abortController.abort("shutdown requested");
+      logger.info("Aborted ongoing operations");
+    }
+
+    clearTimeout(forceExitTimeout);
+    logger.info("Graceful shutdown completed");
+    process.exit(0);
+  } catch (error) {
+    logger.error("Error during graceful shutdown:", error);
+    clearTimeout(forceExitTimeout);
+    process.exit(1);
+  }
+}
 
 async function main() {
-  // Parse command line arguments
-  const args = process.argv.slice(2);
-  const workspace = args[0] && args[0].length ? args[0] : undefined;
-  const restoreWorkspace = !!workspace;
-  const useChatMonitor = args.includes("--chat") || args.includes("-c");
-
   // Create abort controller with a long timeout
-  const abortController = new AbortController();
-  setTimeout(() => abortController.abort(), 30_000_000);
+  abortController = new AbortController();
 
   // Create runtime
   const runtime = await createRuntime({
@@ -23,15 +86,18 @@ async function main() {
       agentRegistry: { restoration: restoreWorkspace },
       taskManager: { restoration: restoreWorkspace },
     },
-    outputDirPath: "./output",
+    outputDirPath: OUTPUT_DIR,
     signal: abortController.signal,
+    logger,
   });
 
   // Use chat monitor UI if specified
   if (useChatMonitor) {
+    // Create a write stream to a log file
     const chatMonitor = new ChatMonitor(
       { title: "Runtime Chat Interface" },
       runtime,
+      abortController
     );
     await chatMonitor.start();
   } else {
@@ -60,14 +126,17 @@ async function main() {
   }
 }
 
+process.on("SIGINT", () => shutdown("SIGINT")); // Ctrl+C
+process.on("SIGTERM", () => shutdown("SIGTERM")); // Docker stop, etc.
+
 // Handle uncaught errors
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
-  process.exit(1);
+  logger.error("Uncaught Exception:", error);
+  shutdown("UncaughtException");
 });
 
 // Run the application
 main().catch((error) => {
-  console.error("Application error:", error);
+  logger.error("Application error:", error);
   process.exit(1);
 });

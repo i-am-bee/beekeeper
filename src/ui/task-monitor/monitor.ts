@@ -356,8 +356,6 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
   }
 
   private setupEventHandlers() {
-    this.screen.key(["escape", "q", "C-c"], () => process.exit(0));
-
     this.taskPoolList.on("select", (_, selectedIndex) =>
       this.onPoolSelect(selectedIndex),
     );

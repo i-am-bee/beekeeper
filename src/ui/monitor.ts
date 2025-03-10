@@ -2,10 +2,12 @@ import blessed from "neo-blessed";
 import { TaskMonitor } from "./task-monitor/monitor.js";
 import { AgentMonitor } from "./agent-monitor/monitor.js";
 import { BaseMonitor } from "./base/monitor.js";
+import { CloseDialog } from "./shared/close-dialog.js";
 
 export class Monitor extends BaseMonitor {
   private agentMonitor: AgentMonitor;
   private taskMonitor: TaskMonitor;
+  private closeDialog: CloseDialog;
 
   constructor(title = "Bee Supervisor Monitor") {
     super({ title });
@@ -39,6 +41,21 @@ export class Monitor extends BaseMonitor {
         border: { type: "bg" },
         label: "■■■ TASK MONITOR ■■■",
       }),
+    });
+
+    this.closeDialog = new CloseDialog(this.screen);
+
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers() {
+    // Add Ctrl+C to quit
+    this.screen.key(["escape", "q", "C-c"], () => {
+      // If the close dialog is already open, don't do anything
+      if (this.closeDialog.isOpen()) {
+        return;
+      }
+      this.closeDialog.show();
     });
   }
 

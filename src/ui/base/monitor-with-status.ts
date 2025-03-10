@@ -71,9 +71,6 @@ export abstract class BaseMonitorWithStatus<
         this.statusBar.log(`Error: ${error.message}`);
       });
     }
-
-    // Setup common keyboard shortcuts
-    this.screen.key(["escape", "q", "C-c"], () => process.exit(0));
   }
 
   // Common reset method that can be overridden by child classes

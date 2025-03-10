@@ -19,6 +19,7 @@ import {
   TaskTypeValueSchema,
 } from "./manager/dto.js";
 import { TaskManager } from "./manager/manager.js";
+import { OperationResult } from "@/base/dto.js";
 
 export const TOOL_NAME = "task_runner";
 
@@ -34,7 +35,9 @@ export type TaskManagerToolResultData =
   | [TaskConfigPoolStats, [number, TaskConfigPoolStats][]]
   | TaskRun
   | TaskRun[]
-  | TaskRunHistoryEntry[];
+  | TaskRunHistoryEntry[]
+  | OperationResult
+  | OperationResult[];
 
 export interface TaskManagerToolResult {
   method: string;
@@ -127,21 +130,21 @@ export const GetAllTaskConfigsSchema = z
   })
   .describe("Gets all created task configs.");
 
+// export const ScheduleStartTaskRunSchema = z
+//   .object({
+//     method: z.literal("scheduleStartTaskRun"),
+//     taskRunId: TaskRunIdValueSchema,
+//     actingAgentId: ActingAgentIdValueSchema,
+//   })
+//   .describe("Starts a task run.");
+
 export const ScheduleStartTaskRunSchema = z
   .object({
     method: z.literal("scheduleStartTaskRun"),
-    taskRunId: TaskRunIdValueSchema,
-    actingAgentId: ActingAgentIdValueSchema,
-  })
-  .describe("Starts a task run.");
-
-export const ScheduleStartSimultaneousTaskRunsSchema = z
-  .object({
-    method: z.literal("scheduleStartSimultaneousTaskRuns"),
     taskRunIds: z.array(TaskRunIdValueSchema),
     actingAgentId: ActingAgentIdValueSchema,
   })
-  .describe("Simultaneous start of multiple task runs.");
+  .describe("Start a task run or group of task runs simultaneously.");
 
 export const StopTaskRunSchema = z
   .object({
@@ -246,7 +249,6 @@ export class TaskManagerTool extends Tool<
       GetPoolStatsSchema,
       CreateTaskRunSchema,
       ScheduleStartTaskRunSchema,
-      ScheduleStartSimultaneousTaskRunsSchema,
       StopTaskRunSchema,
       RemoveTaskRunSchema,
       AddBlockingTaskRunsSchema,
@@ -326,13 +328,7 @@ export class TaskManagerTool extends Tool<
         break;
       }
       case "scheduleStartTaskRun":
-        data = this.taskManager.scheduleStartTaskRun(
-          input.taskRunId,
-          input.actingAgentId,
-        );
-        break;
-      case "scheduleStartSimultaneousTaskRuns":
-        data = this.taskManager.scheduleStartMultipleTaskRuns(
+        data = this.taskManager.scheduleStartTaskRuns(
           input.taskRunIds,
           input.actingAgentId,
         );

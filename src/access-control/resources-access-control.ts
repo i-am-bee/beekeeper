@@ -46,8 +46,10 @@ export class ResourcesAccessControl {
     ]),
   };
 
-  constructor(entityName: string, admins: UserId[] = []) {
-    this.logger = Logger.root.child({ name: `${entityName}AccessControl` });
+  constructor(entityName: string, admins: UserId[] = [], logger: Logger) {
+    this.logger = logger.child({
+      name: `${entityName}AccessControl`,
+    });
     admins.forEach((adminId) => this.registry.admins.add(adminId));
   }
 

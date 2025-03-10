@@ -10,8 +10,10 @@ export abstract class BaseToolsFactory {
   private readonly logger: Logger;
   private initialized = false;
 
-  constructor() {
-    this.logger = Logger.root.child({ name: this.constructor.name });
+  constructor(logger: Logger) {
+    this.logger = logger.child({
+      name: this.constructor.name,
+    });
   }
 
   async init() {

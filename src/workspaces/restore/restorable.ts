@@ -11,8 +11,14 @@ export abstract class WorkspaceRestorable {
   protected resource: WorkspaceResource;
   protected resourceOwnerId: string;
 
-  constructor(path: readonly string[], resourceOwnerId: string) {
-    this.logger = Logger.root.child({ name: this.constructor.name });
+  constructor(
+    path: readonly string[],
+    resourceOwnerId: string,
+    logger: Logger,
+  ) {
+    this.logger = logger.child({
+      name: this.constructor.name,
+    });
     this.resourceOwnerId = resourceOwnerId;
     this.workspaceManager = WorkspaceManager.getInstance();
     this.resource = this.workspaceManager.registerResource(

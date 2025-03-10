@@ -357,8 +357,6 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
   }
 
   private setupEventHandlers() {
-    this.screen.key(["escape", "q", "C-c"], () => process.exit(0));
-
     this.agentPoolList.on("select", (_, selectedIndex) =>
       this.onPoolSelect(selectedIndex),
     );

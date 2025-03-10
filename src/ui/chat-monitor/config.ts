@@ -1,5 +1,6 @@
 import { UIColors } from "../colors.js";
 import * as st from "../config.js";
+import { MessageTypeEnum } from "./runtime-handler.js";
 
 /**
  * Styling functions specific to the chat monitor
@@ -20,7 +21,7 @@ export function formatUserMessage(message: string): string {
  * @returns Formatted system message
  */
 export function formatSystemMessage(message: string): string {
-  return message.includes("Error") ? st.error(message) : st.label(message);
+  return message.includes("Error") ? st.error(message) : st.system(message);
 }
 
 /**
@@ -46,7 +47,7 @@ export function formatRole(role: string): string {
     // This is already formatted for agent/task
     return role;
   } else {
-    return st.label(role);
+    return role;
   }
 }
 
@@ -60,21 +61,28 @@ export function formatRole(role: string): string {
 export function formatCompleteMessage(
   timestamp: Date | string,
   role: string,
-  content: string
+  content: string,
+  type: MessageTypeEnum,
 ): string {
   const formattedTimestamp = st.timestamp(timestamp);
   const formattedRole = formatRole(role);
 
   // Format content based on role
   let formattedContent;
-  if (role === "You") {
-    formattedContent = formatUserMessage(content);
-  } else if (role === "System") {
-    formattedContent = formatSystemMessage(content);
-  } else {
-    formattedContent = formatAgentMessage(content);
+  switch (type) {
+    case MessageTypeEnum.INPUT:
+      formattedContent = formatUserMessage(content);
+      break;
+    case MessageTypeEnum.PROGRESS:
+    case MessageTypeEnum.ERROR:
+    case MessageTypeEnum.ABORT:
+    case MessageTypeEnum.SYSTEM:
+      formattedContent = formatSystemMessage(content);
+      break;
+    case MessageTypeEnum.FINAL:
+      formattedContent = formatAgentMessage(content);
+      break;
   }
-
   return `${formattedTimestamp} ${formattedRole}: ${formattedContent}`;
 }
 
@@ -139,19 +147,19 @@ export function getSendButtonStyle(disabled = false) {
     },
   };
 }
-export function getAbortButtonStyle() {
+export function getAbortButtonStyle(disabled = false) {
   return {
     content: "ABORT",
     align: "center" as any,
     valign: "middle" as any,
     style: {
-      fg: UIColors.white.white,
-      bg: UIColors.red.dark_red,
+      fg: disabled ? UIColors.gray.cool_gray : UIColors.white.white,
+      bg: disabled ? UIColors.gray.cool_gray : UIColors.red.dark_red,
       focus: {
-        bg: UIColors.red.electric_red,
+        bg: disabled ? UIColors.gray.cool_gray : UIColors.red.electric_red,
       },
       hover: {
-        bg: UIColors.red.red,
+        bg: disabled ? UIColors.gray.cool_gray : UIColors.red.red,
       },
     },
   };

@@ -5,3 +5,10 @@ export const DateStringSchema = z.union([
   z.date(),
 ]);
 export type DateString = z.infer<typeof DateStringSchema>;
+
+export const OperationResultSchema = z.object({
+  relatedId: z.string(),
+  success: z.boolean(),
+  errorMessage: z.string().optional(),
+});
+export type OperationResult = z.infer<typeof OperationResultSchema>;

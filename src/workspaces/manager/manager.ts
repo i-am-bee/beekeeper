@@ -1,5 +1,5 @@
 import { AbortScope } from "@/utils/abort-scope.js";
-import { validatePath } from "@/utils/file.js";
+import { ensureDirectoryExistsSafe, validatePath } from "@/utils/file.js";
 import { Logger } from "beeai-framework";
 import EventEmitter from "events";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
@@ -49,16 +49,17 @@ export class WorkspaceManager extends EventEmitter {
 
   static init(
     workspace: string,
-    options: { dirPath?: string; signal?: AbortSignal },
+    logger: Logger,
+    options?: { dirPath?: string; signal?: AbortSignal }
   ) {
     if (this.instance) {
       throw new Error(`Workspace manager is already initialized`);
     }
-    this.instance = new WorkspaceManager(options.signal);
+    this.instance = new WorkspaceManager(logger, options?.signal);
 
     const workspacesDirPath = join(
-      options.dirPath ?? process.cwd(),
-      ...DEFAULT_PATH,
+      options?.dirPath ?? process.cwd(),
+      ...DEFAULT_PATH
     );
 
     this.instance.setWorkspaceDirPath(workspacesDirPath);
@@ -105,29 +106,15 @@ export class WorkspaceManager extends EventEmitter {
     this._workspacesDirPath = dirPath;
   }
 
-  private constructor(signal?: AbortSignal) {
+  private constructor(logger: Logger, signal?: AbortSignal) {
     super();
-    this.logger = Logger.root.child({ name: "WorkspaceManager" });
-    this.abortScope = new AbortScope(signal);
-  }
-
-  private ensureDirectoryExists(dirPath: string) {
-    const validDirPath = validatePath(this.workspacesDirPath, dirPath);
-
-    try {
-      if (!existsSync(validDirPath)) {
-        mkdirSync(validDirPath, { recursive: true });
-        this.logger.info(`Created directory: ${dirPath}`);
-      }
-    } catch (error) {
-      this.logger.error(`Error creating directory: ${dirPath}`);
-      throw error;
-    }
+    this.logger = logger.child({ name: "WorkspaceManager" });
+    this.abortScope = new AbortScope({ parentSignal: signal });
   }
 
   public on<K extends keyof WorkspaceManagerEvents>(
     event: K,
-    listener: WorkspaceManagerEvents[K],
+    listener: WorkspaceManagerEvents[K]
   ): this {
     return super.on(event, listener);
   }
@@ -143,16 +130,20 @@ export class WorkspaceManager extends EventEmitter {
     const workspaceNameSanitized = basename(workspaceName);
     const workspacePathSanitized = path.join(
       this.workspacesDirPath,
-      workspaceNameSanitized,
+      workspaceNameSanitized
     );
-    this.ensureDirectoryExists(workspacePathSanitized);
+    ensureDirectoryExistsSafe(
+      this.workspacesDirPath,
+      workspacePathSanitized,
+      this.logger
+    );
     this._workspaceName = workspaceNameSanitized;
     this._workspacePath = workspacePathSanitized;
   }
 
   registerResource(
     input: CreateFileResourceInput | CreateDirectoryResourceInput,
-    ownerId: string,
+    ownerId: string
   ): WorkspaceResource {
     this.abortScope.checkIsAborted();
 
@@ -163,7 +154,7 @@ export class WorkspaceManager extends EventEmitter {
     const existingResource = this.resources.get(inputJoinedPath);
     if (existingResource) {
       throw new Error(
-        `Resource on path ${inputJoinedPath} already exists and is owned by ${existingResource.ownerId}`,
+        `Resource on path ${inputJoinedPath} already exists and is owned by ${existingResource.ownerId}`
       );
     }
 
@@ -175,7 +166,7 @@ export class WorkspaceManager extends EventEmitter {
           this.logger.info(`Created directory: ${input.path}`);
         } else {
           this.logger.info(
-            `Directory already exists, skipping creation: ${input.path}`,
+            `Directory already exists, skipping creation: ${input.path}`
           );
         }
       } else {
@@ -191,7 +182,7 @@ export class WorkspaceManager extends EventEmitter {
           this.logger.info(`Created file: ${input.path}`);
         } else {
           this.logger.info(
-            `File already exists, skipping creation: ${input.path}`,
+            `File already exists, skipping creation: ${input.path}`
           );
         }
       }
@@ -208,7 +199,7 @@ export class WorkspaceManager extends EventEmitter {
     } catch (error) {
       this.logger.error(
         `Error creating resource: ${inputJoinedPath} owned by ${ownerId}`,
-        error,
+        error
       );
       throw error;
     }
@@ -225,7 +216,7 @@ export class WorkspaceManager extends EventEmitter {
     resourcePath: string,
     ownerId: string,
     onLine: (resource: WorkspaceResource, content: string) => void,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): void {
     if (signal?.aborted) {
       return;
@@ -240,7 +231,7 @@ export class WorkspaceManager extends EventEmitter {
     // Verify ownership
     if (resource.ownerId !== ownerId) {
       throw new Error(
-        `Access denied: Resource ${resourcePath} is owned by ${resource.ownerId}`,
+        `Access denied: Resource ${resourcePath} is owned by ${resource.ownerId}`
       );
     }
 
@@ -284,7 +275,7 @@ export class WorkspaceManager extends EventEmitter {
     resourcePath: string,
     resourceOwnerId: string,
     content: string,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): void {
     if (signal?.aborted) {
       return;
@@ -299,7 +290,7 @@ export class WorkspaceManager extends EventEmitter {
     // Verify ownership
     if (resource.ownerId !== resourceOwnerId) {
       throw new Error(
-        `Access denied: Resource ${resourcePath} is owned by ${resource.ownerId}`,
+        `Access denied: Resource ${resourcePath} is owned by ${resource.ownerId}`
       );
     }
 
@@ -323,13 +314,13 @@ export class WorkspaceManager extends EventEmitter {
     } catch (error) {
       this.logger.error(`Error writing to file: ${resourcePath}`, error);
       throw new Error(
-        `Failed to write to file ${resourcePath}: ${error.message}`,
+        `Failed to write to file ${resourcePath}: ${error.message}`
       );
     }
   }
 
   getWorkspacePath(
-    input: CreateFileResourceInput | CreateDirectoryResourceInput,
+    input: CreateFileResourceInput | CreateDirectoryResourceInput
   ) {
     const inputJoinedPath = path.join(this.workspacePath, ...input.path);
     const validPath = validatePath(this.workspacePath, inputJoinedPath);

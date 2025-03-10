@@ -1,3 +1,5 @@
+import { Logger } from "beeai-framework";
+import fs from "fs";
 import { join, normalize, relative } from "path";
 
 export function validatePath(parentDir: string, targetPath: string): string {
@@ -10,10 +12,29 @@ export function validatePath(parentDir: string, targetPath: string): string {
 
   if (relativePath.startsWith("..") || targetPath.startsWith("/")) {
     throw new Error(
-      `Path traversal attempt detected for path: "${targetPath}"`,
+      `Path traversal attempt detected for path: "${targetPath}"`
     );
   }
 
   // Return the clean relative path
   return relativePath;
+}
+
+export function ensureDirectoryExistsSafe(
+  baseDirPath: string,
+  dirPath: string,
+  logger?: Logger
+) {
+  const validDirPath = validatePath(baseDirPath, dirPath);
+
+  try {
+    if (!fs.existsSync(validDirPath)) {
+      fs.mkdirSync(validDirPath, { recursive: true });
+      logger?.info(`Created directory: ${dirPath}`);
+    }
+    return validDirPath;
+  } catch (error) {
+    logger?.error(`Error creating directory: ${dirPath}`);
+    throw error;
+  }
 }

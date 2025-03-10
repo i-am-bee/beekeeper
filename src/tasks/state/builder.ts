@@ -275,6 +275,7 @@ export class TaskStateBuilder extends BaseStateBuilder<
         completed: 0,
         running: 0,
         failed: 0,
+        aborted: 0,
         stopped: 0,
         pending: 0,
         awaiting_agent: 0,

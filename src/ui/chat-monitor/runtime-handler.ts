@@ -1,19 +1,37 @@
 import { RuntimeOutput } from "@/runtime/index.js";
 import { Runtime, RuntimeOutputMethod } from "@/runtime/runtime.js";
+import * as st from "../config.js";
+
+export enum MessageTypeEnum {
+  INPUT = "input",
+  PROGRESS = "progress",
+  FINAL = "final",
+  ERROR = "error",
+  ABORT = "abort",
+  SYSTEM = "system",
+}
 
 /**
  * A handler class for runtime operations in the chat monitor
  */
 export class ChatRuntimeHandler {
   private runtime: Runtime;
-  private abortController: AbortController;
 
   // Callback for handling messages
-  private onMessageCallback: (role: string, content: string) => void;
+  private onMessageCallback: (
+    role: string,
+    content: string,
+    type: MessageTypeEnum
+  ) => void;
   // Callback for status updates
   private onStatusCallback: (status: string) => void;
   // Callback for state changes
   private onStateChangeCallback: (isProcessing: boolean) => void;
+  private abortController: AbortController;
+
+  get isRunning() {
+    return this.runtime.isRunning;
+  }
 
   constructor(
     runtime: Runtime,
@@ -22,13 +40,14 @@ export class ChatRuntimeHandler {
       onStatus,
       onStateChange,
     }: {
-      onMessage: (role: string, content: string) => void;
+      onMessage: (role: string, content: string, type: MessageTypeEnum) => void;
       onStatus: (status: string) => void;
       onStateChange: (isProcessing: boolean) => void;
     },
+    abortController?: AbortController
   ) {
     this.runtime = runtime;
-    this.abortController = new AbortController();
+    this.abortController = abortController ?? new AbortController();
 
     this.onMessageCallback = onMessage;
     this.onStatusCallback = onStatus;
@@ -39,9 +58,6 @@ export class ChatRuntimeHandler {
    * Send a message to the runtime
    */
   public async sendMessage(message: string): Promise<void> {
-    // Create a new AbortController for this operation
-    this.abortController = new AbortController();
-
     // Signal state change
     this.onStateChangeCallback(true);
 
@@ -51,37 +67,26 @@ export class ChatRuntimeHandler {
 
       // Define output method to handle runtime responses
       const outputMethod: RuntimeOutputMethod = async (
-        output: RuntimeOutput,
+        output: RuntimeOutput
       ) => {
+        const prefix = output.agent
+          ? st.agentId(output.agent)
+          : st.taskRunId(output.taskRun);
         if (output.kind === "progress") {
-          const prefix = output.agent
-            ? `🤖 [${output.agent.agentId}]`
-            : `📋 [${output.taskRun.taskRunId}]`;
-
-          this.onMessageCallback(prefix, output.text);
+          this.onMessageCallback(prefix, output.text, MessageTypeEnum.PROGRESS);
         } else if (output.kind === "final") {
-          const prefix = output.agent
-            ? `🤖 [${output.agent.agentId}]`
-            : `📋 [${output.taskRun.taskRunId}]`;
-
-          this.onMessageCallback(prefix, output.text);
+          this.onMessageCallback(prefix, output.text, MessageTypeEnum.FINAL);
           this.onStatusCallback("Response complete");
         }
       };
 
       // Run the runtime with the user message
-      await this.runtime.run(
-        message,
-        outputMethod,
-        this.abortController.signal,
-      );
+      await this.runtime.run(message, outputMethod);
     } catch (error) {
       if (error instanceof Error) {
         this.onStatusCallback(`Error: ${error.message}`);
-        this.onMessageCallback("System", `Error: ${error.message}`);
       } else {
         this.onStatusCallback(`Unknown error occurred`);
-        this.onMessageCallback("System", "An unknown error occurred");
       }
     } finally {
       // Signal state change back
@@ -95,6 +100,5 @@ export class ChatRuntimeHandler {
   public abort(): void {
     this.abortController.abort();
     this.onStatusCallback("Operation aborted by user");
-    this.onMessageCallback("System", "Operation aborted by user");
   }
 }

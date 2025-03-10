@@ -59,6 +59,7 @@ export const UIConfig = {
     taskKind: { fg: UIColors.purple.magenta, bold: true },
     agentType: { fg: UIColors.blue.cyan, bold: true },
     taskType: { fg: UIColors.blue.cyan, bold: true },
+    system: { fg: UIColors.gray.granite_gray },
     agentId: {
       [AgentKindEnumSchema.Values.supervisor]: {
         fg: UIColors.brown.saddle_brown,
@@ -110,11 +111,12 @@ export const UIConfig = {
   status: {
     CREATED: { fg: UIColors.yellow.yellow, icon: "◆" }, // Diamond
     EXECUTING: { fg: UIColors.green.green, icon: "▶" }, // Play triangle
-    SCHEDULED: { fg: UIColors.blue.cyan, icon: "◇" }, // Hollow diamond
-    PENDING: { fg: UIColors.blue.cyan, icon: "◆" }, // Hollow diamond
+    SCHEDULED: { fg: UIColors.blue.cyan, icon: "↻" }, // Hollow diamond
+    PENDING: { fg: UIColors.blue.cyan, icon: "⏱" }, // Hollow diamond
     AWAITING_AGENT: { fg: UIColors.blue.steel_blue, icon: "◇" }, // Hollow diamond
-    FAILED: { fg: UIColors.red.red, icon: "×" }, // Square
-    COMPLETED: { fg: UIColors.blue.blue, icon: "●" }, // Circle
+    FAILED: { fg: UIColors.red.red, icon: "×" }, // Cross
+    ABORTED: { fg: UIColors.red.upsdell_red, icon: "⊘" }, // Crossed circle
+    COMPLETED: { fg: UIColors.blue.blue, icon: "✔" }, // Circle
     STOPPED: { fg: UIColors.gray.cadet_gray, icon: "◼" }, // Filled square
   } satisfies StyleCategory,
 
@@ -282,6 +284,10 @@ export function num(value: number, inverse = false) {
 
 export function label(value: string) {
   return applyStyle(value, UIConfig.labels.default);
+}
+
+export function system(value: string) {
+  return applyStyle(value, UIConfig.labels.system);
 }
 
 export function agentConfigId(value: string) {

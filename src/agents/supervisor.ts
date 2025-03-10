@@ -16,6 +16,7 @@ import {
   TOOL_NAME as agentRegistryToolName,
 } from "./registry/tool.js";
 import { AgentKindEnumSchema } from "./registry/dto.js";
+import { Logger } from "beeai-framework";
 
 export enum AgentTypes {
   BOSS = "boss",
@@ -70,14 +71,15 @@ export const SUPERVISOR_INSTRUCTIONS = (
       - \`${AgentKindEnumSchema.enum.supervisor}\`: Tasks managed by supervisor agents.
       - \`${AgentKindEnumSchema.enum.operator}\`: Tasks managed by operator agents.
     * Each task config has a unique task type (e.g., 'poem_generation').
+    * Use **exclusive concurrency mode** only for tasks that should not run simultaneously (e.g., to avoid database lock conflicts) otherwise use **parallel**.    
   * A **task run** is an instance of a task config, with a specific input (e.g., topic: 'black cat').  
     * When a task run starts, it will be assigned to the latest version of the agent config with the matching \`{agentKind}:{agentType}\`, e.g., \`'operator:poem_generator'\`.
     * Each task run has a unique ID: \`task:{taskType}[{instanceNum}]:{version}\`, for example \`task:poem_generation[1]:1\`.
     * Each task run can specify a blocked task run ID property. The blocked task run will then receive the output of the original task run as its input. This is useful when you need to chain tasks one after another.
-    * Use **exclusive concurrency mode** only for tasks that should not run simultaneously (e.g., to avoid database lock conflicts).
     * In addition to being divided by task kind, task runs are categorized by task run kind: \`${TaskRunKindEnumSchema.enum.interaction}\` and \`${TaskRunKindEnumSchema.enum.automatic}\`.
       * \`${TaskRunKindEnumSchema.enum.interaction}\` represents interaction with the outer world (mostly users), carries input and provides response. It is always created by the system, never by an assistant. This kind of task run is the origin for any other task runs in the system, and its ID is passed through them. When the last task run in the chain of dependent task runs is completed, its output is set as the response to the user in the origin \`${TaskRunKindEnumSchema.enum.interaction}\` task run.
       * \`${TaskRunKindEnumSchema.enum.automatic}\` represents internal processing steps performed by the system. These are created by assistants as part of breaking down complex tasks into manageable sub-tasks. They receive input from preceding task runs, process it according to their configuration, and pass their output to subsequent task runs in the dependency chain. Unlike interaction tasks, automatic tasks don't directly communicate with the user but serve as computational building blocks that collectively solve the user's request.
+    * If task run related task config has set **run immediately** you have to provide all blocking task runs in its creation.
   * **Task pool**:
     * The task pool does not auto-instantiate tasks because tasks require specific input.
     * The task pool does not have a size limit; tasks can remain until an appropriate agent is available.
@@ -119,6 +121,7 @@ export const SUPERVISOR_INSTRUCTIONS = (
 2. NEVER schedule start of a task run before you finished the setup of whole workflow.  
 3. NEVER schedule start of a task run depending on another task than yours. This attempt will failed.
 4. NEVER set task dependency into loop.
+5. NEVER create a new task config to quickly respond to user chit chat.
 
 **ALWAYS**
 1. ALWAYS call schedule task run start if you want to start it.
@@ -133,8 +136,9 @@ export class ToolsFactory extends BaseToolsFactory {
     protected registry: AgentRegistry<any>,
     protected taskManager: TaskManager,
     protected workdir: string,
+    logger: Logger,
   ) {
-    super();
+    super(logger);
   }
 
   async getFactoriesMethods(): Promise<ToolFactoryMethod[]> {
