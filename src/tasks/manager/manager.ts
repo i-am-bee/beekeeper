@@ -29,6 +29,7 @@ import {
   AutomaticTaskRun,
   BaseTaskRun,
   CreateTaskConfig,
+  FinalStatus,
   InteractionTaskRun,
   isTaskRunActiveStatus,
   isTaskRunTerminationStatus,
@@ -44,12 +45,13 @@ import {
   TaskRunHistoryEntry,
   TaskRunIdValue,
   TaskRunKindEnum,
+  TaskRunStatusEnum,
   TaskRunStatusEnumSchema,
   TaskRunTerminalStatusEnum,
   TaskTypeValue,
 } from "./dto.js";
 import EventEmitter from "events";
-import { taskRunOutput } from "./helpers.js";
+import { taskRunError, taskRunOutput } from "./helpers.js";
 import { AbortScope } from "@/utils/abort-scope.js";
 import { OperationResult } from "@/base/dto.js";
 
@@ -1254,12 +1256,17 @@ export class TaskManager extends WorkspaceRestorable {
     }
 
     if (manualStart) {
-      if (
-        taskRun.blockedByTaskRunIds.length &&
-        !this.ac.hasPermission(taskRunId, actingAgentId, FULL_ACCESS)
-      ) {
-        this.logger.error({ taskRunId }, "Task run not found");
-        throw new Error(`Can't manually start depending task `);
+      const blockedTaskRuns = this.collectBlockedTaskRuns(
+        taskRun.blockedByTaskRunIds,
+      );
+      if (blockedTaskRuns.length) {
+        this.logger.error(
+          { taskRunId, blockedTaskRuns },
+          "Start blocking task attempt error",
+        );
+        throw new Error(
+          `Start depending task attempt error. The task run is blocked by ${JSON.stringify(blockedTaskRuns)}`,
+        );
       }
     }
 
@@ -1295,6 +1302,48 @@ export class TaskManager extends WorkspaceRestorable {
       relatedId: taskRunId,
       success: true,
     };
+  }
+
+  private collectBlockedTaskRuns(
+    blockedTaskRunIds: TaskRunIdValue[],
+    visited: TaskRunIdValue[] = [],
+  ) {
+    const result: {
+      taskRunId: TaskRunIdValue;
+      status: TaskRunStatusEnum;
+      blocking: TaskRunIdValue[];
+    }[] = [];
+    for (const blockedTaskRunId of blockedTaskRunIds) {
+      if (visited.includes(blockedTaskRunId)) {
+        // Skip visited
+        continue;
+      }
+
+      const blockedByTaskRun = this.getTaskRun(
+        blockedTaskRunId,
+        TASK_MANAGER_USER,
+      );
+      visited.push(blockedTaskRunId);
+
+      if (
+        blockedByTaskRun.status === "CREATED" &&
+        blockedByTaskRun.blockedByTaskRunIds.length
+      ) {
+        result.push(
+          ...this.collectBlockedTaskRuns(
+            blockedByTaskRun.blockedByTaskRunIds,
+            visited,
+          ),
+        );
+      } else {
+        result.push({
+          taskRunId: blockedByTaskRun.taskRunId,
+          status: blockedByTaskRun.status,
+          blocking: clone(visited),
+        });
+      }
+    }
+    return result;
   }
 
   private composeTaskRunInput(context: string, input: string) {
@@ -1345,9 +1394,12 @@ export class TaskManager extends WorkspaceRestorable {
   stopTaskRun(
     taskRunId: TaskRunIdValue,
     actingAgentId: AgentIdValue,
-    isCompleted = false,
+    finalStatus: FinalStatus = "STOPPED",
   ): OperationResult {
-    this.logger.info({ taskRunId, actingAgentId }, "Stopping task");
+    this.logger.info(
+      { taskRunId, actingAgentId, finalStatus },
+      "Stopping task",
+    );
     this.ac.checkPermission(taskRunId, actingAgentId, READ_WRITE_ACCESS);
 
     const taskRun = this.getTaskRun(taskRunId, actingAgentId);
@@ -1376,6 +1428,40 @@ export class TaskManager extends WorkspaceRestorable {
       this.releaseTaskRunOccupancy(taskRunId, actingAgentId);
     }
 
+    const closeInteraction = (
+      interactionTaskRunId: TaskRunIdValue,
+      finalStatus: FinalStatus,
+    ) => {
+      // Close interaction
+      const originateInteraction = this.getTaskRun(
+        interactionTaskRunId,
+        TASK_MANAGER_USER,
+      );
+      if (!originateInteraction) {
+        throw new Error(
+          `Interaction task run \`${taskRun.originTaskRunId}\` is missing`,
+        );
+      }
+      if (originateInteraction.taskRunKind != "interaction") {
+        throw new Error(
+          `Task run \`${taskRun.originTaskRunId}\` is not an interaction`,
+        );
+      }
+
+      const hasFailed = finalStatus === "FAILED";
+
+      this._updateTaskRun(
+        originateInteraction.taskRunId,
+        originateInteraction,
+        {
+          interactionStatus: hasFailed ? "FAILED" : "COMPLETED",
+          response: !hasFailed
+            ? taskRunOutput(taskRun, false)
+            : taskRunError(taskRun),
+        },
+      );
+    };
+
     if (taskRun.taskRunKind === "interaction") {
       if (
         !Array.from(this.taskRuns.values()).some(
@@ -1384,11 +1470,7 @@ export class TaskManager extends WorkspaceRestorable {
             run.originTaskRunId === taskRun.taskRunId,
         )
       ) {
-        // Bypass response
-        this._updateTaskRun(taskRunId, taskRun, {
-          interactionStatus: "COMPLETED",
-          response: taskRunOutput(taskRun, false),
-        });
+        closeInteraction(taskRunId, finalStatus);
       }
     } else if (taskRun.taskRunKind === "automatic") {
       if (taskRun.blockingTaskRunIds.length > 0) {
@@ -1406,17 +1488,23 @@ export class TaskManager extends WorkspaceRestorable {
             blockingTaskRunId,
             TASK_MANAGER_USER,
           );
-          this._updateTaskRun(blockingTaskRunId, blockingTaskRun, {
-            taskRunInput: this.setTaskRunInput(
-              blockingTaskRun.taskRunInput,
-              taskRunOutput(taskRun, false),
-              hasUnfinishedBlockedTaskRuns,
-            ),
-            originTaskRunId: taskRun.originTaskRunId,
-          });
 
-          if (!hasUnfinishedBlockedTaskRuns) {
-            blockingTaskRunIdsToStart.push(blockingTaskRunId);
+          if (finalStatus === "FAILED") {
+            // Abort blocking task runs when failed
+            blockingTaskRun.abortScope?.abort();
+          } else {
+            this._updateTaskRun(blockingTaskRunId, blockingTaskRun, {
+              taskRunInput: this.setTaskRunInput(
+                blockingTaskRun.taskRunInput,
+                taskRunOutput(taskRun, false),
+                hasUnfinishedBlockedTaskRuns,
+              ),
+              originTaskRunId: taskRun.originTaskRunId,
+            });
+
+            if (!hasUnfinishedBlockedTaskRuns) {
+              blockingTaskRunIdsToStart.push(blockingTaskRunId);
+            }
           }
         }
 
@@ -1428,35 +1516,12 @@ export class TaskManager extends WorkspaceRestorable {
           );
         }
       } else {
-        // Close interaction
-        const originateInteraction = this.getTaskRun(
-          taskRun.originTaskRunId,
-          TASK_MANAGER_USER,
-        );
-        if (!originateInteraction) {
-          throw new Error(
-            `Originate interaction task run \`${taskRun.originTaskRunId}\` is missing`,
-          );
-        }
-        if (originateInteraction.taskRunKind != "interaction") {
-          throw new Error(
-            `Originate task run \`${taskRun.originTaskRunId}\` is not an interaction`,
-          );
-        }
-
-        this._updateTaskRun(
-          originateInteraction.taskRunId,
-          originateInteraction,
-          {
-            interactionStatus: "COMPLETED",
-            response: taskRunOutput(taskRun, false),
-          },
-        );
+        closeInteraction(taskRun.originTaskRunId, finalStatus);
       }
     }
 
     this._updateTaskRun(taskRunId, taskRun, {
-      status: isCompleted ? "COMPLETED" : "STOPPED",
+      status: finalStatus,
       nextRunAt: undefined,
     });
 
@@ -2104,7 +2169,7 @@ export class TaskManager extends WorkspaceRestorable {
               (taskRun.config.maxRepeats &&
                 taskRun.completedRuns >= taskRun.config.maxRepeats)
             ) {
-              taskManager.stopTaskRun(taskRunId, agentId, true);
+              taskManager.stopTaskRun(taskRunId, agentId, "COMPLETED");
               taskManager.logger.info(
                 {
                   taskRunId,
@@ -2178,15 +2243,20 @@ export class TaskManager extends WorkspaceRestorable {
               { taskRunId },
               "Releasing task occupancy before removal",
             );
-            taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
-            if (taskRun.config.maxRetries) {
-              if (retryAttempt >= taskRun.config.maxRetries) {
-                taskManager.stopTaskRun(taskRunId, taskRun.config.ownerAgentId);
-              } else {
-                taskManager._updateTaskRun(taskRunId, taskRun, {
-                  currentRetryAttempt: retryAttempt + 1,
-                });
-              }
+
+            if (retryAttempt >= (taskRun.config.maxRetries || 2)) {
+              taskManager.stopTaskRun(taskRunId, agentId, "FAILED");
+            } else {
+              taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
+              taskManager._updateTaskRun(taskRunId, taskRun, {
+                currentRetryAttempt: retryAttempt + 1,
+                status: "FAILED",
+              });
+              taskManager.scheduleStartTaskRun(
+                taskRunId,
+                taskRun.config.ownerAgentId,
+                false,
+              );
             }
           },
         }),

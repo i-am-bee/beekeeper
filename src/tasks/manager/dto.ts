@@ -303,6 +303,7 @@ export type TaskRunKindEnum = z.infer<typeof TaskRunKindEnumSchema>;
 export const InteractionTaskRunStatusEnumSchema = z.enum([
   "PENDING",
   "COMPLETED",
+  "FAILED",
 ]);
 export type InteractionTaskRunStatusEnum = z.infer<
   typeof InteractionTaskRunStatusEnumSchema
@@ -390,6 +391,17 @@ type ErrorStatus = (typeof ERROR_STATUSES)[number];
 export const isTaskRunErrorStatus = (
   status: TaskRunStatusEnum,
 ): status is ErrorStatus => ERROR_STATUSES.includes(status as ErrorStatus);
+
+const FINAL_STATUSES = [
+  TaskRunStatusEnumSchema.enum.COMPLETED,
+  TaskRunStatusEnumSchema.enum.FAILED,
+  TaskRunStatusEnumSchema.enum.STOPPED,
+] as const;
+export type FinalStatus = (typeof FINAL_STATUSES)[number];
+
+export const isTaskRunFinalStatus = (
+  status: TaskRunStatusEnum,
+): status is ErrorStatus => FINAL_STATUSES.includes(status as FinalStatus);
 
 export const ActingAgentIdValueSchema = AgentIdValueSchema.describe(
   "ID of the agent performing this operation.",

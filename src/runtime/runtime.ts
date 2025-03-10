@@ -2,7 +2,11 @@ import { AgentWithInstance } from "@/agents/registry/dto.js";
 import { AgentRegistry } from "@/agents/registry/registry.js";
 import { PROCESS_AND_PLAN_TASK_NAME } from "@/agents/supervisor.js";
 import { RuntimeOutput } from "@/runtime/dto.js";
-import { isTaskRunTerminationStatus, TaskRun } from "@/tasks/manager/dto.js";
+import {
+  isTaskRunActiveStatus,
+  TaskRun,
+  TaskRunIdValue,
+} from "@/tasks/manager/dto.js";
 import {
   taskRunError,
   taskRunInteractionResponse,
@@ -159,7 +163,7 @@ export class Runtime {
     this.taskManager.on("task_run:complete", onTaskRunComplete);
 
     try {
-      let taskRunId;
+      let taskRunId: TaskRunIdValue | null = null;
       while (true) {
         this.logger.debug(`waiting...`);
 
@@ -189,12 +193,17 @@ export class Runtime {
           this.supervisor.agentId,
           this.supervisor.agentId,
         );
-        const unfinished = runningTaskRuns.filter(
-          (tr) => !isTaskRunTerminationStatus(tr.status),
+        const taskRun = runningTaskRuns.find((t) => t.taskRunId === taskRunId);
+        if (!taskRun) {
+          throw new Error(`Can't find taskRunId:${taskRunId}`);
+        }
+
+        const active = runningTaskRuns.filter((tr) =>
+          isTaskRunActiveStatus(tr.status),
         );
-        if (!unfinished.length) {
+        if (!active.length) {
           this.logger.debug(
-            `There are ${unfinished.length} unfinished task. Closing loop.`,
+            `There are ${active.length} unfinished task. Closing loop.`,
           );
           const taskRun = this.taskManager.getTaskRun(taskRunId, RUNTIME_USER);
           if (taskRun.status === "ABORTED") {
@@ -213,7 +222,7 @@ export class Runtime {
           return response;
         } else {
           this.logger.debug(
-            `There are ${unfinished.length} unfinished tasks. Keeping loop...`,
+            `There are ${active.length} active tasks. Keeping loop...`,
           );
         }
 

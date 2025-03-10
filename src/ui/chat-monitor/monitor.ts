@@ -463,4 +463,5 @@ export class ChatMonitor extends BaseMonitor {
   }
 }
 
-// Can you generate poems on each of these topics: sun, love, hate, structure and fight. And base on these poems write a song?
+// Can you generate poems on each of these topics: einstein, tiktok, telescope, oreo and cat. And base on these poems write a hip-hop song?
+// Can you create poem about apple and based on it write a song? Don't start any task run
