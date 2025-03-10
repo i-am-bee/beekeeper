@@ -12,7 +12,7 @@ export function validatePath(parentDir: string, targetPath: string): string {
 
   if (relativePath.startsWith("..") || targetPath.startsWith("/")) {
     throw new Error(
-      `Path traversal attempt detected for path: "${targetPath}"`
+      `Path traversal attempt detected for path: "${targetPath}"`,
     );
   }
 
@@ -23,7 +23,7 @@ export function validatePath(parentDir: string, targetPath: string): string {
 export function ensureDirectoryExistsSafe(
   baseDirPath: string,
   dirPath: string,
-  logger?: Logger
+  logger?: Logger,
 ) {
   const validDirPath = validatePath(baseDirPath, dirPath);
 

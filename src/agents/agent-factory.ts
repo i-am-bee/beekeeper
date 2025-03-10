@@ -11,7 +11,7 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
   createAgent<TCreateInput extends CreateAgentInput = CreateAgentInput>(
     input: TCreateInput,
     toolsFactory: BaseToolsFactory,
-    switches?: Switches
+    switches?: Switches,
   ) {
     const llm = getChatLLM(input.agentKind);
     const generalInstructions = `You are a ${input.agentKind} kind of agent (agentId=${input.agentId}, agentType=${input.agentType}). ${input.instructions}`;
@@ -71,7 +71,7 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
     agent: BeeAgent,
     prompt: string,
     onUpdate: (key: string, value: string) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<string> {
     const resp = await agent.run({ prompt }, { signal }).observe((emitter) => {
       emitter.on("update", async ({ update }) => {

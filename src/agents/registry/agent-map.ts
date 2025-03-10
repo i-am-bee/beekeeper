@@ -33,12 +33,12 @@ export class AgentMap<TValue> {
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
     value: TValue,
-    throwError?: boolean
+    throwError?: boolean,
   ) {
     const kindMap = this.getKindMap(agentKind, throwError);
     if (kindMap.has(agentType)) {
       throw new Error(
-        `There already exists agentKind:${agentKind} agentType:${agentType}`
+        `There already exists agentKind:${agentKind} agentType:${agentType}`,
       );
     }
     kindMap.set(agentType, value);
@@ -60,7 +60,7 @@ export class AgentMap<TValue> {
   getTypeValue(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    throwError?: boolean
+    throwError?: boolean,
   ) {
     const kindMap = this.getKindMap(agentKind, throwError);
     const typeMap = kindMap.get(agentType);
@@ -73,7 +73,7 @@ export class AgentMap<TValue> {
         kindMap.set(agentType, this.options.getDefaultValue());
       } else {
         throw new Error(
-          `There is missing type map for agentKind:${agentKind} agentType:${agentType}`
+          `There is missing type map for agentKind:${agentKind} agentType:${agentType}`,
         );
       }
     }
@@ -87,7 +87,7 @@ export class AgentVersionMap<TValue> extends AgentMap<
   getTypeValue(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    throwError?: boolean
+    throwError?: boolean,
   ) {
     const kindMap = this.getKindMap(agentKind);
     let typeMap = kindMap.get(agentType);
@@ -97,7 +97,7 @@ export class AgentVersionMap<TValue> extends AgentMap<
         kindMap.set(agentType, typeMap);
       } else {
         throw new Error(
-          `There is missing type map for agentKind:${agentKind} agentType:${agentType}`
+          `There is missing type map for agentKind:${agentKind} agentType:${agentType}`,
         );
       }
     }
@@ -109,11 +109,11 @@ export class AgentVersionMap<TValue> extends AgentMap<
     agentType: AgentTypeValue,
     agentConfigVersion: AgentConfigVersionValue,
     value: TValue,
-    throwError?: boolean
+    throwError?: boolean,
   ) {
     const typeValue = this.getTypeValue(agentKind, agentType, throwError);
     const versionValue = typeValue.find(
-      ([version]) => version === agentConfigVersion
+      ([version]) => version === agentConfigVersion,
     );
     if (versionValue) {
       // Replace
@@ -128,15 +128,15 @@ export class AgentVersionMap<TValue> extends AgentMap<
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
     agentConfigVersion: AgentConfigVersionValue,
-    throwError?: boolean
+    throwError?: boolean,
   ) {
     const typeValue = this.getTypeValue(agentKind, agentType, throwError);
     const versionIndex = typeValue.findIndex(
-      ([version]) => version === agentConfigVersion
+      ([version]) => version === agentConfigVersion,
     );
     if (versionIndex < 0) {
       throw new Error(
-        `There missing agentKind:${agentKind} agentType:${agentType} agentConfigVersion:${agentConfigVersion} for delete`
+        `There missing agentKind:${agentKind} agentType:${agentType} agentConfigVersion:${agentConfigVersion} for delete`,
       );
     }
 
@@ -154,7 +154,7 @@ export class AgentVersionMap<TValue> extends AgentMap<
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
     agentConfigVersion: AgentConfigVersionValue,
-    throwError?: boolean
+    throwError?: boolean,
   ) {
     const typeMap = this.getTypeValue(agentKind, agentType);
     let version = typeMap.find(([version]) => version === agentConfigVersion);
@@ -169,7 +169,7 @@ export class AgentVersionMap<TValue> extends AgentMap<
         typeMap.push(version);
       } else {
         throw new Error(
-          `There missing agentKind:${agentKind} agentType:${agentType} agentConfigVersion:${agentConfigVersion}`
+          `There missing agentKind:${agentKind} agentType:${agentType} agentConfigVersion:${agentConfigVersion}`,
         );
       }
     }

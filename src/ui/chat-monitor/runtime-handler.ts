@@ -21,7 +21,7 @@ export class ChatRuntimeHandler {
   private onMessageCallback: (
     role: string,
     content: string,
-    type: MessageTypeEnum
+    type: MessageTypeEnum,
   ) => void;
   // Callback for status updates
   private onStatusCallback: (status: string) => void;
@@ -44,7 +44,7 @@ export class ChatRuntimeHandler {
       onStatus: (status: string) => void;
       onStateChange: (isProcessing: boolean) => void;
     },
-    abortController?: AbortController
+    abortController?: AbortController,
   ) {
     this.runtime = runtime;
     this.abortController = abortController ?? new AbortController();
@@ -67,7 +67,7 @@ export class ChatRuntimeHandler {
 
       // Define output method to handle runtime responses
       const outputMethod: RuntimeOutputMethod = async (
-        output: RuntimeOutput
+        output: RuntimeOutput,
       ) => {
         const prefix = output.agent
           ? st.agentId(output.agent)

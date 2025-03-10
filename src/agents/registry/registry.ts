@@ -42,7 +42,7 @@ export interface AgentLifecycleCallbacks<TAgentInstance> {
   onCreate: (
     config: AgentConfig,
     agentId: AgentIdValue,
-    toolsFactory: BaseToolsFactory
+    toolsFactory: BaseToolsFactory,
   ) => Promise<{ agentId: AgentIdValue; instance: TAgentInstance }>;
 
   /**
@@ -92,13 +92,13 @@ export interface AgentRegistryConfig<TAgentInstance> {
   switches?: AgentRegistrySwitches;
   onAgentConfigCreated: (
     agentKind: AgentKindEnum,
-    agentType: AgentTypeValue
+    agentType: AgentTypeValue,
   ) => void;
   onAgentAvailable: (
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
     agentConfigVersion: AgentConfigVersionValue,
-    availableCount: number
+    availableCount: number,
   ) => void;
   agentLifecycle: AgentLifecycleCallbacks<TAgentInstance>;
   logger: Logger;
@@ -124,13 +124,13 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private lifecycleCallbacks: AgentLifecycleCallbacks<TAgentInstance>;
   private onAgentConfigCreated: (
     agentKind: AgentKindEnum,
-    agentType: AgentTypeValue
+    agentType: AgentTypeValue,
   ) => void;
   private onAgentAvailable: (
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
     agentConfigVersion: AgentConfigVersionValue,
-    availableCount: number
+    availableCount: number,
   ) => void;
   /** Maps of tools factories for use by agents per agent kinds */
   private toolsFactory = new Map<AgentKindEnum, BaseToolsFactory>();
@@ -200,11 +200,11 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
           const agentConfig = versions.at(-1)?.[1];
           if (!agentConfig) {
             throw new Error(
-              `Agent config ${agentSomeIdToTypeValue({ agentKind, agentType })} has no version to serialize`
+              `Agent config ${agentSomeIdToTypeValue({ agentKind, agentType })} has no version to serialize`,
             );
           }
           return JSON.stringify(agentConfig);
-        })
+        }),
       )
       .flat()
       .join("\n");
@@ -232,10 +232,10 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         {
           agentKind,
         },
-        `There is missing tools factory for the '${agentKind}' agent kind.`
+        `There is missing tools factory for the '${agentKind}' agent kind.`,
       );
       throw new Error(
-        `There is missing tools factory for the '${agentKind}' agent kind`
+        `There is missing tools factory for the '${agentKind}' agent kind`,
       );
     }
 
@@ -259,7 +259,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         agentType,
         maxPoolSize,
       },
-      "Create new agent config"
+      "Create new agent config",
     );
 
     this.validateConfigMutability();
@@ -275,7 +275,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       const availableTools = toolsFactory.getAvailableTools();
       if (config.tools.filter((it) => !!it.length).length) {
         const undefinedTools = config.tools.filter(
-          (tool) => !availableTools.some((at) => at.toolName === tool)
+          (tool) => !availableTools.some((at) => at.toolName === tool),
         );
         if (undefinedTools.length) {
           this.logger.error(
@@ -283,10 +283,10 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
               availableTools: availableTools.map((at) => at.toolName),
               undefinedTools,
             },
-            `Tool wasn't found between available tools `
+            `Tool wasn't found between available tools `,
           );
           throw new Error(
-            `Tools [${undefinedTools.join(",")}] weren't found between available tools [${availableTools.map((at) => at.toolName).join(",")}]`
+            `Tools [${undefinedTools.join(",")}] weren't found between available tools [${availableTools.map((at) => at.toolName).join(",")}]`,
           );
         }
       } else {
@@ -304,7 +304,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       agentKind,
       agentType,
       agentConfigVersion,
-      configVersioned
+      configVersioned,
     );
     this.stateLogger.logAgentConfigCreate({
       agentConfigId,
@@ -333,13 +333,13 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
           | "maxPoolSize"
           | "autoPopulatePool"
         >
-      >
+      >,
   ) {
     this.logger.debug(
       {
         update,
       },
-      "Update agent config"
+      "Update agent config",
     );
     this.validateConfigMutability();
 
@@ -351,7 +351,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       const toolsFactory = this.getToolsFactory(config.agentKind);
       const availableTools = toolsFactory.getAvailableTools();
       const undefinedTools = update.tools.filter(
-        (tool) => !availableTools.some((at) => at.toolName === tool)
+        (tool) => !availableTools.some((at) => at.toolName === tool),
       );
       if (undefinedTools.length) {
         this.logger.error(
@@ -359,10 +359,10 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
             availableTools: availableTools.map((at) => at.toolName),
             undefinedTools,
           },
-          `Tool wasn't found between available tools `
+          `Tool wasn't found between available tools `,
         );
         throw new Error(
-          `Tools [${undefinedTools.join(",")}] weren't found between available tools [${availableTools.map((at) => at.toolName).join(",")}]`
+          `Tools [${undefinedTools.join(",")}] weren't found between available tools [${availableTools.map((at) => at.toolName).join(",")}]`,
         );
       }
     }
@@ -383,7 +383,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       agentKind,
       agentType,
       agentConfigVersion,
-      newConfigVersion
+      newConfigVersion,
     );
 
     this.initializeAgentPool(agentKind, agentType, agentConfigVersion);
@@ -410,7 +410,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private initializeAgentPool(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion: AgentConfigVersionValue
+    agentConfigVersion: AgentConfigVersionValue,
   ) {
     this.logger.debug(
       {
@@ -418,12 +418,12 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         agentType,
         agentConfigVersion,
       },
-      "Initializing agent pool"
+      "Initializing agent pool",
     );
     this.populatePool(agentKind, agentType, agentConfigVersion).catch(
       (error) => {
         this.logger.error("Failed to populate pool", { agentType, error });
-      }
+      },
     );
   }
 
@@ -437,22 +437,22 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private async populatePool(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion: number
+    agentConfigVersion: number,
   ): Promise<void> {
     this.logger.debug(
       { agentKind, agentType, version: agentConfigVersion },
-      "Populating agent pool"
+      "Populating agent pool",
     );
     const config = this.agentConfigs.getVersionValue(
       agentKind,
       agentType,
-      agentConfigVersion
+      agentConfigVersion,
     );
 
     if (config.maxPoolSize <= 0) {
       this.logger.trace(
         { agentType },
-        "Pool population skipped - no pool or size 0"
+        "Pool population skipped - no pool or size 0",
       );
       return;
     }
@@ -460,7 +460,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
     const pool = this.agentPools.getVersionValue(
       agentKind,
       agentType,
-      agentConfigVersion
+      agentConfigVersion,
     );
     if (config.autoPopulatePool) {
       // Pre-populate pool
@@ -474,7 +474,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
           currentPoolSize,
           targetSize: config.maxPoolSize,
         },
-        "Creating agents for pool"
+        "Creating agents for pool",
       );
 
       for (let i = 0; i < needed; i++) {
@@ -498,7 +498,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
                 agentKind,
                 agentType,
                 agentConfigVersion: version,
-              })
+              }),
             );
           }
         });
@@ -537,7 +537,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       const agentTypeVersionPoolSet = this.agentPools.getVersionValue(
         agentConfigId.agentKind,
         agentConfigId.agentType,
-        agentConfigId.agentConfigVersion
+        agentConfigId.agentConfigVersion,
       );
 
       let destroyed = 0;
@@ -550,12 +550,12 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
           } catch (err) {
             this.logger.error(
               err,
-              `Cleanup error for agent '${agent.agentId}'`
+              `Cleanup error for agent '${agent.agentId}'`,
             );
           }
         } else {
           this.logger.warn(
-            `Can't cleanup agent '${agent.agentId}' he is in use`
+            `Can't cleanup agent '${agent.agentId}' he is in use`,
           );
         }
       }
@@ -566,7 +566,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         this.destroyAgentConfig(
           agentConfigId.agentKind,
           agentConfigId.agentType,
-          agentConfigId.agentConfigVersion
+          agentConfigId.agentConfigVersion,
         );
         this.poolsToCleanup.splice(index, 1);
       }
@@ -598,7 +598,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       .map(([, typeMap]) =>
         Array.from(typeMap.entries())
           .map(([, versions]) => versions.at(-1)?.[1])
-          .filter(isNonNullish)
+          .filter(isNonNullish),
       )
       .flat();
   }
@@ -606,7 +606,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   isAgentConfigExists(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion?: number
+    agentConfigVersion?: number,
   ) {
     let exists = false;
     try {
@@ -622,7 +622,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   getAgentConfig(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion?: number
+    agentConfigVersion?: number,
   ): AgentConfig {
     this.logger.trace(
       {
@@ -630,14 +630,14 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         agentType,
         agentConfigVersion,
       },
-      "Getting agent type configuration"
+      "Getting agent type configuration",
     );
 
     if (agentConfigVersion != null) {
       return this.agentConfigs.getVersionValue(
         agentKind,
         agentType,
-        agentConfigVersion
+        agentConfigVersion,
       );
     }
 
@@ -646,7 +646,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       ?.at(-1);
     if (lastConfigVersion == null) {
       throw new Error(
-        `Agent kind '${agentKind}' type '${agentType}' last version was not found`
+        `Agent kind '${agentKind}' type '${agentType}' last version was not found`,
       );
     }
     return lastConfigVersion[1];
@@ -655,7 +655,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private destroyAgentConfig(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion: number
+    agentConfigVersion: number,
   ): AgentConfig {
     this.logger.debug(
       {
@@ -663,7 +663,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         agentType,
         version: agentConfigVersion,
       },
-      "Destroying agent configuration"
+      "Destroying agent configuration",
     );
 
     this.validateConfigMutability();
@@ -671,16 +671,16 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       agentKind,
       agentType,
       agentConfigVersion,
-      true
+      true,
     );
     const stats = this.getPoolStatsByVersion(
       agentKind,
       agentType,
-      agentConfigVersion
+      agentConfigVersion,
     );
     if (stats.active) {
       throw new Error(
-        `Agent config kind '${agentKind}' type '${agentType}' version '${agentConfigVersion}' can't be destroyed while it is still in use.`
+        `Agent config kind '${agentKind}' type '${agentType}' version '${agentConfigVersion}' can't be destroyed while it is still in use.`,
       );
     }
     this.removePoolStatsByVersion(agentKind, agentType, agentConfigVersion);
@@ -688,7 +688,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
     const destroyedConfig = this.agentConfigs.deleteVersion(
       agentKind,
       agentType,
-      agentConfigVersion
+      agentConfigVersion,
     );
     const { agentConfigId } = destroyedConfig;
     this.logger.info({ agentConfigId }, "Agent config destroyed successfully");
@@ -723,23 +723,23 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   async acquireAgent(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    version?: number
+    version?: number,
   ): Promise<AgentWithInstance<TAgentInstance>> {
     this.logger.debug(
       { agentKind, agentType, version },
-      "Attempting to acquire agent"
+      "Attempting to acquire agent",
     );
     const config = this.getAgentConfig(agentKind, agentType, version);
     const pool = this.agentPools.getVersionValue(
       agentKind,
       agentType,
-      config.agentConfigVersion
+      config.agentConfigVersion,
     );
 
     if (!pool || config.maxPoolSize === 0) {
       this.logger.debug({ agentType }, "No pool available, creating new agent");
       return this._acquireAgent(
-        await this.createAgent(agentKind, agentType, config.agentConfigVersion)
+        await this.createAgent(agentKind, agentType, config.agentConfigVersion),
       );
     }
 
@@ -762,10 +762,10 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
           currentSize: pool.size,
           maxSize: config.maxPoolSize,
         },
-        "Pool not at capacity, creating new agent"
+        "Pool not at capacity, creating new agent",
       );
       return this._acquireAgent(
-        await this.createAgent(agentKind, agentType, config.agentConfigVersion)
+        await this.createAgent(agentKind, agentType, config.agentConfigVersion),
       );
     }
 
@@ -776,7 +776,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
       poolSize: config.maxPoolSize,
     });
     throw new Error(
-      `No available agents of kind '${agentKind}' type '${agentType}' version '${config.agentConfigVersion}' in pool and pool is at capacity`
+      `No available agents of kind '${agentKind}' type '${agentType}' version '${config.agentConfigVersion}' in pool and pool is at capacity`,
     );
   }
 
@@ -794,7 +794,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
 
     const [poolStats, versions] = this.getPoolStats(
       agent.agentKind,
-      agent.agentType
+      agent.agentType,
     );
     this.stateLogger.logPoolChange({
       agentTypeId: agentSomeIdToTypeValue(agent),
@@ -823,7 +823,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
     const pool = this.agentPools.getVersionValue(
       agentKind,
       agentType,
-      agentConfigVersion
+      agentConfigVersion,
     );
 
     if (!pool || maxPoolSize === 0) {
@@ -842,7 +842,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
     pool.add(agentId);
     this.logger.debug(
       { agentId, agentType: agent.agentType },
-      "Agent released back to pool"
+      "Agent released back to pool",
     );
     this.stateLogger.logAgentRelease({
       agentId: agent.agentId,
@@ -850,7 +850,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
 
     const [poolStats, versions] = this.getPoolStats(
       agent.agentKind,
-      agent.agentType
+      agent.agentType,
     );
     this.stateLogger.logPoolChange({
       agentTypeId: agentSomeIdToTypeValue(agent),
@@ -864,24 +864,24 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private incrementAgentCreatedCount(
     agentKind: AgentKindEnum,
     agentType: string,
-    agentConfigVersion: AgentConfigVersionValue
+    agentConfigVersion: AgentConfigVersionValue,
   ) {
     this.logger.trace(
       { agentKind, agentType, agentConfigVersion },
-      "Increment agent created count"
+      "Increment agent created count",
     );
 
     const newValue =
       this.agentCreatedCounts.getVersionValue(
         agentKind,
         agentType,
-        agentConfigVersion
+        agentConfigVersion,
       ) + 1;
     this.agentCreatedCounts.setVersionValue(
       agentKind,
       agentType,
       agentConfigVersion,
-      newValue
+      newValue,
     );
 
     return newValue;
@@ -890,20 +890,20 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private async createAgent(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion: number
+    agentConfigVersion: number,
   ): Promise<AgentWithInstance<TAgentInstance>> {
     this.logger.debug({ agentKind, agentType }, "Creating new agent");
     const config = this.getAgentConfig(
       agentKind,
       agentType,
-      agentConfigVersion
+      agentConfigVersion,
     );
 
     const toolsFactory = this.getToolsFactory(agentKind);
     const agentNum = this.incrementAgentCreatedCount(
       agentKind,
       agentType,
-      agentConfigVersion
+      agentConfigVersion,
     );
     const agentId = agentIdToString({
       agentKind,
@@ -914,7 +914,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
     const { instance } = await this.lifecycleCallbacks.onCreate(
       config,
       agentId,
-      toolsFactory
+      toolsFactory,
     );
 
     const agent = {
@@ -936,7 +936,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
 
     this.logger.info(
       { agentId, agentType, agentKind },
-      "Agent created successfully"
+      "Agent created successfully",
     );
 
     this.stateLogger.logAgentCreate({
@@ -975,7 +975,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         agentType,
         agentConfigVersion,
       },
-      "Agent destroyed successfully"
+      "Agent destroyed successfully",
     );
 
     this.stateLogger.logAgentDestroy({
@@ -997,7 +997,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   getActiveAgents(
     agentKind?: AgentKindEnum,
     agentType?: AgentTypeValue,
-    agentConfigVersion?: number
+    agentConfigVersion?: number,
   ): Agent[] {
     this.logger.trace("Getting active agents");
     return Array.from(this.agents.values()).filter((a) => {
@@ -1029,7 +1029,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
 
   getPoolStats(
     agentKind: AgentKindEnum,
-    agentType: AgentTypeValue
+    agentType: AgentTypeValue,
   ): [AgentConfigPoolStats, [number, AgentConfigPoolStats][]] {
     this.logger.trace({ agentKind, agentType }, "Getting pool statistics");
     const pool = this.agentPools.getTypeValue(agentKind, agentType);
@@ -1039,7 +1039,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
 
     const versionedAgents = pool.map(
       ([version, set]) =>
-        [version, Array.from(set).map(this.getAgent.bind(this))] as const
+        [version, Array.from(set).map(this.getAgent.bind(this))] as const,
     );
     const versions = versionedAgents.map(([version, agents]) => {
       const available = agents.filter((agent) => !agent.inUse).length;
@@ -1068,7 +1068,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
         available: 0,
         active: 0,
         created: 0,
-      } satisfies AgentConfigPoolStats
+      } satisfies AgentConfigPoolStats,
     );
 
     this.logger.debug({ agentType, ...stats }, "Pool statistics");
@@ -1078,12 +1078,12 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private getPoolStatsByVersion(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion: number
+    agentConfigVersion: number,
   ) {
     // FIXME Unoptimized
     const [, versions] = this.getPoolStats(agentKind, agentType);
     const found = versions.find(
-      ([currVersion]) => currVersion === agentConfigVersion
+      ([currVersion]) => currVersion === agentConfigVersion,
     );
     if (!found) {
       return { poolSize: 0, available: 0, active: 0, created: 0 };
@@ -1095,7 +1095,7 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   private removePoolStatsByVersion(
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
-    agentConfigVersion: number
+    agentConfigVersion: number,
   ) {
     this.agentPools.deleteVersion(agentKind, agentType, agentConfigVersion);
   }

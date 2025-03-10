@@ -29,7 +29,7 @@ export class AbortScope {
         this.parentSignalHandler,
         {
           once: true,
-        }
+        },
       );
     }
 
@@ -70,7 +70,7 @@ export class AbortScope {
         callback(...callbackArgs);
       },
       ms,
-      ...args
+      ...args,
     );
 
     this.timeouts.add(id);
@@ -152,7 +152,7 @@ export class AbortScope {
     options?: {
       operationName?: string;
       logger: Logger;
-    }
+    },
   ): Promise<T> {
     const logger = options?.logger;
     const opName = options?.operationName || "operation";

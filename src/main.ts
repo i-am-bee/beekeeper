@@ -30,13 +30,13 @@ const logger = useChatMonitor
         createWriteStream(
           path.join(
             ensureDirectoryExistsSafe(".", path.join(OUTPUT_DIR, "logs")),
-            "app.log"
+            "app.log",
           ),
           {
             flags: "w",
-          }
-        )
-      )
+          },
+        ),
+      ),
     )
   : Logger.root.child({ name: "app" });
 
@@ -49,7 +49,7 @@ interface CLIArguments {
 
 async function shutdown(signal?: string) {
   logger.info(
-    `\nReceived ${signal || "shutdown"} signal. Starting graceful shutdown...`
+    `\nReceived ${signal || "shutdown"} signal. Starting graceful shutdown...`,
   );
 
   // Set a timeout to force exit if graceful shutdown takes too long
@@ -97,7 +97,7 @@ async function main() {
     const chatMonitor = new ChatMonitor(
       { title: "Runtime Chat Interface" },
       runtime,
-      abortController
+      abortController,
     );
     await chatMonitor.start();
   } else {
