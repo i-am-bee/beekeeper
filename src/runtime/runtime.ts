@@ -99,14 +99,14 @@ export class Runtime {
 
     this.logger.info(
       { input, start, timeout, timeoutMs: this.timeoutMs },
-      "Starting processing finish task run"
+      "Starting processing finish task run",
     );
 
     const getAgent = (taskRun: TaskRun) => {
       const agentId = taskRun.currentAgentId;
       if (!agentId) {
         throw new Error(
-          `Missing current agent id on taskRun:${taskRun.taskRunId}`
+          `Missing current agent id on taskRun:${taskRun.taskRunId}`,
         );
       }
       return this.agentRegistry.getAgent(agentId);
@@ -125,7 +125,7 @@ export class Runtime {
     const onTaskRunTrajectoryUpdate = (taskRun: TaskRun) => {
       this.logger.debug(
         { taskRunId: taskRun.taskRunId },
-        "Task run trajectory updated"
+        "Task run trajectory updated",
       );
       outputMethod({
         kind: "progress",
@@ -135,7 +135,7 @@ export class Runtime {
     };
     this.taskManager.on(
       "task_run:trajectory_update",
-      onTaskRunTrajectoryUpdate
+      onTaskRunTrajectoryUpdate,
     );
 
     const onTaskRunError = (taskRun: TaskRun) => {
@@ -173,7 +173,7 @@ export class Runtime {
             PROCESS_AND_PLAN_TASK_NAME,
             "interaction",
             input,
-            this.supervisor.agentId
+            this.supervisor.agentId,
           );
           taskRunId = taskRun.taskRunId;
         }
@@ -182,28 +182,28 @@ export class Runtime {
         if (restMs <= 0) {
           this.logger.error(
             { taskRunId },
-            "Timeout waiting for finish supervisor run"
+            "Timeout waiting for finish supervisor run",
           );
           throw new Error(
-            `Timeout waiting for finish supervisor run ${taskRunId}`
+            `Timeout waiting for finish supervisor run ${taskRunId}`,
           );
         }
 
         const runningTaskRuns = this.taskManager.findTaskRunsOwnedBy(
           this.supervisor.agentId,
-          this.supervisor.agentId
+          this.supervisor.agentId,
         );
         const taskRun = runningTaskRuns.find((t) => t.taskRunId === taskRunId);
         if (!taskRun) {
           throw new Error(`Can't find taskRunId:${taskRunId}`);
         }
 
-        const active = runningTaskRuns.filter(
-          (tr) => isTaskRunActiveStatus(tr.status)
+        const active = runningTaskRuns.filter((tr) =>
+          isTaskRunActiveStatus(tr.status),
         );
         if (!active.length) {
           this.logger.debug(
-            `There are ${active.length} unfinished task. Closing loop.`
+            `There are ${active.length} unfinished task. Closing loop.`,
           );
           const taskRun = this.taskManager.getTaskRun(taskRunId, RUNTIME_USER);
           if (taskRun.status === "ABORTED") {
@@ -222,7 +222,7 @@ export class Runtime {
           return response;
         } else {
           this.logger.debug(
-            `There are ${active.length} active tasks. Keeping loop...`
+            `There are ${active.length} active tasks. Keeping loop...`,
           );
         }
 
@@ -239,7 +239,7 @@ export class Runtime {
       this.taskManager.off("task_run:complete", onTaskRunComplete);
       this.taskManager.off(
         "task_run:trajectory_update",
-        onTaskRunTrajectoryUpdate
+        onTaskRunTrajectoryUpdate,
       );
     }
   }
