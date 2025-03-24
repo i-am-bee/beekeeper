@@ -15,7 +15,7 @@ import {
 import { TaskManager } from "@/tasks/manager/manager.js";
 import { AbortError, AbortScope } from "@/utils/abort-scope.js";
 import { Logger } from "beeai-framework";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 
 export const RUNTIME_USER = "runtime_user";
 export type RuntimeOutputMethod = (output: RuntimeOutput) => Promise<void>;
@@ -25,7 +25,7 @@ export interface RuntimeConfig {
   timeoutMs: number;
   agentRegistry: AgentRegistry<unknown>;
   taskManager: TaskManager;
-  supervisor: AgentWithInstance<BeeAgent>;
+  supervisor: AgentWithInstance<ReActAgent>;
   logger: Logger;
 }
 
@@ -37,7 +37,7 @@ export class Runtime {
 
   private agentRegistry: AgentRegistry<unknown>;
   private taskManager: TaskManager;
-  private supervisor: AgentWithInstance<BeeAgent>;
+  private supervisor: AgentWithInstance<ReActAgent>;
   private _isRunning = false;
   private abortScope: AbortScope;
 
@@ -67,8 +67,10 @@ export class Runtime {
     this.taskManager.addAdmin(RUNTIME_USER);
   }
 
-  async run(input: string, output: RuntimeOutputMethod) {
+  async run(input: string, output: RuntimeOutputMethod, signal: AbortSignal) {
     this.logger.info("Try to start runtime process...");
+    this.abortScope.switchSignal(signal);
+
     if (this._isRunning) {
       throw new Error(`Runtime is already running`);
     }
@@ -76,7 +78,11 @@ export class Runtime {
     try {
       this._isRunning = true;
       this.logger.info("Starting runtime process...");
-      const response = await this.waitUntilTaskRunFinish(input, output);
+      const response = await this.waitUntilTaskRunFinish(
+        input,
+        output,
+        this.abortScope.signal,
+      );
       this.logger.info("Process completed successfully");
       return response;
     } catch (error) {
@@ -84,15 +90,15 @@ export class Runtime {
         this.logger.info("Runtime process aborted");
       } else {
         this.logger.error(error, "Error in runtime process:");
+        throw error;
       }
-      throw error;
     } finally {
       this._isRunning = false;
     }
   }
 
   private async waitUntilTaskRunFinish(...args: Parameters<typeof this.run>) {
-    const [input, outputMethod] = args;
+    const [input, outputMethod, signal] = args;
     const start = new Date();
     const timeout = new Date(start.getTime() + this.timeoutMs);
     const timeoutTime = timeout.getTime();
@@ -174,6 +180,9 @@ export class Runtime {
             "interaction",
             input,
             this.supervisor.agentId,
+            {
+              signal,
+            },
           );
           taskRunId = taskRun.taskRunId;
         }

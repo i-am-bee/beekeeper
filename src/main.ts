@@ -97,7 +97,6 @@ async function main() {
     const chatMonitor = new ChatMonitor(
       { title: "Runtime Chat Interface" },
       runtime,
-      abortController,
     );
     await chatMonitor.start();
   } else {
@@ -118,7 +117,7 @@ async function main() {
 
     for await (const { prompt } of reader) {
       try {
-        await runtime.run(prompt, output);
+        await runtime.run(prompt, output, abortController.signal);
       } catch (error) {
         reader.write(`Error`, FrameworkError.ensure(error).dump());
       }
@@ -131,12 +130,12 @@ process.on("SIGTERM", () => shutdown("SIGTERM")); // Docker stop, etc.
 
 // Handle uncaught errors
 process.on("uncaughtException", (error) => {
-  logger.error("Uncaught Exception:", error);
+  logger.error(error, "Uncaught Exception:");
   shutdown("UncaughtException");
 });
 
 // Run the application
 main().catch((error) => {
-  logger.error("Application error:", error);
+  logger.error(error, "Application error:");
   process.exit(1);
 });

@@ -40,23 +40,14 @@ export class ChatMonitor extends BaseMonitor {
     return this._isAborting;
   }
 
-  constructor(
-    arg: ParentInput | ScreenInput,
-    runtime: Runtime,
-    abortController?: AbortController,
-  ) {
+  constructor(arg: ParentInput | ScreenInput, runtime: Runtime) {
     super(arg);
-    this.runtimeHandler = new ChatRuntimeHandler(
-      runtime,
-      {
-        onMessage: (role, content, type) =>
-          this.addMessage(role, content, type),
-        onStatus: (status) =>
-          this.addMessage("System", status, MessageTypeEnum.SYSTEM),
-        onStateChange: (isProcessing) => this.setProcessingState(isProcessing),
-      },
-      abortController,
-    );
+    this.runtimeHandler = new ChatRuntimeHandler(runtime, {
+      onMessage: (role, content, type) => this.addMessage(role, content, type),
+      onStatus: (status) =>
+        this.addMessage("System", status, MessageTypeEnum.SYSTEM),
+      onStateChange: (isProcessing) => this.setProcessingState(isProcessing),
+    });
 
     // Main chat container
     this.chatBox = blessed.box({
@@ -227,7 +218,8 @@ export class ChatMonitor extends BaseMonitor {
   private onSendMessage() {
     const message = this.inputBox.getValue();
     if (message.trim()) {
-      this.sendMessage(message)
+      const abortController = new AbortController();
+      this.sendMessage(message, abortController.signal)
         .catch((err) => console.error(err))
         .finally(() => {
           this.setProcessingState(false);
@@ -237,12 +229,12 @@ export class ChatMonitor extends BaseMonitor {
     }
   }
 
-  private async sendMessage(message: string) {
+  private async sendMessage(message: string, signal: AbortSignal) {
     // Add user message to chat
     this.addMessage("You", message, MessageTypeEnum.INPUT);
 
     // Send message via runtime handler
-    await this.runtimeHandler.sendMessage(message);
+    await this.runtimeHandler.sendMessage(message, signal);
   }
 
   private addMessage(role: string, content: string, type: MessageTypeEnum) {

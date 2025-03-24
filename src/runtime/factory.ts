@@ -11,7 +11,7 @@ import { AgentStateLogger } from "@agents/state/logger.js";
 import { TaskManager, TaskManagerSwitches } from "@tasks/manager/manager.js";
 import { TaskStateLogger } from "@tasks/state/logger.js";
 import { WorkspaceManager } from "@workspaces/manager/manager.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { AgentFactory } from "../agents/agent-factory.js";
 import { BaseAgentFactory } from "../agents/base/agent-factory.js";
 import { operator, supervisor } from "../agents/index.js";
@@ -124,6 +124,12 @@ export async function createRuntime({
       },
     ) => {
       let agent;
+
+      const taskRunAbortScope = taskRun.abortScope;
+      if (!taskRunAbortScope) {
+        throw new Error(`Task Run Abort Scope is missing`);
+      }
+
       try {
         agent = await registry.acquireAgent(
           taskRun.config.agentKind,
@@ -152,7 +158,7 @@ export async function createRuntime({
               taskManager,
             );
           },
-          signal,
+          taskRunAbortScope.signal,
         )
         .then((resp) =>
           onAgentComplete(resp, taskRun.taskRunId, agent.agentId, taskManager),
@@ -257,7 +263,7 @@ export async function createRuntime({
     agentRegistry: registry,
     taskManager,
     pollingIntervalMs: 3000,
-    supervisor: agent as AgentWithInstance<BeeAgent>,
+    supervisor: agent as AgentWithInstance<ReActAgent>,
     timeoutMs: 15 * 60_000, // 15 min
     logger,
   });

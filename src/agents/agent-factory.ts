@@ -1,13 +1,13 @@
 import { BaseToolsFactory } from "@/base/tools-factory.js";
 import { getChatLLM } from "@/helpers/llm.js";
 import { Switches } from "@/runtime/factory.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { BaseAgentFactory, CreateAgentInput } from "./base/agent-factory.js";
 import { supervisor } from "./index.js";
 
-export class AgentFactory extends BaseAgentFactory<BeeAgent> {
+export class AgentFactory extends BaseAgentFactory<ReActAgent> {
   createAgent<TCreateInput extends CreateAgentInput = CreateAgentInput>(
     input: TCreateInput,
     toolsFactory: BaseToolsFactory,
@@ -19,7 +19,7 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
       case "supervisor": {
         const tools = toolsFactory.createTools(input.tools);
 
-        return new BeeAgent({
+        return new ReActAgent({
           meta: {
             name: input.agentId,
             description: input.description,
@@ -42,7 +42,7 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
         });
       }
       case "operator":
-        return new BeeAgent({
+        return new ReActAgent({
           meta: {
             name: input.agentId,
             description: input.description,
@@ -68,16 +68,19 @@ export class AgentFactory extends BaseAgentFactory<BeeAgent> {
   }
 
   async runAgent(
-    agent: BeeAgent,
+    agent: ReActAgent,
     prompt: string,
     onUpdate: (key: string, value: string) => void,
-    signal?: AbortSignal,
+    signal: AbortSignal,
   ): Promise<string> {
-    const resp = await agent.run({ prompt }, { signal }).observe((emitter) => {
-      emitter.on("update", async ({ update }) => {
-        onUpdate(update.key, update.value);
-      });
-    });
+    const resp = await agent
+      .run({ prompt }, { signal })
+      .observe((emitter) => {
+        emitter.on("update", async ({ update }) => {
+          onUpdate(update.key, update.value);
+        });
+      })
+      .context({ task_run_signal: signal });
 
     return resp.result.text;
   }

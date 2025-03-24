@@ -23,7 +23,7 @@ export class AbortScope {
     if (options?.parentSignal?.aborted) {
       this.aborted = true;
     } else if (options?.parentSignal) {
-      this.parentSignalHandler = () => this.abort();
+      this.parentSignalHandler = () => !this.aborted && this.abort();
       options?.parentSignal.addEventListener(
         "abort",
         this.parentSignalHandler,
@@ -36,7 +36,7 @@ export class AbortScope {
     this.onAbort = options?.onAbort;
   }
 
-  getSignal(): AbortSignal {
+  get signal(): AbortSignal {
     const controller = this.createChildController();
     return controller.signal;
   }
@@ -103,7 +103,7 @@ export class AbortScope {
     return controller;
   }
 
-  clean(): void {
+  clean(abortChildrenControllers = false): void {
     // Clear all intervals
     for (const id of this.intervals) {
       clearInterval(id);
@@ -118,7 +118,9 @@ export class AbortScope {
 
     // Abort all child controllers
     for (const controller of this.childControllers) {
-      controller.abort();
+      if (!controller.signal.aborted && abortChildrenControllers) {
+        controller.abort();
+      }
     }
     this.childControllers.clear();
   }
@@ -129,7 +131,7 @@ export class AbortScope {
     }
 
     this.aborted = true;
-    this.clean();
+    this.clean(true);
 
     if (!manualAbort) {
       this.onAbort?.();
@@ -206,6 +208,33 @@ export class AbortScope {
           once: true,
         });
       }
+    });
+  }
+
+  switchSignal(newSignal: AbortSignal): void {
+    // Clean up existing parent signal listener if any
+    if (this.parentSignal && this.parentSignalHandler) {
+      this.parentSignal.removeEventListener("abort", this.parentSignalHandler);
+      this.parentSignalHandler = undefined;
+      this.parentSignal = undefined;
+    }
+
+    // Reset the aborted state if it was previously aborted
+    if (this.aborted) {
+      this.reset();
+    }
+
+    // If the new signal is already aborted, abort this scope
+    if (newSignal.aborted) {
+      this.abort();
+      return;
+    }
+
+    // Set up the new parent signal
+    this.parentSignal = newSignal;
+    this.parentSignalHandler = () => this.abort();
+    this.parentSignal.addEventListener("abort", this.parentSignalHandler, {
+      once: true,
     });
   }
 

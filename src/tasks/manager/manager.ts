@@ -57,7 +57,7 @@ import { OperationResult } from "@/base/dto.js";
 
 export type TaskRunRuntime = TaskRun & {
   intervalId: NodeJS.Timeout | null;
-  abortScope: AbortScope | null;
+  abortScope: AbortScope;
 };
 
 const TASK_MANAGER_RESOURCE = "task_manager";
@@ -79,7 +79,7 @@ export interface TaskMangerOptions {
 }
 
 export type OnTaskStart = (
-  taskRun: TaskRun,
+  taskRun: TaskRunRuntime,
   taskManager: TaskManager,
   callbacks: {
     onAwaitingAgentAcquired: (
@@ -261,21 +261,6 @@ export class TaskManager extends WorkspaceRestorable {
     }
 
     try {
-      // Create a task-specific abort scope as a child of the main scope
-      const taskScope = new AbortScope({
-        parentSignal: this.abortScope.getSignal(),
-        onAbort: () => {
-          this.logger.info(
-            { taskRunId, actingAgentId },
-            "Aborting task interval",
-          );
-          this.abortTaskRun(taskRunId);
-        },
-      });
-
-      // Store the task scope for later reference if needed
-      taskRun.abortScope = taskScope;
-
       if (taskRun.config.runImmediately || !taskRun.config.intervalMs) {
         this.logger.debug({ taskRunId }, "Executing task immediately");
         await this.executeTask(taskRunId, actingAgentId);
@@ -295,7 +280,7 @@ export class TaskManager extends WorkspaceRestorable {
         );
 
         // Use the task scope to create the interval
-        taskRun.intervalId = taskScope.setInterval(async () => {
+        taskRun.intervalId = taskRun.abortScope.setInterval(async () => {
           try {
             await this.executeTask(taskRunId, actingAgentId);
           } catch (err) {
@@ -326,7 +311,6 @@ export class TaskManager extends WorkspaceRestorable {
 
         if (taskRun.abortScope) {
           taskRun.abortScope.dispose();
-          taskRun.abortScope = null;
         }
 
         // Update status to aborted
@@ -358,7 +342,6 @@ export class TaskManager extends WorkspaceRestorable {
         // Clean up on error
         if (taskRun.abortScope) {
           taskRun.abortScope.reset();
-          taskRun.abortScope = null;
         }
       }
 
@@ -404,6 +387,10 @@ export class TaskManager extends WorkspaceRestorable {
 
   get switches() {
     return clone(this._switches);
+  }
+
+  switchSignal(signal: AbortSignal) {
+    this.abortScope.switchSignal(signal);
   }
 
   restore(actingAgentId: AgentIdValue): void {
@@ -1074,6 +1061,7 @@ export class TaskManager extends WorkspaceRestorable {
     taskRunInput: string,
     actingAgentId: AgentIdValue,
     options?: {
+      signal?: AbortSignal;
       originTaskRunId?: TaskRunIdValue;
       blockedByTaskRunIds?: TaskRunIdValue[];
     },
@@ -1169,7 +1157,16 @@ export class TaskManager extends WorkspaceRestorable {
     }
 
     this.taskRuns.set(taskRunId, {
-      abortScope: new AbortScope({ parentSignal: this.abortScope.getSignal() }),
+      abortScope: new AbortScope({
+        parentSignal: options?.signal,
+        onAbort: () => {
+          this.logger.info(
+            { taskRunId, actingAgentId },
+            "Aborting task interval",
+          );
+          this.abortTaskRun(taskRunId);
+        },
+      }),
       intervalId: null,
       ...taskRun,
     });
@@ -1230,10 +1227,13 @@ export class TaskManager extends WorkspaceRestorable {
   scheduleStartTaskRuns(
     taskRunIds: string[],
     actingAgentId: string,
-    manualStart = true,
+    options?: {
+      signal?: AbortSignal;
+      manualStart?: boolean;
+    },
   ): OperationResult[] {
     return taskRunIds.map((taskRunId) =>
-      this.scheduleStartTaskRun(taskRunId, actingAgentId, manualStart),
+      this.scheduleStartTaskRun(taskRunId, actingAgentId, options),
     );
   }
 
@@ -1244,7 +1244,10 @@ export class TaskManager extends WorkspaceRestorable {
   scheduleStartTaskRun(
     taskRunId: TaskRunIdValue,
     actingAgentId: AgentIdValue,
-    manualStart = true,
+    options?: {
+      signal?: AbortSignal;
+      manualStart?: boolean;
+    },
   ): OperationResult {
     this.logger.info({ taskRunId, actingAgentId }, "Schedule task run start");
     this.ac.checkPermission(taskRunId, actingAgentId, FULL_ACCESS);
@@ -1255,7 +1258,7 @@ export class TaskManager extends WorkspaceRestorable {
       throw new Error(`Task run ${taskRunId} not found`);
     }
 
-    if (manualStart) {
+    if (options?.manualStart) {
       const blockedTaskRuns = this.collectBlockedTaskRuns(
         taskRun.blockedByTaskRunIds,
       );
@@ -1295,6 +1298,10 @@ export class TaskManager extends WorkspaceRestorable {
     this._updateTaskRun(taskRunId, taskRun, {
       status: "SCHEDULED",
     });
+    if (options?.signal) {
+      taskRun.abortScope.switchSignal(options.signal);
+    }
+
     this.scheduledTasksToStart.push({ taskRunId, actingAgentId });
     this.startTaskProcessing();
 
@@ -1415,7 +1422,7 @@ export class TaskManager extends WorkspaceRestorable {
     // Use the task's abortScope to handle interval clearing
     if (taskRun.abortScope) {
       this.logger.debug({ taskRunId }, "Aborting task via AbortScope");
-      taskRun.abortScope.abort(true);
+      taskRun.abortScope.clean(false);
     } else if (taskRun.intervalId) {
       // Fallback for tasks that don't have abortScope
       this.logger.debug({ taskRunId }, "Clearing task interval");
@@ -1512,7 +1519,9 @@ export class TaskManager extends WorkspaceRestorable {
           this.scheduleStartTaskRuns(
             blockingTaskRunIdsToStart,
             TASK_MANAGER_USER,
-            false,
+            {
+              signal: taskRun.abortScope.signal,
+            },
           );
         }
       } else {
@@ -1585,7 +1594,6 @@ export class TaskManager extends WorkspaceRestorable {
     if (taskRun.abortScope) {
       this.logger.debug({ taskRunId }, "Disposing task abort scope");
       taskRun.abortScope.dispose();
-      taskRun.abortScope = null;
     }
 
     const {
@@ -1862,6 +1870,7 @@ export class TaskManager extends WorkspaceRestorable {
         index++;
         continue;
       }
+
       this.awaitingTasksForAgents.splice(index, 1);
       this.scheduleStartTaskRun(taskRunId, TASK_MANAGER_USER);
       rest--;
@@ -2255,7 +2264,6 @@ export class TaskManager extends WorkspaceRestorable {
               taskManager.scheduleStartTaskRun(
                 taskRunId,
                 taskRun.config.ownerAgentId,
-                false,
               );
             }
           },
@@ -2381,7 +2389,6 @@ export class TaskManager extends WorkspaceRestorable {
     for (const taskRun of this.taskRuns.values()) {
       if (taskRun.abortScope) {
         taskRun.abortScope.dispose();
-        taskRun.abortScope = null;
       }
     }
 

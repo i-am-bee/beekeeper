@@ -1,6 +1,7 @@
 import { RuntimeOutput } from "@/runtime/index.js";
 import { Runtime, RuntimeOutputMethod } from "@/runtime/runtime.js";
 import * as st from "../config.js";
+import { AbortScope } from "@/utils/abort-scope.js";
 
 export enum MessageTypeEnum {
   INPUT = "input",
@@ -27,10 +28,21 @@ export class ChatRuntimeHandler {
   private onStatusCallback: (status: string) => void;
   // Callback for state changes
   private onStateChangeCallback: (isProcessing: boolean) => void;
-  private abortController: AbortController;
+  private _abortScope: AbortScope | null = null;
 
   get isRunning() {
     return this.runtime.isRunning;
+  }
+
+  private get abortScope() {
+    if (!this._abortScope) {
+      throw new Error(`Missing abort scope`);
+    }
+    return this._abortScope;
+  }
+
+  private set abortScope(controller: AbortScope) {
+    this._abortScope = controller;
   }
 
   constructor(
@@ -44,10 +56,8 @@ export class ChatRuntimeHandler {
       onStatus: (status: string) => void;
       onStateChange: (isProcessing: boolean) => void;
     },
-    abortController?: AbortController,
   ) {
     this.runtime = runtime;
-    this.abortController = abortController ?? new AbortController();
 
     this.onMessageCallback = onMessage;
     this.onStatusCallback = onStatus;
@@ -57,9 +67,14 @@ export class ChatRuntimeHandler {
   /**
    * Send a message to the runtime
    */
-  public async sendMessage(message: string): Promise<void> {
+  public async sendMessage(
+    message: string,
+    signal: AbortSignal,
+  ): Promise<void> {
     // Signal state change
     this.onStateChangeCallback(true);
+
+    this.abortScope = new AbortScope({ parentSignal: signal });
 
     try {
       // Update status
@@ -81,7 +96,7 @@ export class ChatRuntimeHandler {
       };
 
       // Run the runtime with the user message
-      await this.runtime.run(message, outputMethod);
+      await this.runtime.run(message, outputMethod, this.abortScope.signal);
     } catch (error) {
       if (error instanceof Error) {
         this.onStatusCallback(`Error: ${error.message}`);
@@ -98,7 +113,7 @@ export class ChatRuntimeHandler {
    * Abort the current operation
    */
   public abort(): void {
-    this.abortController.abort();
+    this.abortScope.abort();
     this.onStatusCallback("Operation aborted by user");
   }
 }

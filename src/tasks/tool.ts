@@ -1,3 +1,5 @@
+import { OperationResult } from "@/base/dto.js";
+import { RunContext } from "beeai-framework/context";
 import { Emitter } from "beeai-framework/emitter/emitter";
 import {
   BaseToolOptions,
@@ -19,7 +21,6 @@ import {
   TaskTypeValueSchema,
 } from "./manager/dto.js";
 import { TaskManager } from "./manager/manager.js";
-import { OperationResult } from "@/base/dto.js";
 
 export const TOOL_NAME = "task_runner";
 
@@ -259,7 +260,11 @@ export class TaskManagerTool extends Tool<
     ]);
   }
 
-  protected async _run(input: ToolInput<this>) {
+  protected async _run(
+    input: ToolInput<this>,
+    options: TaskManagerToolInput,
+    run: RunContext<this>,
+  ) {
     let data: TaskManagerToolResultData;
     switch (input.method) {
       case "createTaskConfig": {
@@ -331,6 +336,9 @@ export class TaskManagerTool extends Tool<
         data = this.taskManager.scheduleStartTaskRuns(
           input.taskRunIds,
           input.actingAgentId,
+          {
+            signal: (run.context as any)["task_run_signal"],
+          },
         );
         break;
       case "stopTaskRun":
