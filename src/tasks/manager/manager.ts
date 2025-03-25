@@ -13,12 +13,15 @@ import {
   AgentKindEnum,
   AgentTypeValue,
 } from "@/agents/registry/dto.js";
+import { OperationResult } from "@/base/dto.js";
+import { AbortScope } from "@/utils/abort-scope.js";
 import { updateDeepPartialObject } from "@/utils/objects.js";
 import { AgentStateLogger } from "@agents/state/logger.js";
 import { TaskStateLogger } from "@tasks/state/logger.js";
 import { WorkspaceResource } from "@workspaces/manager/index.js";
 import { WorkspaceRestorable } from "@workspaces/restore/index.js";
 import { AbortError, FrameworkError, Logger } from "beeai-framework";
+import EventEmitter from "events";
 import { clone, difference, isNonNullish, omit } from "remeda";
 import {
   taskConfigIdToValue,
@@ -50,10 +53,12 @@ import {
   TaskRunTerminalStatusEnum,
   TaskTypeValue,
 } from "./dto.js";
-import EventEmitter from "events";
-import { taskRunError, taskRunOutput } from "./helpers.js";
-import { AbortScope } from "@/utils/abort-scope.js";
-import { OperationResult } from "@/base/dto.js";
+import {
+  serializeTaskRunInput,
+  extendBlockingTaskRunOutput,
+  taskRunError,
+  taskRunOutput,
+} from "./helpers.js";
 
 export type TaskRunRuntime = TaskRun & {
   intervalId: NodeJS.Timeout | null;
@@ -63,7 +68,6 @@ export type TaskRunRuntime = TaskRun & {
 const TASK_MANAGER_RESOURCE = "task_manager";
 const TASK_MANAGER_USER = "task_manager_user";
 const TASK_MANAGER_CONFIG_PATH = ["configs", "task_manager.jsonl"] as const;
-const TASK_INPUT_DELIMITER = "This is your input for this task:";
 
 const MAX_POOL_SIZE = 100;
 
@@ -128,7 +132,6 @@ export interface TaskManagerConfig {
   logger: Logger;
 }
 
-const BLOCKING_TASK_OUTPUT_PLACEHOLDER = "${blocking_task_output}";
 export class TaskManager extends WorkspaceRestorable {
   /** Map of registered task type and their configurations */
   private taskConfigs: Map<TaskKindEnum, Map<TaskTypeValue, TaskConfig[]>>;
@@ -1111,12 +1114,13 @@ export class TaskManager extends WorkspaceRestorable {
       );
     }
 
-    const input = this.composeTaskRunInput(
-      `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}\n\n`,
-      options?.blockedByTaskRunIds?.length
-        ? BLOCKING_TASK_OUTPUT_PLACEHOLDER
-        : taskRunInput,
-    );
+    const input = serializeTaskRunInput({
+      context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
+      input: taskRunInput,
+      options: {
+        hasUnfinishedBlockingTasks: !!options?.blockedByTaskRunIds?.length,
+      },
+    });
 
     const baseTaskRun: BaseTaskRun = {
       taskKind,
@@ -1353,51 +1357,6 @@ export class TaskManager extends WorkspaceRestorable {
     return result;
   }
 
-  private composeTaskRunInput(context: string, input: string) {
-    return `${context}${TASK_INPUT_DELIMITER}\n${input}`;
-  }
-
-  private decomposeTaskRunInput(input: string) {
-    const result: {
-      context: string;
-      input: string;
-    } = { context: "", input: "" };
-    const splitted = input.split(TASK_INPUT_DELIMITER);
-    if (splitted.length > 1) {
-      const [context, ...rest] = splitted;
-      result.context = context;
-      result.input = rest.join("");
-    } else {
-      result.input = splitted[0];
-    }
-
-    return result;
-  }
-
-  private setTaskRunInput(
-    existingInput: string,
-    newInput: string,
-    appendPlaceholder: boolean,
-  ) {
-    const existingInputDec = this.decomposeTaskRunInput(existingInput);
-
-    let finalInput = newInput;
-    if (existingInputDec.input.includes(BLOCKING_TASK_OUTPUT_PLACEHOLDER)) {
-      // Replace placeholder
-      finalInput = `${existingInputDec.input.replace(BLOCKING_TASK_OUTPUT_PLACEHOLDER, finalInput)}`;
-    }
-
-    if (appendPlaceholder) {
-      // We expect that there will be another output from other blocked task
-      finalInput += `${BLOCKING_TASK_OUTPUT_PLACEHOLDER}\n\n`;
-    }
-
-    return this.composeTaskRunInput(
-      existingInputDec.context,
-      finalInput.trim(),
-    );
-  }
-
   stopTaskRun(
     taskRunId: TaskRunIdValue,
     actingAgentId: AgentIdValue,
@@ -1501,7 +1460,7 @@ export class TaskManager extends WorkspaceRestorable {
             blockingTaskRun.abortScope?.abort();
           } else {
             this._updateTaskRun(blockingTaskRunId, blockingTaskRun, {
-              taskRunInput: this.setTaskRunInput(
+              taskRunInput: extendBlockingTaskRunOutput(
                 blockingTaskRun.taskRunInput,
                 taskRunOutput(taskRun, false),
                 hasUnfinishedBlockedTaskRuns,
