@@ -53,6 +53,7 @@ export const CreateTaskConfigSchema = z
       taskConfigId: true,
       taskConfigVersion: true,
       ownerAgentId: true,
+      runImmediately: true,
     }),
     actingAgentId: ActingAgentIdValueSchema,
   })
@@ -270,7 +271,7 @@ export class TaskManagerTool extends Tool<
       case "createTaskConfig": {
         const { actingAgentId, taskConfig } = input;
         data = this.taskManager.createTaskConfig(
-          taskConfig,
+          { ...taskConfig, runImmediately: false },
           actingAgentId,
           actingAgentId,
         );
