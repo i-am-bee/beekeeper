@@ -18,10 +18,10 @@ depends = ["*:check","*:check:*"]
 [tasks."build"]
 depends = ["*:build"]
 
-[tasks."supervisor"]
+[tasks."autonomous"]
 depends = ["*:start"]
 
-[tasks."supervisor:chat"]
+[tasks."interactive"]
 depends = ["*:start-chat"]
 
 [tasks."monitor"]
@@ -133,11 +133,23 @@ outputs = ["dist/**/*"]
 
 [tasks."code:start"]
 depends = ["code:build"]
-run = "pnpm start"
+run = """
+if [ -n "$WORKSPACE" ]; then
+    pnpm start -w "$WORKSPACE"
+else
+    pnpm start
+fi
+"""
 
 [tasks."code:start-chat"]
 depends = ["code:build"]
-run = "pnpm start -c -w default"
+run = """
+if [ -n "$WORKSPACE" ]; then
+    pnpm start -c -w "$WORKSPACE"
+else
+    pnpm start -c -w "default"
+fi
+"""
 
 ### monitor
 
