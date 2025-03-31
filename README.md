@@ -1,32 +1,26 @@
-![cover](https://github.com/user-attachments/assets/8e61bb06-7548-4d57-9d00-897c6f4da414)
+<div align="center">
+  
+# Beekeeper
 
-# ![Bee simplest circle](https://github.com/user-attachments/assets/fea01c9c-662e-4349-8047-5a787f105909) BeeAI Supervisor
+**A system for coordinating specialized AI agents in complex workflows**
+
+[Overview](#overview) - [Key Benefits](#key-benefits) - [Get started](#get-started) - [Interaction Modes](#interaction-modes) - [Monitor](#monitor) - [Workspaces](#workspaces) - [Showcase](#showcase) - [Best Practices](#best-practices)
+
+</div>
 
 > [!WARNING]
 > [PRE-Alpha] This repository contains the beeai supervisor which is still under a rapid development. Please treat it as
 > highly experimental and expect breaking changes often. Reach out on discord if you'd like to contribute or get 
 > involved in the discussions: [join discord](https://discord.gg/AZFrp3UF5k)
 
+## Key benefits
+- **Iterative Development**: Refine agents and tasks through ongoing dialogue with the Supervisor, ensuring continuous improvement.  
+- **Workspace Persistence**: Preserve and reuse configurations to save tokens and maintain consistent results across sessions.  
+- **Parallel Scalability**: Coordinate specialized agents to handle complex or high-volume operations efficiently.  
+- **Unified Interface**: Control all AI agents from a single entry point, simplifying orchestration.  
+- **Active Monitoring**: Gain real-time insights into platform operations to quickly identify and address bottlenecks.
 
-## Table of Contents
-- [ BeeAI Supervisor](#-beeai-supervisor)
-  - [Table of Contents](#table-of-contents)
-  - [🧭 Overview](#-overview)
-  - [🧑‍🏫 Getting started](#-getting-started)
-    - [🛠️ Installation](#️-installation)
-    - [🏡 Environment setup](#-environment-setup)
-  - [🎛️ Operation Modes](#️-operation-modes)
-    - [💬 Interactive Mode](#-interactive-mode)
-    - [🤖 Autonomous Mode](#-autonomous-mode)
-  - [🖥️ Monitor](#️-monitor)
-  - [📤 Workspaces](#-workspaces)
-  - [🎪 Showcase](#-showcase)
-    - [⚙️ Specification](#️-specification)
-  - [🏁 Conclusion](#-conclusion)
-    - [🚀 Key Benefits](#-key-benefits)
-    - [💡 Best Practices](#-best-practices)
-
-## 🧭 Overview
+## Overview
 
 [🌅 Quick Intro - beeai-supervisor.pdf](https://github.com/user-attachments/files/19391229/beeai-supervisor-v01.pdf)
 [📚 Full documentation](https://cheerful-sodalite-38a.notion.site/BeeAI-Supervisor-1ab3b270a700801cabadc0eb80ae9ddb)
@@ -36,8 +30,7 @@ BeeAI Supervisor is a multi-agent AI system designed to orchestrate specialized 
 
 Think of BeeAI Supervisor as a hive of AI agents, with the Supervisor agent acting as the queen bee, orchestrating the activities of worker agents to efficiently accomplish your goals. This system enables you to harness the collective intelligence of multiple specialized agents through a single, coordinated interface.
 
-## 🧑‍🏫 Getting started
-
+## Get started
 
 ### 🛠️ Installation
 This project uses [Mise-en-place](https://mise.jdx.dev/) as a manager of tool versions (`python`, `uv`, `nodejs`, `pnpm` etc.), as well as a task runner and environment manager. Mise will download all the needed tools automatically -- you don't need to install them yourself.
@@ -76,7 +69,7 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 
 
 
-## 🎛️ Operation Modes
+## Interaction Modes
 
 The system can be operated in two distinct modes: **interactive** and **autonomous**.
 
@@ -112,7 +105,7 @@ This command runs the platform in autonomous mode where you can:
 
 Autonomous mode is ideal for scripted operations, batch processing, or one-off requests that don’t require iterative development. Once your request is complete, results are returned, and the system automatically shuts down—no further input or interaction needed.
 
-## 🖥️ Monitor
+## Monitor
 
 ![monitors](https://github.com/user-attachments/assets/ea8a8ca5-77ea-46f2-80b0-9afba7b99f69)
 
@@ -124,7 +117,7 @@ mise monitor
 
 This allows you to observe the platform's operations as it works on your request.
 
-## 📤 Workspaces
+## Workspaces
 
 One of the main challenges in a multi-agent system is preventing the creation of unnecessary objects that can quickly consume resources. To address this, Workspaces provide a persistence layer for both agent and task configurations. This layer preserves configuration states across sessions and supports iterative refinement. Once you’ve fine-tuned a configuration to meet your needs, you can reuse it for new inputs—avoiding the expense of rebuilding complex structures, ensuring consistent processing quality, and optimizing token usage.
 
@@ -137,7 +130,7 @@ You can create or switch a workspace by setting an environment variable like thi
 WORKSPACE=my_workspace mise interactive
 ```
 
-## 🎪 Showcase
+## Showcase
 
 [🎶 Creative Multi-Agent Tasks Showcase: Poetry and Hip-Hop Analysis](https://cheerful-sodalite-38a.notion.site/Creative-Multi-Agent-Tasks-Showcase-Poetry-and-Hip-Hop-Analysis-1b53b270a700800ab1d3eb28f825bd2a)
 
@@ -168,14 +161,7 @@ This showcase particularly highlights the system's ability to handle both parall
 
 This platform combines the power of specialized AI agents with the flexibility of interactive configuration, all managed through natural conversation with the Supervisor Agent.
 
-### 🚀 Key Benefits
-- **Iterative Development**: Refine agents and tasks through ongoing dialogue with the Supervisor, ensuring continuous improvement.  
-- **Workspace Persistence**: Preserve and reuse configurations to save tokens and maintain consistent results across sessions.  
-- **Parallel Scalability**: Coordinate specialized agents to handle complex or high-volume operations efficiently.  
-- **Unified Interface**: Control all AI agents from a single entry point, simplifying orchestration.  
-- **Active Monitoring**: Gain real-time insights into platform operations to quickly identify and address bottlenecks.
-
-### 💡 Best Practices
+### Best practices
 - **Incremental Approach**: Start with smaller tasks and gradually expand to more complex, multi-agent workflows.  
 - **Leverage Workspaces**: Reuse proven agent and task configurations to optimize resource usage and maintain quality.  
 - **Stay Observant**: Use the Monitor to track operations and make timely adjustments based on system feedback.  
