@@ -9,7 +9,7 @@
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
 
-[Overview](#overview) - [Key Features](#key-features) - [Quick start](#quick-start) - [Interaction Modes](#interaction-modes) - [Workspaces](#workspaces)
+[Overview](#overview) - [Key Features](#key-features) - [Installation](#installation) - [Quick start](#quick-start) - [Interaction Modes](#interaction-modes) - [Workspaces](#workspaces)
 
 </div>
 
@@ -32,9 +32,7 @@ These components work together to create a comprehensive solution for managing c
 - **Unified interface**: Control all AI agents from a single entry point, simplifying orchestration.  
 - **Active monitoring**: Gain real-time insights into platform operations to quickly identify and address bottlenecks.
 
-## Quick start
-
-### Installation
+## Installation
 [Mise-en-place](https://mise.jdx.dev/) is used to manage tool versions (`python`, `uv`, `nodejs`, `pnpm`...), run tasks, and handle environments, automatically downloading required tools.
 
 Clone the project, then run:
@@ -46,14 +44,14 @@ mise install
 mise build
 ```
 
-### Environment variables
+### Environment setup
 
 Mise automatically creates a `.env` file using the `.env.template` in the project root. Choose an LLM Provider (`ollama` or `openai`) and configure its API key. 
 
 For example, if you select OpenAI, your `.env` file might look like this:
 
 ```bash
-# LLM Provider (ibm_rits/ollama/openai)
+# LLM Provider (ollama/openai)
 LLM_BACKEND="openai"
 
 ## OpenAI
@@ -65,21 +63,11 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 > [!WARNING]
 > If you use **Ollama**, make sure your model supports tool calling. Smaller models may cause frequent incorrect tool calls from the supervisor agent. For stable performance, we recommend using a large model like `qwq:32b`.
 
-### Showcase
+## Quick start
 
-The Poetry and Hip-Hop Analysis showcase demonstrates Beekeeper’s ability to efficiently manage complex task dependencies, running multiple analyses in parallel while ensuring necessary synchronization. Agents work on different analysis aspects, with the supervisor agent coordinating task sequencing and resource allocation to avoid conflicts and optimize throughput.
+1. To start, run: `mise interactive`
 
-### Agents
-- `boss` 1x - `meta-llama/llama-3-1-405b-instruct-fp`
-- `peom_generator` 4x - `meta-llama/llama-3-3-70b-instruct`
-- `hip_hop_song_generator` 1x - `meta-llama/llama-3-3-70b-instruct`
-- `poem_elements_highlighter` 1x - `meta-llama/llama-3-3-70b-instruct`
-
-### Tasks
-- `process_input_and_plan` 1x
-- `poem_generation` 4x
-- `hip_hop_song_generation` 1x
-- `poem_elements_highlighting` 1x
+2. Enter the following prompt: `Help me plan a trip to San Francisco CA for next week`
 
 ## Interaction modes
 
