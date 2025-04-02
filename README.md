@@ -15,18 +15,18 @@
 
 ## Overview
 
-Beekeeper is a multi-agent AI system that orchestrates specialized AI agents to complete complex tasks. A central Supervisor agent serves as your primary interface for configuring specialized agents. This eliminates the complexity of having to define agent configurations on your own, as the Supervisor agent handles this.
+Beekeeper is a multi-agent AI system that orchestrates specialized AI agents to complete complex tasks. A central supervisor agent serves as your primary interface for configuring specialized agents. This eliminates the complexity of having to define agent configurations on your own, as the supervisor agent handles this.
 
 ### Core components
 1. **Supervision:** A central supervisor agent oversees and coordinates multiple AI agents.
 2. **Agent registry:** A centralized repository of available agents.
 3. **Task management:** Manages and executes complex tasks, breaking them down into smaller sub-tasks.
 
-These components work together to create a comprehensive solution for managing complex tasks, enabling efficient coordination and configuration through an intuitive interface. Beekeeper integrates the power of specialized AI agents with the flexibility of interactive configuration, all guided by natural conversations with the Supervisor agent.
+These components work together to create a comprehensive solution for managing complex tasks, enabling efficient coordination and configuration through an intuitive interface. Beekeeper integrates the power of specialized AI agents with the flexibility of interactive configuration, all guided by natural conversations with the supervisor agent.
 
 ## Key features
 
-- **Iterative development**: Refine agents and tasks through ongoing dialogue with the Supervisor, ensuring continuous improvement.  
+- **Iterative development**: Refine agents and tasks through ongoing dialogue with the supervisor agent, ensuring continuous improvement.  
 - **Workspace persistence**: Preserve and reuse configurations to save tokens and maintain consistent results across sessions.  
 - **Parallel scalability**: Coordinate specialized agents to handle complex or high-volume operations efficiently.  
 - **Unified interface**: Control all AI agents from a single entry point, simplifying orchestration.  
@@ -63,9 +63,7 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 ```
 
 > [!WARNING]
-> **Ollama**
-> 
-> If you use the Ollama backend, make sure all models you plan to use support tool calling. Smaller models may cause frequent incorrect tool calls from the supervisor agent. For stable performance, we recommend using a large model like `qwq:32b`.
+> If you use **Ollama**, make sure your model supports tool calling. Smaller models may cause frequent incorrect tool calls from the supervisor agent. For stable performance, we recommend using a large model like `qwq:32b`.
 
 ### Showcase
 
@@ -89,14 +87,14 @@ The system operates in two modes: **Interactive** and **Autonomous**.
 
 ### Interactive mode
 
-This mode enables real-time interaction with the Supervisor agent via the Chat UI.
+This mode enables real-time interaction with the supervisor agent via the Chat UI.
 
 To start, run:
 ```bash
 mise interactive
 ```
 
-This mode lets you collaborate with the Supervisor agent to:
+This mode lets you collaborate with the supervisor agent to:
 - **Define your goals** – Start a conversation and receive guidance
 - **Fine-tune settings** – Configure agents and tasks iteratively
 - **Improve continuously** – Adjust your setup based on results
@@ -104,8 +102,7 @@ This mode lets you collaborate with the Supervisor agent to:
 
 > [!TIP]
 > **Want to monitor the process?**<br>
-> Open another terminal and run: `mise monitor`<br>
-> This provides a live view of the platform’s activity.
+> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
 
 ### Autonomous mode
 
@@ -126,8 +123,7 @@ This mode is ideal for scripted operations, batch jobs, or one-off requests that
 
 > [!TIP]
 > **Want to monitor the process?**<br>
-> Open another terminal and run: `mise monitor`<br>
-> This provides a live view of the platform’s activity.
+> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
 
 ## Workspaces
 
