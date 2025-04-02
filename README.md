@@ -1,4 +1,4 @@
-<div align="center">
+8<div align="center">
   
 # Beekeeper <img align="cener" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
 
@@ -48,7 +48,7 @@ mise build
 
 Mise automatically creates a `.env` file using the `.env.template` in the project root. Choose an LLM Provider (`ollama` or `openai`) and update your `.env` file. 
 
-For example, if you select OpenAI, your `.env` file might look like this:
+If you select **OpenAI**, your `.env` file might look like this:
 
 ```bash
 # LLM Provider (ollama/openai)
