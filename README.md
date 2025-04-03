@@ -13,6 +13,14 @@
 
 </div>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Beekeeper.jpg">
+    <source media="(prefers-color-scheme: light)" srcset="Beekeeper.jpg">
+    <img alt="Beekeeper" width="100%">
+  </picture>
+</p>
+
 ## Overview
 
 Beekeeper is a multi-agent system, built on the [BeeAI framework](https://github.com/i-am-bee/beeai-framework), designed to coordinate specialized AI agents for complex tasks. At its core, a central supervisor agent acts as your primary interface, simplifying the setup and management of specialized agents. Instead of manually configuring each agent, you define your objectives, and the supervisor handles the rest.
