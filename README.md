@@ -69,6 +69,12 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 
 2. Enter the following prompt: `Help me plan a trip to San Francisco CA for next week`
 
+[More coming soon]
+
+> [!TIP]
+> **Want to monitor the process?**<br>
+> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
+
 ## Interaction modes
 
 The system operates in two modes: **Interactive** and **Autonomous**.
@@ -88,10 +94,6 @@ This mode lets you collaborate with the supervisor agent to:
 - **Improve continuously** – Adjust your setup based on results
 - **Modify in real time** – Abort or tweak tasks mid-process through chat
 
-> [!TIP]
-> **Want to monitor the process?**<br>
-> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
-
 ### Autonomous mode
 
 For single-task execution or batch processing, use **autonomous mode**.
@@ -108,10 +110,6 @@ What happens:
 - **Automatic completion** – Results are returned, and the system shuts down on its own
 
 This mode is ideal for scripted operations, batch jobs, or one-off requests that don’t require back-and-forth adjustments.
-
-> [!TIP]
-> **Want to monitor the process?**<br>
-> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
 
 ## Workspaces
 
