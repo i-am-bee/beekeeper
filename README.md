@@ -1,9 +1,16 @@
 <div align="center">
-  
-# Beekeeper <img align="cener" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="beekeeper_logo.png">
+    <source media="(prefers-color-scheme: light)" srcset="beekeeper_logo.png">
+    <img alt="Beekeeper" width="30%">
+  </picture>
+</p>
 
 **A system for coordinating specialized AI agents in complex workflows**
 
+![Alpha](https://img.shields.io/badge/Status-Alpha-red?style=plastic)
 [![Apache 2.0](https://img.shields.io/badge/Apache%202.0-License-EA7826?style=plastic&logo=apache&logoColor=white)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
 [![Follow on Bluesky](https://img.shields.io/badge/Follow%20on%20Bluesky-0285FF?style=plastic&logo=bluesky&logoColor=white)](https://bsky.app/profile/beeaiagents.bsky.social)
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
