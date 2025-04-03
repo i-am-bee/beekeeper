@@ -15,7 +15,7 @@
 
 ## Overview
 
-Beekeeper is a multi-agent AI system that orchestrates specialized AI agents to complete complex tasks, built with the [BeeAI framework](https://github.com/i-am-bee/beeai-framework). A central supervisor agent serves as your primary interface for configuring specialized agents. This eliminates the complexity of having to define agent configurations on your own, as the supervisor agent handles this.
+Beekeeper is a multi-agent AI system that orchestrates specialized AI agents to complete complex tasks, built using the [BeeAI framework](https://github.com/i-am-bee/beeai-framework). A central supervisor agent serves as your primary interface for configuring specialized agents. This eliminates the complexity of having to define agent configurations on your own, as the supervisor agent handles this.
 
 ### Core components
 1. **Supervision:** A central supervisor agent oversees and coordinates multiple AI agents.
