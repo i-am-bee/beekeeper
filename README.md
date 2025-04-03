@@ -109,12 +109,12 @@ What happens:
 
 ## Workspaces
 
-Managing resources efficiently is critical in a multi-agent system, where unnecessary object creation can quickly drain memory and processing power. Workspaces solve this by providing a persistence layer for both agent and task configurations. This allows you to:
-1. Preserve configurations across sessions, eliminating the need to rebuild complex structures.
-2. Iterate and refine setups, ensuring optimal performance over time.
-3. Maintain consistent processing quality while optimizing token usage.
+Workspaces provide a persistence layer for your agent and task configurations, optimizing resource use. With workspaces, you can:
+1.	Retain configurations across sessions, eliminating the need to rebuild setups.
+2.	Iterate and refine configurations for improved performance.
+3.	Ensure consistent processing while reducing token costs.
 
-Once you've fine-tuned a configuration, you can easily reuse it for new inputs, making your workflow more efficient.
+Once fine-tuned, configurations can be easily reused, making workflows more efficient.
 
 ### Workspace directory
 
