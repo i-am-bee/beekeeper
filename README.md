@@ -46,7 +46,7 @@ mise build
 
 ### Environment setup
 
-Mise generates a `.env` file using the `.env.template` in the project root. Select an LLM provider (`ollama` or `openai`) and update your `.env` file accordingly.
+Mise generates a `.env` file using the `.env.template` in the project root. Select an LLM provider (**Ollama** or **OpenAI**) and update your `.env` file accordingly.
 
 For **OpenAI**, your `.env` file might look like this:
 
