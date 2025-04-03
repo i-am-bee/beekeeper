@@ -46,9 +46,9 @@ mise build
 
 ### Environment setup
 
-Mise automatically creates a `.env` file using the `.env.template` in the project root. Choose an LLM Provider (`ollama` or `openai`) and update your `.env` file. 
+Mise generates a `.env` file using the `.env.template` in the project root. Select an LLM provider (`ollama` or `openai`) and update your `.env` file accordingly.
 
-If you select **OpenAI**, your `.env` file might look like this:
+For **OpenAI**, your `.env` file might look like this:
 
 ```bash
 # LLM Provider (ollama/openai)
@@ -61,7 +61,7 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 ```
 
 > [!WARNING]
-> If you use **Ollama**, make sure your model supports tool calling. Smaller models may cause frequent incorrect tool calls from the supervisor agent. For stable performance, we recommend using a large model like `qwq:32b`.
+> When using **Ollama**, ensure your model supports tool calling. Smaller models may lead to frequent incorrect tool calls. For stability, use a larger model like `qwq:32b`.
 
 ## Quick start
 
