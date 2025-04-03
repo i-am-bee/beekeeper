@@ -80,15 +80,15 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 
 ## Quick start
 
-1. To start, run: `mise interactive`
+| Step | Action                                           | Explanation                                                                                      |
+|------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| **1** | Run: `mise interactive`                          | This command starts the interactive mode of the `mise` tool, allowing you to input prompts easily. |
+| **2** | Split the terminal & run: `mise monitor`       | This provides a live view of the platform’s activity. |
+| **3** | Enter the following: <br> `Help me plan a trip to San Francisco CA for next week` | Observe the supervisor agent begin to create tasks and generate specialized agents. |
+| **4** | Enter a follow up prompt: <br> `TBD` | TBD |
+| **5** | Try redirecting the supervisor agent (?) | TBD |
 
-2. Enter the following prompt: `Help me plan a trip to San Francisco CA for next week`
-
-[More coming soon]
-
-> [!TIP]
-> **Want to monitor the process?**<br>
-> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
+[^WORK IN PROGRESS]
 
 ## Interaction modes
 
@@ -108,6 +108,10 @@ Use this mode to:
 - **Fine-tune settings** – Adjust agents and tasks iteratively.
 - **Modify in real time** – Tweak or abort tasks mid-process.
 
+> [!TIP]
+> **Want to monitor the process?**<br>
+> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
+
 ### Autonomous mode
 
 Execute tasks independently, ideal for batch jobs or one-off requests.
@@ -121,6 +125,10 @@ What happens:
 - **Single-step execution** – One command, one result.
 - **Hands-free processing** – No interaction needed.
 - **Automatic completion** – The system shuts down after execution.
+
+> [!TIP]
+> **Want to monitor the process?**<br>
+> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
 
 ## Workspaces
 
