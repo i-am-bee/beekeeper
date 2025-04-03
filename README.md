@@ -1,4 +1,4 @@
-8<div align="center">
+<div align="center">
   
 # Beekeeper <img align="cener" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
 
