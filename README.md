@@ -22,7 +22,7 @@ Beekeeper is a multi-agent system, built on the [BeeAI framework](https://github
 2. **Agent registry:** A centralized repository of available agents.
 3. **Task management:** Manages and executes complex tasks, breaking them down into smaller sub-tasks.
 
-These components work together to create a comprehensive solution for managing complex tasks, enabling efficient coordination and configuration through an intuitive interface. Beekeeper integrates the power of specialized AI agents with the flexibility of interactive configuration, all guided by natural conversations with the supervisor agent.
+These components enable seamless task management by coordinating specialized AI agents through an intuitive, conversational interface with the supervisor agent.
 
 ## Key features
 
