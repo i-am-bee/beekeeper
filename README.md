@@ -81,22 +81,21 @@ The system operates in two modes: **Interactive** and **Autonomous**.
 
 ### Interactive mode
 
-This mode enables real-time interaction with the supervisor agent via the Chat UI.
+Engage with the supervisor agent in real time via the Chat UI.
 
 To start, run:
 ```bash
 mise interactive
 ```
 
-This mode lets you collaborate with the supervisor agent to:
-- **Define your goals** – Start a conversation and receive guidance
-- **Fine-tune settings** – Configure agents and tasks iteratively
-- **Improve continuously** – Adjust your setup based on results
-- **Modify in real time** – Abort or tweak tasks mid-process through chat
+Use this mode to:
+- **Define goals** – Get guidance through conversation.
+- **Fine-tune settings** – Adjust agents and tasks iteratively.
+- **Modify in real time** – Tweak or abort tasks mid-process.
 
 ### Autonomous mode
 
-For single-task execution or batch processing, use **autonomous mode**.
+Execute tasks independently, ideal for batch jobs or one-off requests.
 
 To start, run:
 ```bash
@@ -104,12 +103,9 @@ mise autonomous <<< "Hi, can you create a poem about each of these topics: bee, 
 ```
 
 What happens:
-- **Single-step execution** – Provide your request in one command
-- **Hands-free processing** – The system autonomously manages agents and tasks
-- **Efficient & unattended** – No interaction required; the system works independently
-- **Automatic completion** – Results are returned, and the system shuts down on its own
-
-This mode is ideal for scripted operations, batch jobs, or one-off requests that don’t require back-and-forth adjustments.
+- **Single-step execution** – One command, one result.
+- **Hands-free processing** – No interaction needed.
+- **Automatic completion** – The system shuts down after execution.
 
 ## Workspaces
 
