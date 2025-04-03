@@ -41,11 +41,11 @@ These components enable seamless task management by coordinating specialized AI 
 
 ## Key features
 
-- **Iterative development**: Refine agents and tasks through ongoing dialogue with the supervisor agent, ensuring continuous improvement.  
-- **Workspace persistence**: Preserve and reuse configurations to save tokens and maintain consistent results across sessions.  
-- **Parallel scalability**: Coordinate specialized agents to handle complex or high-volume operations efficiently.  
-- **Unified interface**: Control all AI agents from a single entry point, simplifying orchestration.  
-- **Active monitoring**: Gain real-time insights into platform operations to quickly identify and address bottlenecks.
+- 🔄 **Iterative development**: Continuously refine agents and tasks by giving feedback to the supervisor agent.
+- 📁 **Workspace persistence**: Save and reuse configurations for efficiency and consistency.
+- 🚀 **Parallel scalability**: Run multiple agents simultaneously for complex tasks.
+- 🖥️ **Unified interface**: Manage all AI agents from one central hub.
+- 📡 **Active monitoring**: Get real-time insights to detect and fix issues quickly.
 
 ## Installation
 [Mise-en-place](https://mise.jdx.dev/) is used to manage tool versions (`python`, `uv`, `nodejs`, `pnpm`...), run tasks, and handle environments, automatically downloading required tools.
