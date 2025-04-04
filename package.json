@@ -71,6 +71,7 @@
     "@ibm-generative-ai/node-sdk": "^3.2.4",
     "@modelcontextprotocol/sdk": "^1.5.0",
     "@opentelemetry/sdk-node": "^0.57.0",
+    "@tavily/core": "^0.3.5",
     "bee-observe-connector": "^0.0.6",
     "chokidar": "^4.0.3",
     "dotenv": "^16.4.5",

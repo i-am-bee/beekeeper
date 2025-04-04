@@ -50,10 +50,12 @@ export const CreateTaskConfigSchema = z
   .object({
     method: z.literal("createTaskConfig"),
     taskConfig: TaskConfigSchema.omit({
+      concurrencyMode: true,
       taskConfigId: true,
       taskConfigVersion: true,
       ownerAgentId: true,
       runImmediately: true,
+      intervalMs: true,
     }),
     actingAgentId: ActingAgentIdValueSchema,
   })
@@ -271,7 +273,12 @@ export class TaskManagerTool extends Tool<
       case "createTaskConfig": {
         const { actingAgentId, taskConfig } = input;
         data = this.taskManager.createTaskConfig(
-          { ...taskConfig, runImmediately: false },
+          {
+            ...taskConfig,
+            runImmediately: false,
+            concurrencyMode: "PARALLEL",
+            intervalMs: 0,
+          },
           actingAgentId,
           actingAgentId,
         );

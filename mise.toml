@@ -147,7 +147,7 @@ run = """
 if [ -n "$WORKSPACE" ]; then
     pnpm start -c -w "$WORKSPACE"
 else
-    pnpm start -c -w "default"
+    pnpm start -c
 fi
 """
 
