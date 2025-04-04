@@ -131,7 +131,7 @@ SEARCH_TOOL="duckduckgo"
 | **1** | Run: `mise interactive`                          | This command starts the interactive mode of the `mise` tool, allowing you to input prompts easily. |
 | **2** | Split the terminal & run: `mise monitor`       | This provides a live view of the platform’s activity. |
 | **3** | Enter the following: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together a simple 3-day itinerary. I've already booked my flights and will be staying in the Back Bay area. I'd like to explore historical sites, attend a local hockey game, and enjoy some great food. Could you suggest a good restaurant for dinner each day? I'd like to try Italian, Chinese, and French cuisine.` | Observe the supervisor agent begin to create tasks and generate specialized agents e.g., `itinerary_planner`, `hockey_game_finder`, and `restaurant_selector`. |
-| **4** | Enter a follow up prompt: <br> `TBD` | TBD |
+| **4** | Enter a follow-up prompt: <br> `This is great! Can you add one visit to a science museum?` | Watch the supervisor agent create an additional agent to address your additional task. |
 | **5** | Try redirecting the supervisor agent (?) | TBD |
 
 [^WORK IN PROGRESS]
