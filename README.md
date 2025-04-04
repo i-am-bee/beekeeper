@@ -66,7 +66,7 @@ Mise generates a `.env` file using the `.env.template` in the project root.
 **1. Set your LLM provider**
 
 <details>
-  <summary><strong>OpenAI</strong></summary>
+  <summary>OpenAI (Recommended)</summary>
 
 ```
 # LLM Provider (ollama/openai)
@@ -80,7 +80,7 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 </details>
 
 <details>
-  <summary><strong>Ollama</strong></summary>
+  <summary>Ollama</summary>
 
 ```
 # LLM Provider (ollama/openai)
@@ -102,7 +102,7 @@ OLLAMA_MODEL_OPERATOR="deepseek-r1:8b"
 **2. Set your search tool**
 
 <details>
-  <summary><strong>Tavily (Recommended)</strong></summary>
+  <summary>Tavily (Recommended)</summary>
 
 Tavily offers 1,000 free API credits/month without a credit card. Get your API key from [Tavily Quickstart](https://docs.tavily.com/documentation/quickstart).
 
@@ -116,7 +116,7 @@ TAVILY_API_KEY="<YOUR_TAVILY_API_KEY_HERE>"
 </details>
 
 <details>
-  <summary><strong>DuckDuckGo</strong></summary>
+  <summary>DuckDuckGo</summary>
 
 ```
 # Tools
