@@ -91,8 +91,8 @@ importers:
         specifier: ^18.15.3
         version: 18.19.76
       beeai-framework:
-        specifier: 0.1.9
-        version: 0.1.9(28d790e447bc65e9719a322ab2700495)
+        specifier: 0.1.10
+        version: 0.1.10(28d790e447bc65e9719a322ab2700495)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1739,9 +1739,6 @@ packages:
     resolution: {integrity: sha512-kNOjDqAh7px0XWNI+4QbzoiR/nTkHAWNud2uvnJquD1/x5a7EQZMJT0AczqK0Qn67oY/TTQ1LbUKajZpp3I9tQ==}
     engines: {node: '>=8.0.0'}
 
-  axios@1.8.1:
-    resolution: {integrity: sha512-NN+fvwH/kV01dYUQ3PTOZns4LWtWhOFCAhQ/pHb88WQ1hNe5V/dvFwc4VJcDL11LT9xSX0QtsR8sWUuyOuOq7g==}
-
   axios@1.8.4:
     resolution: {integrity: sha512-eBSYY4Y68NNlHbHBMdeDmKNtDgXWhQsJcGqzO3iLUM0GraQFSS9cVgPX5I9b3lbdFKyYoAEGAZF1DwhTaljNAw==}
 
@@ -1813,8 +1810,8 @@ packages:
     peerDependencies:
       bee-agent-framework: '>=0.0.27 <0.1.0'
 
-  beeai-framework@0.1.9:
-    resolution: {integrity: sha512-rTnYBLlfG7htbqniwG73cgkS+djL8dgD15lt4Mjeu8o8v2IOP6cVj1y/ExAXYwEb3BSglNMd2CWBseZznyG6CA==}
+  beeai-framework@0.1.10:
+    resolution: {integrity: sha512-uzMglzRLrxJAXpfY/0q+daMAN/AF8DCzrxQbmpc3Kka9b/nFEWgbZifOvTlEE2tFbcBd+gO7oxugJmsMn6l18g==}
     peerDependencies:
       '@ai-sdk/amazon-bedrock': ^1.1.5
       '@ai-sdk/anthropic': ^1.1.6
@@ -5707,14 +5704,6 @@ snapshots:
 
   atomic-sleep@1.0.0: {}
 
-  axios@1.8.1:
-    dependencies:
-      follow-redirects: 1.15.9(debug@4.4.0)
-      form-data: 4.0.2
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-
   axios@1.8.4(debug@4.4.0):
     dependencies:
       follow-redirects: 1.15.9(debug@4.4.0)
@@ -5780,7 +5769,7 @@ snapshots:
       openapi-fetch: 0.11.3
       remeda: 2.21.0
 
-  beeai-framework@0.1.9(28d790e447bc65e9719a322ab2700495):
+  beeai-framework@0.1.10(28d790e447bc65e9719a322ab2700495):
     dependencies:
       '@ai-zen/node-fetch-event-source': 2.1.4
       '@aws-sdk/client-bedrock-runtime': 3.755.0
@@ -7949,7 +7938,7 @@ snapshots:
 
   wikipedia@2.1.2:
     dependencies:
-      axios: 1.8.1
+      axios: 1.8.4(debug@4.4.0)
       infobox-parser: 3.6.4
     transitivePeerDependencies:
       - debug
