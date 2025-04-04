@@ -61,11 +61,14 @@ mise build
 
 ### Environment setup
 
-Mise generates a `.env` file using the `.env.template` in the project root. Select an LLM provider (**Ollama** or **OpenAI**) and update your `.env` file accordingly.
+Mise generates a `.env` file using the `.env.template` in the project root. 
 
-For **OpenAI**, your `.env` file might look like this:
+**1. Set your LLM provider** and update your `.env` file accordingly.
 
-```bash
+<details>
+  <summary>Click to expand <strong>OpenAI</strong> setup</summary>
+
+```
 # LLM Provider (ollama/openai)
 LLM_BACKEND="openai"
 
@@ -74,9 +77,36 @@ OPENAI_API_KEY="<YOUR_OPEN_AI_API_KEY_HERE>"
 OPENAI_MODEL_SUPERVISOR="gpt-4o"
 OPENAI_MODEL_OPERATOR="gpt-4o"
 ```
+</details>
+
+<details>
+  <summary>Click to expand <strong>Ollama</strong> setup</summary>
+
+```
+# LLM Provider (ibm_rits/ollama/openai)
+LLM_BACKEND="openai"
+
+## Ollama
+OLLAMA_HOST="http://0.0.0.0:11434"
+OLLAMA_MODEL_SUPERVISOR="deepseek-r1:8b"
+OLLAMA_MODEL_OPERATOR="deepseek-r1:8b"
+```
+</details>
 
 > [!WARNING]
-> When using **Ollama**, ensure your model supports tool calling. Smaller models may lead to frequent incorrect tool calls. For stability, use a larger model like `qwq:32b`.
+> When using **Ollama**, ensure your model supports tool calling.<br>
+> Smaller models may lead to frequent incorrect tool calls.<br>
+> For stability, use a larger model like `qwq:32b`.
+
+**2. Add your Tavily Search API key**
+
+Tavily offers 1,000 free API credits/month without a credit card. Get your API key from [Tavily Quickstart](https://docs.tavily.com/documentation/quickstart).
+
+Add your API key to your `.env` file:
+```
+# Tools
+TAVILY_API_KEY="<YOUR_TAVILY_API_KEY_HERE>"
+```
 
 ## Quick start
 
@@ -84,7 +114,7 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 |------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
 | **1** | Run: `mise interactive`                          | This command starts the interactive mode of the `mise` tool, allowing you to input prompts easily. |
 | **2** | Split the terminal & run: `mise monitor`       | This provides a live view of the platform’s activity. |
-| **3** | Enter the following: <br> `Help me plan a trip to San Francisco CA for next week` | Observe the supervisor agent begin to create tasks and generate specialized agents. |
+| **3** | Enter the following: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together a simple 3-day itinerary. I've already booked my flights and will be staying in the Back Bay area. I'd like to explore historical sites, attend a local hockey game, and enjoy some great food. Could you suggest a good restaurant for dinner each day? I'd like to try Italian, Chinese, and French cuisine.` | Observe the supervisor agent begin to create tasks and generate specialized agents e.g., `itinerary_planner`, `hockey_game_finder`, and `restaurant_selector`. |
 | **4** | Enter a follow up prompt: <br> `TBD` | TBD |
 | **5** | Try redirecting the supervisor agent (?) | TBD |
 
