@@ -2,8 +2,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="beekeeper_logo.png">
-    <source media="(prefers-color-scheme: light)" srcset="beekeeper_logo.png">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/beekeeper-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/beekeeper-light.png">
     <img alt="Beekeeper" width="30%">
   </picture>
 </p>
@@ -22,8 +22,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="Beekeeper.jpg">
-    <source media="(prefers-color-scheme: light)" srcset="Beekeeper.jpg">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/Beekeeper.jpg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/Beekeeper.jpg">
     <img alt="Beekeeper" width="100%">
   </picture>
 </p>
