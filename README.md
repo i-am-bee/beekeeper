@@ -63,10 +63,10 @@ mise build
 
 Mise generates a `.env` file using the `.env.template` in the project root. 
 
-**1. Set your LLM provider** and update your `.env` file accordingly.
+**1. Set your LLM provider**
 
 <details>
-  <summary>Click to expand <strong>OpenAI</strong> setup</summary>
+  <summary><strong>OpenAI</strong></summary>
 
 ```
 # LLM Provider (ollama/openai)
@@ -80,10 +80,10 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 </details>
 
 <details>
-  <summary>Click to expand <strong>Ollama</strong> setup</summary>
+  <summary><strong>Ollama</strong></summary>
 
 ```
-# LLM Provider (ibm_rits/ollama/openai)
+# LLM Provider (ollama/openai)
 LLM_BACKEND="openai"
 
 ## Ollama
@@ -91,22 +91,38 @@ OLLAMA_HOST="http://0.0.0.0:11434"
 OLLAMA_MODEL_SUPERVISOR="deepseek-r1:8b"
 OLLAMA_MODEL_OPERATOR="deepseek-r1:8b"
 ```
-</details>
 
 > [!WARNING]
 > When using **Ollama**, ensure your model supports tool calling.<br>
 > Smaller models may lead to frequent incorrect tool calls.<br>
 > For stability, use a larger model like `qwq:32b`.
 
-**2. Add your Tavily Search API key**
+</details>
+
+**2. Set your search tool**
+
+<details>
+  <summary><strong>Tavily (Recommended)</strong></summary>
 
 Tavily offers 1,000 free API credits/month without a credit card. Get your API key from [Tavily Quickstart](https://docs.tavily.com/documentation/quickstart).
 
 Add your API key to your `.env` file:
 ```
 # Tools
+SEARCH_TOOL="tavily"
 TAVILY_API_KEY="<YOUR_TAVILY_API_KEY_HERE>"
 ```
+
+</details>
+
+<details>
+  <summary><strong>DuckDuckGo</strong></summary>
+
+```
+# Tools
+SEARCH_TOOL="duckduckgo"
+```
+</details>
 
 ## Quick start
 
