@@ -8,7 +8,7 @@
   </picture>
 </p>
 
-**Orchestrating multi-agent systems with centralized supervision and automatic agent creation**
+**Orchestrate multi-agent systems with centralized supervision and automatic agent creation**
 
 ![Alpha](https://img.shields.io/badge/Status-Alpha-red?style=plastic)
 [![Apache 2.0](https://img.shields.io/badge/Apache%202.0-License-EA7826?style=plastic&logo=apache&logoColor=white)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
