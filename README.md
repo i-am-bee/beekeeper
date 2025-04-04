@@ -92,10 +92,7 @@ OLLAMA_MODEL_SUPERVISOR="deepseek-r1:8b"
 OLLAMA_MODEL_OPERATOR="deepseek-r1:8b"
 ```
 
-> [!WARNING]
-> When using **Ollama**, ensure your model supports tool calling.<br>
-> Smaller models may lead to frequent incorrect tool calls.<br>
-> For stability, use a larger model like `qwq:32b`.
+> Important Note: When using **Ollama**, ensure your model supports tool calling. Smaller models may lead to frequent incorrect tool calls. For stability, use a larger model like `qwq:32b`.
 
 </details>
 
@@ -106,7 +103,6 @@ OLLAMA_MODEL_OPERATOR="deepseek-r1:8b"
 
 Tavily offers 1,000 free API credits/month without a credit card. Get your API key from [Tavily Quickstart](https://docs.tavily.com/documentation/quickstart).
 
-Add your API key to your `.env` file:
 ```
 # Tools
 SEARCH_TOOL="tavily"
