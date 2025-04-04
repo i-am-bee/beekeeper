@@ -42,7 +42,7 @@ Think of BeeAI Supervisor as a hive of AI agents, with the Supervisor agent acti
 ### 🛠️ Installation
 This project uses [Mise-en-place](https://mise.jdx.dev/) as a manager of tool versions (`python`, `uv`, `nodejs`, `pnpm` etc.), as well as a task runner and environment manager. Mise will download all the needed tools automatically -- you don't need to install them yourself.
 
-Clone this project, then run these setup steps:
+Clone this project, and then run these setup steps:
 
 ```sh
 brew install mise  # more ways to install: https://mise.jdx.dev/installing-mise.html
