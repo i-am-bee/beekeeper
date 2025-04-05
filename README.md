@@ -203,7 +203,7 @@ Workspaces are stored in the `./outputs/workspaces` folder.
 
 ### Creating or switching workspaces
 
-To create or switch to a different workspace, set the `WORKSPACE` environment variable when launching the interactive session:
+To create or switch to a different workspace, set the `WORKSPACE` variable when launching your session:
 ```bash
 WORKSPACE=my_workspace mise interactive
 ```
