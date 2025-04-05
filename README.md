@@ -124,13 +124,15 @@ SEARCH_TOOL="duckduckgo"
 
 | Step | Action                                           | Explanation                                                                                      |
 |------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| **1** | Run: `mise interactive`                          | This command starts the interactive mode of the `mise` tool, allowing you to input prompts easily. |
-| **2** | Split the terminal & run: `mise monitor`       | This provides a live view of the platform’s activity. |
-| **3** | Enter the following: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together a simple 3-day itinerary. I've already booked my flights and will be staying in the Back Bay area. I'd like to explore historical sites, attend a local hockey game, and enjoy some great food. Could you suggest a good restaurant for dinner each day? I'd like to try Italian, Chinese, and French cuisine.` | Observe the supervisor agent begin to create tasks and generate specialized agents e.g., `itinerary_planner`, `hockey_game_finder`, and `restaurant_selector`. |
-| **4** | Enter a follow-up prompt: <br> `This is great! Can you add one visit to a science museum?` | Watch the supervisor agent create an additional agent to address your additional task. |
-| **5** | Try redirecting the supervisor agent (?) | TBD |
+| **1** | Define a new workspace and run:<br> `WORKSPACE=trip-planner mise interactive`  | Run this command to start the interactive mode of the `mise` tool. This will allow you to input prompts easily and save your work in `output/workspaces/trip-planner`. |
+| **2** | Split the terminal, then run:<br> `mise monitor`  | View a live activity feed of the platform's tasks and agents. |
+| **3** | Input the following prompt: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together an itinerary. I want to try the best food available in the city. I enjoy Seafood and Italian cuisine.` | Observe the supervisor agent create tasks and generate specialized agents (e.g., `itinerary_planner`, and `restaurant_researcher`). |
+| **4** | Modify an existing agent:<br> `Can you change the instructions of the restaurant researcher to only suggest restaurants that offer gluten free?` | Watch the supervisor agent update the instructions of the `restaurant_researcher`. |
+| **5** | Add more agents:<br> `I also want suggestions for the best hotels around the North End Boston.` | Watch the supervisor create an additional agent focused on accomodations. |
 
-[^WORK IN PROGRESS]
+> [!Important]
+> All tasks and agents are preserved in `output/workspaces/trip-planner`.<br>
+> To avoid losing your work, always define a workspace when running `mise interactive`.
 
 ## Interaction modes
 
@@ -187,7 +189,7 @@ Workspaces are stored in the `./outputs/workspaces` folder.
 
 ### Creating or switching workspaces
 
-To create or switch to a different workspace, set the `WORKSPACE` environment variable before launching the interactive session:
+To create or switch to a different workspace, set the `WORKSPACE` environment variable when launching the interactive session:
 ```bash
 WORKSPACE=my_workspace mise interactive
 ```
