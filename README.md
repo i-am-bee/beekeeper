@@ -136,7 +136,7 @@ SEARCH_TOOL="duckduckgo"
 | **6** | Now that you have all your agents set up, close out of the session (`esc` 2x, click yes) and start fresh:<br> `WORKSPACE=trip-planner mise interactive` | Revisit your multi-agent system at any time using this command. All tasks and agents are preserved in `output/workspaces/trip-planner`. |
 | **7** | Finally, engage all agents with a prompt: `I'm traveling to Boston MA next week for 3 days. I want some excellent restaurant recommendations and hotel suggestions.` | Notice all agent configurations are preserved, allowing you to build on your work. For example, there is no need to specify gluten-free restaurants since your restaurant agents configuration is preserved. |
 
-**You've just built your first multi-agent system with a supervisor agent 👏**
+**You've just built your first multi-agent system with Beekeeper 👏**
 
 Now you're ready to iterate, expand, or even create something completely new!
 
