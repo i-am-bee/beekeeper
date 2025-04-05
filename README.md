@@ -140,11 +140,11 @@ SEARCH_TOOL="duckduckgo"
 
 Now you're ready to iterate, expand, or even create something completely new!
 
+---
+
 ## Interaction modes
 
 The system operates in two modes: **Interactive** and **Autonomous**.
-
----
 
 ### Interactive mode
 
