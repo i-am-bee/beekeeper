@@ -124,7 +124,7 @@ SEARCH_TOOL="duckduckgo"
 
 | Step | Action                                           | Explanation                                                                                      |
 |------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| **1** | Define a new workspace and run:<br> `WORKSPACE=trip-planner mise interactive`  | Run this command to start the interactive mode of the `mise` tool. This will allow you to input prompts easily and save your work in `output/workspaces/trip-planner`. |
+| **1** | Run:<br> `WORKSPACE=trip-planner mise interactive`  | Run this command to start the interactive mode of the `mise` tool. This will allow you to input prompts easily and save your work in `output/workspaces/trip-planner`. |
 | **2** | Split the terminal, then run:<br> `mise monitor`  | View a live activity feed of the platform's tasks and agents. |
 | **3** | Input the following prompt: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together an itinerary. I want to try the best food available in the city. I enjoy Seafood and Italian cuisine.` | Observe the supervisor agent create tasks and generate specialized agents (e.g., `itinerary_planner`, and `restaurant_researcher`). |
 | **4** | Modify an existing agent:<br> `Can you change the instructions of the restaurant researcher to only suggest restaurants that offer gluten free?` | Watch the supervisor agent update the instructions of the `restaurant_researcher`. |
@@ -132,7 +132,7 @@ SEARCH_TOOL="duckduckgo"
 | **6** | Now that you have all your agents set up, close out of the session (`esc` 2x, click yes) and start fresh:<br> `WORKSPACE=trip-planner mise interactive` | Revisit your multi-agent system at any time using this command. All tasks and agents are preserved in `output/workspaces/trip-planner`. |
 | **7** | Finally, engage all agents with a prompt: `I'm traveling to Boston MA next week for 3 days. I want some excellent restaurant recommendations and hotel suggestions.` | Notice all agent configurations are preserved, allowing you to build on your work. For example, there is no need to specify gluten-free restaurants since your restaurant agents configuration is preserved. |
 
-You've just built your first multi-agent system with a supervisor agent - now you're ready to iterate, expand, or even create something completely new!
+You've just built your first multi-agent system with a supervisor agent 👏 Now you're ready to iterate, expand, or even create something completely new!
 
 > [!Important]
 > All tasks and agents are preserved in `output/workspaces/trip-planner`.<br>
