@@ -187,6 +187,12 @@ export class TaskStateBuilder extends BaseStateBuilder<
               modifiedUpdate.blockedByTaskRunIds,
             );
         }
+        if (modifiedUpdate.blockingTaskRunIds) {
+          modifiedUpdate.blockingTaskRunIds =
+            taskRunInfo.taskRun.blockingTaskRunIds.concat(
+              modifiedUpdate.blockingTaskRunIds,
+            );
+        }
 
         updateDeepPartialObject(taskRunInfo.taskRun, modifiedUpdate);
         break;

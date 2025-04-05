@@ -3,7 +3,7 @@ import { AgentRegistry } from "@/agents/registry/registry.js";
 import { PROCESS_AND_PLAN_TASK_NAME } from "@/agents/supervisor.js";
 import { RuntimeOutput } from "@/runtime/dto.js";
 import {
-  isTaskRunActiveStatus,
+  isTaskRunTerminationStatus,
   TaskRun,
   TaskRunIdValue,
 } from "@/tasks/manager/dto.js";
@@ -169,11 +169,11 @@ export class Runtime {
     this.taskManager.on("task_run:complete", onTaskRunComplete);
 
     try {
-      let taskRunId: TaskRunIdValue | null = null;
+      let interactionTaskRunId: TaskRunIdValue | null = null;
       while (true) {
         this.logger.debug(`waiting...`);
 
-        if (!taskRunId) {
+        if (!interactionTaskRunId) {
           const taskRun = this.taskManager.createTaskRun(
             "supervisor",
             PROCESS_AND_PLAN_TASK_NAME,
@@ -184,55 +184,61 @@ export class Runtime {
               signal,
             },
           );
-          taskRunId = taskRun.taskRunId;
+          interactionTaskRunId = taskRun.taskRunId;
         }
         const restMs = timeoutTime - Date.now();
         // Check if we've exceeded the timeout
         if (restMs <= 0) {
           this.logger.error(
-            { taskRunId },
+            { interactionTaskRunId },
             "Timeout waiting for finish supervisor run",
           );
           throw new Error(
-            `Timeout waiting for finish supervisor run ${taskRunId}`,
+            `Timeout waiting for finish supervisor run ${interactionTaskRunId}`,
           );
         }
 
-        const runningTaskRuns = this.taskManager.findTaskRunsOwnedBy(
-          this.supervisor.agentId,
-          this.supervisor.agentId,
-        );
-        const taskRun = runningTaskRuns.find((t) => t.taskRunId === taskRunId);
-        if (!taskRun) {
-          throw new Error(`Can't find taskRunId:${taskRunId}`);
-        }
-
-        const active = runningTaskRuns.filter((tr) =>
-          isTaskRunActiveStatus(tr.status),
-        );
-        if (!active.length) {
-          this.logger.debug(
-            `There are ${active.length} unfinished task. Closing loop.`,
+        const interactionChildrenTaskRuns =
+          this.taskManager.findInteractionChildrenTaskRuns(
+            interactionTaskRunId,
+            this.supervisor.agentId,
           );
-          const taskRun = this.taskManager.getTaskRun(taskRunId, RUNTIME_USER);
-          if (taskRun.status === "ABORTED") {
-            return `Task was aborted`;
-          } else if (taskRun.status === "FAILED") {
-            return `Task was failed`;
+        const active = interactionChildrenTaskRuns.filter(
+          (taskRun) => !isTaskRunTerminationStatus(taskRun.status),
+        );
+
+        const interactionTaskRun = this.taskManager.getTaskRun(
+          interactionTaskRunId,
+          RUNTIME_USER,
+        );
+        if (isTaskRunTerminationStatus(interactionTaskRun.status)) {
+          if (!active.length) {
+            this.logger.debug(
+              `There are ${active.length} unfinished task. Closing loop.`,
+            );
+            const taskRun = this.taskManager.getTaskRun(
+              interactionTaskRunId,
+              RUNTIME_USER,
+            );
+            if (taskRun.status === "ABORTED") {
+              return `Task was aborted`;
+            } else if (taskRun.status === "FAILED") {
+              return `Task was failed`;
+            }
+
+            const response = taskRunInteractionResponse(taskRun);
+            outputMethod({
+              kind: "final",
+              taskRun,
+              agent: this.supervisor,
+              text: response,
+            });
+            return response;
+          } else {
+            this.logger.debug(
+              `There are ${active.length} active tasks. Keeping loop...`,
+            );
           }
-
-          const response = taskRunInteractionResponse(taskRun);
-          outputMethod({
-            kind: "final",
-            taskRun,
-            agent: this.supervisor,
-            text: response,
-          });
-          return response;
-        } else {
-          this.logger.debug(
-            `There are ${active.length} active tasks. Keeping loop...`,
-          );
         }
 
         //Sleep for polling

@@ -156,10 +156,10 @@ export class ChatMonitor extends BaseMonitor {
     // Mouse scrolling for messages
     this.messagesBox.on("mouse", (data) => {
       if (data.action === "wheelup") {
-        this.messagesBox.scroll(-3);
+        this.messagesBox.scroll(-1);
         this.screen.render();
       } else if (data.action === "wheeldown") {
-        this.messagesBox.scroll(3);
+        this.messagesBox.scroll(1);
         this.screen.render();
       }
     });
@@ -190,12 +190,12 @@ export class ChatMonitor extends BaseMonitor {
 
     // Add page up/down for message scrolling
     this.screen.key(["pageup"], () => {
-      this.messagesBox.scroll(-this.messagesBox.height);
+      this.messagesBox.scroll(-3);
       this.screen.render();
     });
 
     this.screen.key(["pagedown"], () => {
-      this.messagesBox.scroll(Number(this.messagesBox.height));
+      this.messagesBox.scroll(3);
       this.screen.render();
     });
 

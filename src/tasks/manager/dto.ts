@@ -279,6 +279,9 @@ export const BaseTaskRunSchema = z
       .describe(
         `Indicates if it depends on another task run so then is not possible to start it manually. `,
       ),
+    initiatingTaskRunId: TaskRunIdValueSchema.describe(
+      "ID of the originating interaction task run that started this interaction chain. This field is only populated when the task was scheduled to run.",
+    ).optional(),
     blockedByTaskRunIds: z
       .array(TaskRunIdValueSchema)
       .describe(

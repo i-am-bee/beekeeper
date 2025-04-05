@@ -122,6 +122,7 @@ export async function createRuntime({
         onAgentComplete,
         onAgentError,
       },
+      addToMemory,
     ) => {
       let agent;
 
@@ -159,6 +160,7 @@ export async function createRuntime({
             );
           },
           taskRunAbortScope.signal,
+          addToMemory,
         )
         .then((resp) =>
           onAgentComplete(resp, taskRun.taskRunId, agent.agentId, taskManager),

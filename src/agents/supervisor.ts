@@ -99,11 +99,10 @@ export const SUPERVISOR_INSTRUCTIONS = (
   * A **task run** is an instance of a task config, with a specific input (e.g., topic: 'black cat').  
     * When a task run starts, it will be assigned to the latest version of the agent config with the matching \`{agentKind}:{agentType}\`, e.g., \`'operator:poem_generator'\`.
     * Each task run has a unique ID: \`task:{taskType}[{instanceNum}]:{version}\`, for example \`task:poem_generation[1]:1\`.
-    * Each task run can specify a blocked task run ID property. The blocked task run will then receive the output of the original task run as its input. This is useful when you need to chain tasks one after another.
+    * Each task run can specify a blocking task runs ID property. The blocked task runs will then receive the output of the original task run as its input. This is useful when you need to chain tasks one after another or parallel.
     * In addition to being divided by task kind, task runs are categorized by task run kind: \`${TaskRunKindEnumSchema.enum.interaction}\` and \`${TaskRunKindEnumSchema.enum.automatic}\`.
       * \`${TaskRunKindEnumSchema.enum.interaction}\` represents interaction with the outer world (mostly users), carries input and provides response. It is always created by the system, never by an assistant. This kind of task run is the origin for any other task runs in the system, and its ID is passed through them. When the last task run in the chain of dependent task runs is completed, its output is set as the response to the user in the origin \`${TaskRunKindEnumSchema.enum.interaction}\` task run.
-      * \`${TaskRunKindEnumSchema.enum.automatic}\` represents internal processing steps performed by the system. These are created by assistants as part of breaking down complex tasks into manageable sub-tasks. They receive input from preceding task runs, process it according to their configuration, and pass their output to subsequent task runs in the dependency chain. Unlike interaction tasks, automatic tasks don't directly communicate with the user but serve as computational building blocks that collectively solve the user's request.
-    * If task run related task config has set **run immediately** you have to provide all blocking task runs in its creation.
+      * \`${TaskRunKindEnumSchema.enum.automatic}\` represents internal processing steps performed by the system. These are created by assistants as part of breaking down complex tasks into manageable sub-tasks. They receive input from preceding task runs, process it according to their configuration, and pass their output to subsequent task runs in the dependency chain. Unlike interaction tasks, automatic tasks don't directly communicate with the user but serve as computational building blocks that collectively solve the user's request.    
   * **Task pool**:
     * The task pool does not auto-instantiate tasks because tasks require specific input.
     * The task pool does not have a size limit; tasks can remain until an appropriate agent is available.
@@ -171,12 +170,13 @@ export const SUPERVISOR_INSTRUCTIONS = (
 
 **ALWAYS**
 1. ALWAYS call schedule task run start if you want to start it.
+1. ALWAYS prefer to call schedule interaction blocking task runs start if you want to start all blocking task at once on behalf on of **${PROCESS_AND_PLAN_TASK_NAME}** before schedule a specific task runs.
 2. ALWAYS when you schedule start of a task run then you should IMMEDIATELY respond to the user and let the automatic mechanism finish the work. 
 3. ALWAYS when you create a task run on behalf of **${PROCESS_AND_PLAN_TASK_NAME}**, use the provided task run's ID to fill the "blocked by task run ids" property to keep dependency relation.
 4. ALWAYS when you create a task run, set the "origin task run id" to the ID of the task run on behalf of which you are acting.
 5. ALWAYS check whether a agent config with the required functionality already exists before creating a new one or creating a task config.
 6. ALWAYS check whether a task config with the required functionality already exists before creating a new one.
-7. ALWAYS create a dedicated task to process, summarize, or integrate outputs from multiple tasks. Set the "blocked by task run ids" property of this integration task to the IDs of all relevant preceding tasks, since task outputs are not automatically provided through the dependency hierarchy.`;
+7. ALWAYS create a dedicated task to process, aggregate, summarize, or integrate outputs from multiple tasks. Set the "blocked by task run ids" property of this integration task to the IDs of all relevant preceding tasks, since task outputs are not automatically provided through the dependency hierarchy.`;
 
 export class ToolsFactory extends BaseToolsFactory {
   constructor(

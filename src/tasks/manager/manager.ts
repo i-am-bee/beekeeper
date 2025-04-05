@@ -21,6 +21,7 @@ import { TaskStateLogger } from "@tasks/state/logger.js";
 import { WorkspaceResource } from "@workspaces/manager/index.js";
 import { WorkspaceRestorable } from "@workspaces/restore/index.js";
 import { AbortError, FrameworkError, Logger } from "beeai-framework";
+import { AssistantMessage, ToolMessage } from "beeai-framework/backend/message";
 import EventEmitter from "events";
 import { clone, difference, isNonNullish, omit } from "remeda";
 import {
@@ -44,18 +45,20 @@ import {
   TaskConfigVersionValue,
   TaskKindEnum,
   TaskKindEnumSchema,
+  TaskKindValue,
   TaskRun,
   TaskRunHistoryEntry,
   TaskRunIdValue,
   TaskRunKindEnum,
+  TaskRunKindEnumSchema,
   TaskRunStatusEnum,
   TaskRunStatusEnumSchema,
   TaskRunTerminalStatusEnum,
   TaskTypeValue,
 } from "./dto.js";
 import {
-  serializeTaskRunInput,
   extendBlockingTaskRunOutput,
+  serializeTaskRunInput,
   taskRunError,
   taskRunOutput,
 } from "./helpers.js";
@@ -88,33 +91,34 @@ export type OnTaskStart = (
   callbacks: {
     onAwaitingAgentAcquired: (
       taskRunId: TaskRunIdValue,
-      taskManage: TaskManager
+      taskManage: TaskManager,
     ) => void;
     onAgentAcquired: (
       taskRunId: TaskRunIdValue,
       agentId: AgentIdValue,
-      taskManage: TaskManager
+      taskManage: TaskManager,
     ) => void;
     onAgentUpdate: (
       key: string,
       value: string,
       taskRunId: TaskRunIdValue,
       agentId: AgentIdValue,
-      taskManage: TaskManager
+      taskManage: TaskManager,
     ) => void;
     onAgentComplete: (
       output: string,
       taskRunId: TaskRunIdValue,
       agentId: AgentIdValue,
-      taskManage: TaskManager
+      taskManage: TaskManager,
     ) => void;
     onAgentError: (
       err: Error,
       taskRunId: TaskRunIdValue,
       agentId: AgentIdValue,
-      taskManage: TaskManager
+      taskManage: TaskManager,
     ) => void;
-  }
+  },
+  addToMemory?: (AssistantMessage | ToolMessage)[],
 ) => Promise<unknown>;
 
 interface TaskManagerEvents {
@@ -196,22 +200,22 @@ export class TaskManager extends WorkspaceRestorable {
     this.ac = new ResourcesAccessControl(
       this.constructor.name,
       [TASK_MANAGER_USER].concat(
-        this.options.adminIds ? this.options.adminIds : []
+        this.options.adminIds ? this.options.adminIds : [],
       ),
-      logger
+      logger,
     );
     this.ac.createResource(
       TASK_MANAGER_RESOURCE,
       TASK_MANAGER_USER,
-      TASK_MANAGER_USER
+      TASK_MANAGER_USER,
     );
 
     // Initialize task pools for all task kinds
     this.taskConfigs = new Map(
-      TaskKindEnumSchema.options.map((kind) => [kind, new Map()])
+      TaskKindEnumSchema.options.map((kind) => [kind, new Map()]),
     );
     this.taskPools = new Map(
-      TaskKindEnumSchema.options.map((kind) => [kind, new Map()])
+      TaskKindEnumSchema.options.map((kind) => [kind, new Map()]),
     );
     this._switches = { restoration: true, ...clone(switches) };
   }
@@ -254,7 +258,7 @@ export class TaskManager extends WorkspaceRestorable {
 
     this.logger.info(
       { taskRunId, actingAgentId },
-      "Starting scheduled task run"
+      "Starting scheduled task run",
     );
 
     const taskRun = this.getTaskRun(taskRunId, actingAgentId, FULL_ACCESS);
@@ -279,7 +283,7 @@ export class TaskManager extends WorkspaceRestorable {
             taskRunId,
             intervalMs: taskRun.config.intervalMs,
           },
-          "Setting up task interval"
+          "Setting up task interval",
         );
 
         // Use the task scope to create the interval
@@ -289,7 +293,7 @@ export class TaskManager extends WorkspaceRestorable {
           } catch (err) {
             this.logger.error(
               { err, taskRunId, actingAgentId },
-              "Error executing scheduled task"
+              "Error executing scheduled task",
             );
           }
         }, taskRun.config.intervalMs);
@@ -339,7 +343,7 @@ export class TaskManager extends WorkspaceRestorable {
       } else {
         this.logger.error(
           { err, taskRunId, actingAgentId },
-          "Failed to start task"
+          "Failed to start task",
         );
 
         // Clean up on error
@@ -369,14 +373,14 @@ export class TaskManager extends WorkspaceRestorable {
 
   public on<K extends keyof TaskManagerEvents>(
     event: K,
-    listener: TaskManagerEvents[K]
+    listener: TaskManagerEvents[K],
   ): typeof this.emitter {
     return this.emitter.on(event, listener);
   }
 
   public off<K extends keyof TaskManagerEvents>(
     event: K,
-    listener: TaskManagerEvents[K]
+    listener: TaskManagerEvents[K],
   ): typeof this.emitter {
     return this.emitter.off(event, listener);
   }
@@ -410,7 +414,7 @@ export class TaskManager extends WorkspaceRestorable {
   protected restoreEntity(
     resource: WorkspaceResource,
     line: string,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ): void {
     this.logger.info(`Restoring previous state from ${resource.path}`);
     // Check if aborted
@@ -430,7 +434,7 @@ export class TaskManager extends WorkspaceRestorable {
         taskConfigResult.data.taskConfig,
         taskConfigResult.data.ownerId,
         actingAgentId,
-        false
+        false,
       );
       return;
     }
@@ -446,19 +450,19 @@ export class TaskManager extends WorkspaceRestorable {
           const taskConfig = versions.at(-1);
           if (!taskConfig) {
             throw new Error(
-              `Task ${taskSomeIdToTypeValue({ taskKind, taskType })} has no version to serialize`
+              `Task ${taskSomeIdToTypeValue({ taskKind, taskType })} has no version to serialize`,
             );
           }
           const { ownerId } = this.ac.getResourcePermissionsByAdmin(
             taskConfig.taskConfigId,
-            TASK_MANAGER_USER
+            TASK_MANAGER_USER,
           )!;
           const config = {
             ownerId,
             taskConfig,
           } satisfies TaskConfigOwnedResource;
           return JSON.stringify(config);
-        })
+        }),
       )
       .flat()
       .join("\n");
@@ -469,7 +473,7 @@ export class TaskManager extends WorkspaceRestorable {
       TASK_MANAGER_RESOURCE,
       agentId,
       FULL_ACCESS,
-      TASK_MANAGER_USER
+      TASK_MANAGER_USER,
     );
   }
 
@@ -481,7 +485,7 @@ export class TaskManager extends WorkspaceRestorable {
     } else {
       if (types.includes(agentType)) {
         throw new Error(
-          `Agent type duplicity for agentKind:${agentKind}, agentType:${agentType}`
+          `Agent type duplicity for agentKind:${agentKind}, agentType:${agentType}`,
         );
       }
       types.push(agentType);
@@ -494,7 +498,7 @@ export class TaskManager extends WorkspaceRestorable {
   getTaskRun(
     taskRunId: TaskRunIdValue,
     actingAgentId: AgentIdValue,
-    permissions = READ_ONLY_ACCESS
+    permissions = READ_ONLY_ACCESS,
   ): TaskRunRuntime {
     this.logger.trace({ taskRunId }, "Getting task run by ID");
     this.ac.checkPermission(taskRunId, actingAgentId, permissions);
@@ -510,17 +514,17 @@ export class TaskManager extends WorkspaceRestorable {
   getPoolStats(
     taskKind: TaskKindEnum,
     taskType: TaskTypeValue,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ): [TaskConfigPoolStats, [number, TaskConfigPoolStats][]] {
     this.logger.trace(
       { taskKind, taskType, actingAgentId },
-      "Getting pool statistics"
+      "Getting pool statistics",
     );
 
     this.ac.checkPermission(
       TASK_MANAGER_RESOURCE,
       actingAgentId,
-      READ_ONLY_ACCESS
+      READ_ONLY_ACCESS,
     );
 
     const pool = this.getTaskTypeVersionSetsArray(taskKind, taskType, false);
@@ -555,14 +559,14 @@ export class TaskManager extends WorkspaceRestorable {
               }
             })
             .filter(isNonNullish),
-        ] as const
+        ] as const,
     );
     const versions = versionedTaskRuns.map(([version, taskRuns]) => {
       const config = this.getTaskConfig(
         taskKind,
         taskType,
         actingAgentId,
-        version
+        version,
       );
       const stats = {
         poolSize: config.concurrencyMode === "EXCLUSIVE" ? 1 : MAX_POOL_SIZE,
@@ -614,7 +618,7 @@ export class TaskManager extends WorkspaceRestorable {
         awaiting_agent: 0,
         created: 0,
         total: 0,
-      } satisfies TaskConfigPoolStats
+      } satisfies TaskConfigPoolStats,
     );
 
     this.logger.trace({ taskType: taskType, ...stats }, "Pool statistics");
@@ -625,12 +629,12 @@ export class TaskManager extends WorkspaceRestorable {
     taskKind: TaskKindEnum,
     taskType: TaskTypeValue,
     taskConfigVersion: number,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ) {
     // FIXME Unoptimized
     const [, versions] = this.getPoolStats(taskKind, taskType, actingAgentId);
     const found = versions.find(
-      ([currVersion]) => currVersion === taskConfigVersion
+      ([currVersion]) => currVersion === taskConfigVersion,
     );
     if (!found) {
       return {
@@ -663,13 +667,13 @@ export class TaskManager extends WorkspaceRestorable {
   private getTaskTypeVersionSetsArray(
     taskKind: TaskKindEnum,
     taskType: AgentTypeValue,
-    throwError = true
+    throwError = true,
   ) {
     const poolKind = this.getTaskKindPoolMap(taskKind);
     const pool = poolKind.get(taskType);
     if (!pool && throwError) {
       throw new Error(
-        `There is missing pool version sets array for agent agentKind:${taskKind} agentType:${taskType}`
+        `There is missing pool version sets array for agent agentKind:${taskKind} agentType:${taskType}`,
       );
     }
     return pool;
@@ -678,18 +682,18 @@ export class TaskManager extends WorkspaceRestorable {
   private getTaskTypeVersionSet(
     taskKind: TaskKindEnum,
     taskType: TaskTypeValue,
-    taskConfigVersion: number
+    taskConfigVersion: number,
   ) {
     const poolVersionSetsArray = this.getTaskTypeVersionSetsArray(
       taskKind,
-      taskType
+      taskType,
     )!;
     const poolVersionSet = poolVersionSetsArray.find(
-      (it) => it[0] === taskConfigVersion
+      (it) => it[0] === taskConfigVersion,
     );
     if (!poolVersionSet) {
       throw new Error(
-        `There is missing pool version set for task taskKind:${taskKind} taskType:${taskType} version:${taskConfigVersion}`
+        `There is missing pool version set for task taskKind:${taskKind} taskType:${taskType} version:${taskConfigVersion}`,
       );
     }
     return poolVersionSet[1];
@@ -699,7 +703,7 @@ export class TaskManager extends WorkspaceRestorable {
     config: CreateTaskConfig,
     ownerAgentId: string,
     actingAgentId: AgentIdValue,
-    persist = true
+    persist = true,
   ): TaskConfig {
     const { taskKind, taskType, maxRepeats: maxRuns } = config;
     this.logger.info(
@@ -708,12 +712,12 @@ export class TaskManager extends WorkspaceRestorable {
         taskType,
         maxRuns,
       },
-      "Create new task config"
+      "Create new task config",
     );
     this.ac.checkPermission(
       TASK_MANAGER_RESOURCE,
       actingAgentId,
-      WRITE_ONLY_ACCESS
+      WRITE_ONLY_ACCESS,
     );
 
     const taskTypesMap = this.getTaskConfigMap(taskKind);
@@ -728,7 +732,7 @@ export class TaskManager extends WorkspaceRestorable {
         ?.includes(config.agentType)
     ) {
       throw new Error(
-        `Agent kind: ${config.agentKind} type: ${config.agentType} wasn't yet registered`
+        `Agent kind: ${config.agentKind} type: ${config.agentType} wasn't yet registered`,
       );
     }
 
@@ -751,7 +755,7 @@ export class TaskManager extends WorkspaceRestorable {
       taskConfigId,
       ownerAgentId,
       READ_EXECUTE_ACCESS,
-      actingAgentId
+      actingAgentId,
     );
 
     this.stateLogger.logTaskConfigCreate({
@@ -772,7 +776,7 @@ export class TaskManager extends WorkspaceRestorable {
   private initializeTaskPool(
     taskKind: TaskKindEnum,
     taskType: TaskTypeValue,
-    version: number
+    version: number,
   ) {
     this.logger.debug(
       {
@@ -780,7 +784,7 @@ export class TaskManager extends WorkspaceRestorable {
         taskType,
         version,
       },
-      "Initializing task pool"
+      "Initializing task pool",
     );
 
     const kindPool = this.getTaskKindPoolMap(taskKind);
@@ -796,7 +800,7 @@ export class TaskManager extends WorkspaceRestorable {
     const typesMap = this.taskConfigs.get(taskKind);
     if (!typesMap) {
       throw new Error(
-        `There is missing types map for task taskKind:${taskKind}`
+        `There is missing types map for task taskKind:${taskKind}`,
       );
     }
     return typesMap;
@@ -804,17 +808,17 @@ export class TaskManager extends WorkspaceRestorable {
 
   private getTaskConfigTypeMap(
     taskKind: TaskKindEnum,
-    taskType: TaskTypeValue
+    taskType: TaskTypeValue,
   ) {
     const taskConfigTypeMap = this.getTaskConfigMap(taskKind);
     const taskConfigVersions = taskConfigTypeMap.get(taskType);
     if (!taskConfigVersions) {
       this.logger.error(
         { taskKind, taskType },
-        "Task config type map was not found"
+        "Task config type map was not found",
       );
       throw new Error(
-        `Task kind '${taskKind}' type '${taskType}' was not found`
+        `Task kind '${taskKind}' type '${taskType}' was not found`,
       );
     }
     return taskConfigVersions;
@@ -836,28 +840,28 @@ export class TaskManager extends WorkspaceRestorable {
     taskType: TaskTypeValue,
     actingAgentId: AgentIdValue,
     taskConfigVersion?: number,
-    permissions = READ_ONLY_ACCESS
+    permissions = READ_ONLY_ACCESS,
   ): TaskConfig {
     const configVersions = this.getTaskConfigMap(taskKind).get(taskType);
     if (!configVersions) {
       this.logger.error({ taskKind, taskType }, "Task config not found");
       throw new Error(
-        `Task kind '${taskKind}' type '${taskType}' was not found`
+        `Task kind '${taskKind}' type '${taskType}' was not found`,
       );
     }
 
     let result;
     if (taskConfigVersion != null) {
       const configVersion = configVersions.find(
-        (c) => c.taskConfigVersion === taskConfigVersion
+        (c) => c.taskConfigVersion === taskConfigVersion,
       );
       if (!configVersion) {
         this.logger.error(
           { taskKind, taskType, taskConfigVersion },
-          "Task config version not found"
+          "Task config version not found",
         );
         throw new Error(
-          `Task kind '${taskKind}' type '${taskType}' version '${taskConfigVersion}' was not found`
+          `Task kind '${taskKind}' type '${taskType}' version '${taskConfigVersion}' was not found`,
         );
       }
       result = configVersion;
@@ -867,17 +871,17 @@ export class TaskManager extends WorkspaceRestorable {
     if (lastConfigVersion == null) {
       this.logger.error(
         { taskKind, taskType, taskConfigVersion },
-        "Task config last version was not found"
+        "Task config last version was not found",
       );
       throw new Error(
-        `Task kind '${taskKind}' type '${taskType}' last version was not found`
+        `Task kind '${taskKind}' type '${taskType}' last version was not found`,
       );
     }
     result = lastConfigVersion;
     this.ac.checkPermission(
       lastConfigVersion.taskConfigId,
       actingAgentId,
-      permissions
+      permissions,
     );
     return result;
   }
@@ -897,7 +901,7 @@ export class TaskManager extends WorkspaceRestorable {
           | "concurrencyMode"
         >
       >,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ) {
     const { taskKind, taskType } = update;
     this.logger.info(
@@ -906,7 +910,7 @@ export class TaskManager extends WorkspaceRestorable {
         taskType,
         actingAgentId,
       },
-      "Update task config"
+      "Update task config",
     );
 
     const config = this.getTaskConfig(
@@ -914,7 +918,7 @@ export class TaskManager extends WorkspaceRestorable {
       taskType,
       actingAgentId,
       undefined,
-      READ_WRITE_ACCESS
+      READ_WRITE_ACCESS,
     );
 
     const newConfigVersion = clone(config);
@@ -937,7 +941,7 @@ export class TaskManager extends WorkspaceRestorable {
       taskConfigId,
       config.ownerAgentId,
       READ_EXECUTE_ACCESS,
-      actingAgentId
+      actingAgentId,
     );
 
     this.stateLogger.logTaskConfigUpdate({
@@ -953,21 +957,21 @@ export class TaskManager extends WorkspaceRestorable {
   destroyTaskConfig(
     taskKind: TaskKindEnum,
     taskType: TaskTypeValue,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ): void {
     this.logger.info(
       { taskKind, taskType, actingAgentId },
-      "Destroying agent configuration"
+      "Destroying agent configuration",
     );
 
     const configVersions = this.getTaskConfigMap(taskKind).get(taskType);
     if (!configVersions) {
       this.logger.error(
         { taskKind, taskType },
-        "Task config versions was not found"
+        "Task config versions was not found",
       );
       throw new Error(
-        `Task kind '${taskKind}' type '${taskType}' config versions was not found`
+        `Task kind '${taskKind}' type '${taskType}' config versions was not found`,
       );
     }
 
@@ -978,15 +982,15 @@ export class TaskManager extends WorkspaceRestorable {
         taskKind,
         taskType,
         taskConfigVersion,
-        actingAgentId
+        actingAgentId,
       );
       if (stats.active) {
         this.logger.error(
           { taskKind, taskType, stats },
-          "Task config can't be destroyed while it is still has active runs"
+          "Task config can't be destroyed while it is still has active runs",
         );
         throw new Error(
-          `Task config kind '${taskKind}' type '${taskType}' version '${taskConfigVersion}' can't be destroyed while it is still has active runs.`
+          `Task config kind '${taskKind}' type '${taskType}' version '${taskConfigVersion}' can't be destroyed while it is still has active runs.`,
         );
       }
       configVersions.splice(index, 1)[0];
@@ -997,7 +1001,7 @@ export class TaskManager extends WorkspaceRestorable {
           taskType,
           taskConfigVersion,
         },
-        "Task config destroyed successfully"
+        "Task config destroyed successfully",
       );
 
       this.stateLogger.logTaskConfigDestroy({
@@ -1010,7 +1014,7 @@ export class TaskManager extends WorkspaceRestorable {
       const [poolStats, versions] = this.getPoolStats(
         taskKind,
         taskType,
-        actingAgentId
+        actingAgentId,
       );
       this.stateLogger.logPoolChange({
         taskTypeId: taskSomeIdToTypeValue({ taskKind, taskType }),
@@ -1025,7 +1029,7 @@ export class TaskManager extends WorkspaceRestorable {
       this.getTaskConfigMap(taskKind).delete(taskType);
       this.ac.removeResource(
         taskSomeIdToTypeValue({ taskKind, taskType }),
-        actingAgentId
+        actingAgentId,
       );
     }
 
@@ -1046,13 +1050,13 @@ export class TaskManager extends WorkspaceRestorable {
         this.ac.hasPermission(
           taskConfig.taskConfigId,
           actingAgentId,
-          READ_ONLY_ACCESS
-        )
+          READ_ONLY_ACCESS,
+        ),
       );
 
     this.logger.debug(
       { actingAgentId, count: taskConfigs.length },
-      "Retrieved task runs"
+      "Retrieved task runs",
     );
     return taskConfigs;
   }
@@ -1067,7 +1071,7 @@ export class TaskManager extends WorkspaceRestorable {
       signal?: AbortSignal;
       originTaskRunId?: TaskRunIdValue;
       blockedByTaskRunIds?: TaskRunIdValue[];
-    }
+    },
   ): TaskRun {
     this.logger.debug(
       {
@@ -1075,7 +1079,7 @@ export class TaskManager extends WorkspaceRestorable {
         taskType,
         actingAgentId,
       },
-      "Creating new task run"
+      "Creating new task run",
     );
 
     const config = this.getTaskConfig(
@@ -1083,13 +1087,13 @@ export class TaskManager extends WorkspaceRestorable {
       taskType,
       actingAgentId,
       undefined,
-      READ_EXECUTE_ACCESS
+      READ_EXECUTE_ACCESS,
     );
 
     this.ac.checkPermission(
       config.taskConfigId,
       actingAgentId,
-      READ_EXECUTE_ACCESS
+      READ_EXECUTE_ACCESS,
     );
 
     const { taskConfigVersion } = config;
@@ -1097,7 +1101,7 @@ export class TaskManager extends WorkspaceRestorable {
       taskKind,
       taskType,
       taskConfigVersion,
-      actingAgentId
+      actingAgentId,
     );
     const taskRunNum = versionPoolStats.total + 1;
     const taskRunId = taskRunIdToString({
@@ -1110,17 +1114,24 @@ export class TaskManager extends WorkspaceRestorable {
     const types = this.registeredAgentTypes.get(config.agentKind);
     if (!types || !types.includes(config.agentType)) {
       throw new Error(
-        `Unregistered task type for task.agentKind:${config.agentKind} task.agentType: ${config.agentType}`
+        `Unregistered task type for task.agentKind:${config.agentKind} task.agentType: ${config.agentType}`,
       );
     }
 
-    if (options?.blockedByTaskRunIds?.length) {
-      const notFoundTaskRuns = options.blockedByTaskRunIds.filter(
-        (taskRunId) => this.taskRuns.get(taskRunId) == null
+    // Hack: Automatically set originTaskRun as blocked if there is no other blocked by task run to prevent stuck
+    const blockedByTaskRunIds = options?.blockedByTaskRunIds?.length
+      ? options.blockedByTaskRunIds
+      : options?.originTaskRunId
+        ? [options?.originTaskRunId]
+        : [];
+
+    if (blockedByTaskRunIds?.length) {
+      const notFoundTaskRuns = blockedByTaskRunIds.filter(
+        (taskRunId) => this.taskRuns.get(taskRunId) == null,
       );
       if (notFoundTaskRuns.length) {
         throw new Error(
-          `Undefined task run ids: ${notFoundTaskRuns.join(",")}`
+          `Undefined task run ids: ${notFoundTaskRuns.join(",")}`,
         );
       }
     }
@@ -1133,11 +1144,12 @@ export class TaskManager extends WorkspaceRestorable {
       },
     });
 
+    const originTaskRunId = options?.originTaskRunId ?? taskRunId;
     const baseTaskRun: BaseTaskRun = {
       taskKind,
       taskType,
       taskRunId,
-      originTaskRunId: options?.originTaskRunId ?? taskRunId,
+      originTaskRunId,
       taskConfigVersion: config.taskConfigVersion,
       taskRunNum,
       taskRunInput: input,
@@ -1151,7 +1163,7 @@ export class TaskManager extends WorkspaceRestorable {
       currentTrajectory: [],
       history: [],
       isDependent: false,
-      blockedByTaskRunIds: options?.blockedByTaskRunIds ?? [],
+      blockedByTaskRunIds,
       blockingTaskRunIds: [],
     };
 
@@ -1177,7 +1189,7 @@ export class TaskManager extends WorkspaceRestorable {
         onAbort: () => {
           this.logger.info(
             { taskRunId, actingAgentId },
-            "Aborting task interval"
+            "Aborting task interval",
           );
           this.abortTaskRun(taskRunId);
         },
@@ -1201,7 +1213,7 @@ export class TaskManager extends WorkspaceRestorable {
         const blockedByTaskRun = this.getTaskRun(
           blockedByTaskRunId,
           actingAgentId,
-          WRITE_ONLY_ACCESS
+          WRITE_ONLY_ACCESS,
         );
         this._updateTaskRun(blockedByTaskRunId, blockedByTaskRun, {
           blockingTaskRunIds: [taskRunId],
@@ -1218,13 +1230,13 @@ export class TaskManager extends WorkspaceRestorable {
     poolVersionSetArrayItem[1].add(taskRunId);
     this.logger.trace(
       { taskKind, taskType, taskConfigVersion, taskRunId },
-      "Added task to pool"
+      "Added task to pool",
     );
 
     const [poolStats, versions] = this.getPoolStats(
       taskKind,
       taskType,
-      actingAgentId
+      actingAgentId,
     );
     this.stateLogger.logPoolChange({
       taskTypeId: taskSomeIdToTypeValue({ taskKind, taskType }),
@@ -1233,22 +1245,53 @@ export class TaskManager extends WorkspaceRestorable {
     });
 
     if (config.runImmediately) {
-      this.scheduleStartTaskRun(taskRunId, actingAgentId);
+      this.scheduleStartTaskRun(taskRunId, actingAgentId, {
+        initiatingTaskRunId: originTaskRunId,
+      });
     }
 
     return taskRun;
   }
 
-  scheduleStartTaskRuns(
-    taskRunIds: string[],
+  scheduleStartInteractionBlockingTaskRuns(
+    interactionTaskRunId: TaskRunIdValue,
     actingAgentId: string,
     options?: {
       signal?: AbortSignal;
       manualStart?: boolean;
-    }
+    },
+  ) {
+    this.logger.info(
+      { interactionTaskRunId },
+      "Schedule interaction blocking task runs start",
+    );
+
+    const interactionTaskRun = this.getTaskRun(
+      interactionTaskRunId,
+      actingAgentId,
+    );
+
+    return this.scheduleStartTaskRuns(
+      interactionTaskRun.blockingTaskRunIds,
+      actingAgentId,
+      {
+        ...options,
+        initiatingTaskRunId: interactionTaskRunId,
+      },
+    );
+  }
+
+  scheduleStartTaskRuns(
+    taskRunIds: TaskRunIdValue[],
+    actingAgentId: string,
+    options?: {
+      initiatingTaskRunId?: TaskRunIdValue;
+      signal?: AbortSignal;
+      manualStart?: boolean;
+    },
   ): OperationResult[] {
     return taskRunIds.map((taskRunId) =>
-      this.scheduleStartTaskRun(taskRunId, actingAgentId, options)
+      this.scheduleStartTaskRun(taskRunId, actingAgentId, options),
     );
   }
 
@@ -1260,30 +1303,50 @@ export class TaskManager extends WorkspaceRestorable {
     taskRunId: TaskRunIdValue,
     actingAgentId: AgentIdValue,
     options?: {
+      initiatingTaskRunId?: TaskRunIdValue;
       signal?: AbortSignal;
       manualStart?: boolean;
-    }
+    },
   ): OperationResult {
     this.logger.info({ taskRunId, actingAgentId }, "Schedule task run start");
     this.ac.checkPermission(taskRunId, actingAgentId, FULL_ACCESS);
 
-    const taskRun = this.taskRuns.get(taskRunId);
-    if (!taskRun) {
-      this.logger.error({ taskRunId }, "Task run not found");
-      throw new Error(`Task run ${taskRunId} not found`);
+    let initiatingTaskRunId = options?.initiatingTaskRunId;
+
+    const taskRun = this.getTaskRun(taskRunId, TASK_MANAGER_USER);
+    // Validate initial task run
+    if (taskRun.taskRunKind === "automatic") {
+      if (!initiatingTaskRunId) {
+        throw new Error(
+          `Automatic task runs require a specified 'initiatingTaskRunId' attribute`,
+        );
+      } else {
+        // Check initial task run kind
+        const initiatingTaskRun = this.getTaskRun(
+          initiatingTaskRunId,
+          TASK_MANAGER_USER,
+        );
+        if (initiatingTaskRun.taskRunKind !== "interaction") {
+          throw new Error(
+            `Invalid initiating task run kind '${initiatingTaskRun.taskRunKind}'. Initiating task run must be '${TaskRunKindEnumSchema.Values.interaction}'`,
+          );
+        }
+      }
+    } else {
+      initiatingTaskRunId = taskRun.taskRunId;
     }
 
     if (options?.manualStart) {
       const blockedTaskRuns = this.collectBlockedTaskRuns(
-        taskRun.blockedByTaskRunIds
+        taskRun.blockedByTaskRunIds,
       );
       if (blockedTaskRuns.length) {
         this.logger.error(
           { taskRunId, blockedTaskRuns },
-          "Start blocking task attempt error"
+          "Start blocking task attempt error",
         );
         throw new Error(
-          `Start depending task attempt error. The task run is blocked by ${JSON.stringify(blockedTaskRuns)}`
+          `Start depending task attempt error. The task run is blocked by ${JSON.stringify(blockedTaskRuns)}`,
         );
       }
     }
@@ -1294,13 +1357,13 @@ export class TaskManager extends WorkspaceRestorable {
       taskKind,
       taskType,
       taskConfigVersion,
-      actingAgentId
+      actingAgentId,
     );
 
     if (versionPoolStats.active >= versionPoolStats.poolSize) {
       this.logger.trace(
         { taskKind, taskType, taskConfigVersion },
-        "Task pool population is full"
+        "Task pool population is full",
       );
       return {
         relatedId: taskRunId,
@@ -1312,12 +1375,16 @@ export class TaskManager extends WorkspaceRestorable {
 
     this._updateTaskRun(taskRunId, taskRun, {
       status: "SCHEDULED",
+      initiatingTaskRunId,
     });
     if (options?.signal) {
       taskRun.abortScope.switchSignal(options.signal);
     }
 
-    this.scheduledTasksToStart.push({ taskRunId, actingAgentId });
+    this.scheduledTasksToStart.push({
+      taskRunId,
+      actingAgentId,
+    });
     this.startTaskProcessing();
 
     return {
@@ -1328,7 +1395,7 @@ export class TaskManager extends WorkspaceRestorable {
 
   private collectBlockedTaskRuns(
     blockedTaskRunIds: TaskRunIdValue[],
-    visited: TaskRunIdValue[] = []
+    visited: TaskRunIdValue[] = [],
   ) {
     const result: {
       taskRunId: TaskRunIdValue;
@@ -1343,7 +1410,7 @@ export class TaskManager extends WorkspaceRestorable {
 
       const blockedByTaskRun = this.getTaskRun(
         blockedTaskRunId,
-        TASK_MANAGER_USER
+        TASK_MANAGER_USER,
       );
       visited.push(blockedTaskRunId);
 
@@ -1354,8 +1421,8 @@ export class TaskManager extends WorkspaceRestorable {
         result.push(
           ...this.collectBlockedTaskRuns(
             blockedByTaskRun.blockedByTaskRunIds,
-            visited
-          )
+            visited,
+          ),
         );
       } else {
         result.push({
@@ -1371,11 +1438,11 @@ export class TaskManager extends WorkspaceRestorable {
   stopTaskRun(
     taskRunId: TaskRunIdValue,
     actingAgentId: AgentIdValue,
-    finalStatus: FinalStatus = "STOPPED"
+    finalStatus: FinalStatus = "STOPPED",
   ): OperationResult {
     this.logger.info(
       { taskRunId, actingAgentId, finalStatus },
-      "Stopping task"
+      "Stopping task",
     );
     this.ac.checkPermission(taskRunId, actingAgentId, READ_WRITE_ACCESS);
 
@@ -1407,101 +1474,101 @@ export class TaskManager extends WorkspaceRestorable {
 
     const closeInteraction = (
       interactionTaskRunId: TaskRunIdValue,
-      finalStatus: FinalStatus
+      finalStatus: FinalStatus,
     ) => {
       // Close interaction
-      const originateInteraction = this.getTaskRun(
+      const interactionTaskRun = this.getTaskRun(
         interactionTaskRunId,
-        TASK_MANAGER_USER
+        TASK_MANAGER_USER,
       );
-      if (!originateInteraction) {
+      if (!interactionTaskRun) {
         throw new Error(
-          `Interaction task run \`${taskRun.originTaskRunId}\` is missing`
+          `Interaction task run \`${interactionTaskRun}\` is missing`,
         );
       }
-      if (originateInteraction.taskRunKind != "interaction") {
+      if (interactionTaskRun.taskRunKind != "interaction") {
         throw new Error(
-          `Task run \`${taskRun.originTaskRunId}\` is not an interaction`
+          `Task run \`${interactionTaskRun}\` is not an interaction`,
         );
       }
 
       const hasFailed = finalStatus === "FAILED";
-      const hasUnfinishedBlockingTask =
-        originateInteraction.blockingTaskRunIds.map(
-          (taskRunId) => this.taskRuns.get(taskRunId)?.status !== "COMPLETED"
-        ).length > 0;
 
-      if (hasFailed || !hasUnfinishedBlockingTask) {
-        this._updateTaskRun(
-          originateInteraction.taskRunId,
-          originateInteraction,
-          {
-            interactionStatus: hasFailed ? "FAILED" : "COMPLETED",
-            response: !hasFailed
-              ? taskRunOutput(taskRun, false)
-              : taskRunError(taskRun),
-          }
-        );
+      const interactionChildrenTaskRuns = this._findInteractionChildrenTaskRuns(
+        taskRunId,
+      ).filter(
+        (childTaskRun) => !isTaskRunTerminationStatus(childTaskRun.status),
+      );
+      const hasUnfinishedChildrenTasks = !!interactionChildrenTaskRuns.length;
+
+      if (hasFailed || !hasUnfinishedChildrenTasks) {
+        this._updateTaskRun(interactionTaskRun.taskRunId, interactionTaskRun, {
+          interactionStatus: hasFailed ? "FAILED" : "COMPLETED",
+          response: !hasFailed
+            ? taskRunOutput(taskRun, false)
+            : taskRunError(taskRun),
+        });
       }
     };
 
     if (taskRun.taskRunKind === "interaction") {
-      if (
-        !Array.from(this.taskRuns.values()).some(
-          (run) =>
-            run.taskRunKind === "automatic" &&
-            run.originTaskRunId === taskRun.taskRunId
-        )
-      ) {
+      const interactionChildrenTaskRuns =
+        this._findInteractionChildrenTaskRuns(taskRunId);
+      if (finalStatus === "STOPPED" && interactionChildrenTaskRuns.length) {
+        // Stopping children tasks
+        for (const childTask of interactionChildrenTaskRuns) {
+          this.stopTaskRun(childTask.taskRunId, actingAgentId, finalStatus);
+        }
+      } else {
+        // Closing interaction
         closeInteraction(taskRunId, finalStatus);
       }
     } else if (taskRun.taskRunKind === "automatic") {
+      // Process blocking tasks
       if (taskRun.blockingTaskRunIds.length > 0) {
-        // Run blocking task runs
-        const blockingTaskRunIdsToStart: string[] = [];
-
         for (const blockingTaskRunId of taskRun.blockingTaskRunIds) {
-          const hasUnfinishedBlockedTaskRuns =
-            this._hasUnfinishedBlockedTaskRunsOtherThan(
+          const hasOtherUnfinishedBlockedTaskRuns =
+            this.hasOtherUnfinishedBlockedTaskRuns(
               blockingTaskRunId,
-              taskRunId
+              taskRunId,
             );
 
           const blockingTaskRun = this.getTaskRun(
             blockingTaskRunId,
-            TASK_MANAGER_USER
+            TASK_MANAGER_USER,
           );
 
           if (finalStatus === "FAILED") {
             // Abort blocking task runs when failed
             blockingTaskRun.abortScope?.abort();
           } else {
+            // Pass output into blocking task input
             this._updateTaskRun(blockingTaskRunId, blockingTaskRun, {
               taskRunInput: extendBlockingTaskRunOutput(
                 blockingTaskRun.taskRunInput,
                 taskRunOutput(taskRun, false),
-                hasUnfinishedBlockedTaskRuns
+                hasOtherUnfinishedBlockedTaskRuns,
               ),
               originTaskRunId: taskRun.originTaskRunId,
             });
 
-            if (!hasUnfinishedBlockedTaskRuns) {
-              blockingTaskRunIdsToStart.push(blockingTaskRunId);
+            if (!hasOtherUnfinishedBlockedTaskRuns) {
+              if (!taskRun.initiatingTaskRunId) {
+                throw new Error(
+                  `Task run requires a specified 'initiatingTaskRunId' attribute`,
+                );
+              }
+
+              // Task doesn't wait to any unfinished blocked task so we can start it
+              this.scheduleStartTaskRun(blockingTaskRunId, TASK_MANAGER_USER, {
+                initiatingTaskRunId: taskRun.initiatingTaskRunId,
+                signal: taskRun.abortScope.signal,
+              });
             }
           }
         }
-
-        if (blockingTaskRunIdsToStart.length) {
-          this.scheduleStartTaskRuns(
-            blockingTaskRunIdsToStart,
-            TASK_MANAGER_USER,
-            {
-              signal: taskRun.abortScope.signal,
-            }
-          );
-        }
       } else {
-        closeInteraction(taskRun.originTaskRunId, finalStatus);
+        closeInteraction(taskRun.initiatingTaskRunId! /* FIXME */, finalStatus);
       }
     }
 
@@ -1510,7 +1577,7 @@ export class TaskManager extends WorkspaceRestorable {
       nextRunAt: undefined,
     });
 
-    this.logger.info({ taskRunId }, "Task stopped successfully");
+    this.logger.info({ taskRunId, finalStatus }, "Task stopped successfully");
 
     return {
       relatedId: taskRunId,
@@ -1518,17 +1585,17 @@ export class TaskManager extends WorkspaceRestorable {
     };
   }
 
-  private _hasUnfinishedBlockedTaskRunsOtherThan(
+  private hasOtherUnfinishedBlockedTaskRuns(
     taskRunId: TaskRunIdValue,
-    exception: TaskRunIdValue
+    currentBlockedTaskRunId: TaskRunIdValue,
   ) {
     const taskRun = this.getTaskRun(taskRunId, TASK_MANAGER_USER);
     for (const blockedTaskRunId of difference(taskRun.blockedByTaskRunIds, [
-      exception,
+      currentBlockedTaskRunId,
     ])) {
       const blockedTaskRun = this.getTaskRun(
         blockedTaskRunId,
-        TASK_MANAGER_USER
+        TASK_MANAGER_USER,
       );
       if (!["COMPLETED", "STOPPED"].includes(blockedTaskRun.status)) {
         return true;
@@ -1541,7 +1608,7 @@ export class TaskManager extends WorkspaceRestorable {
   destroyTaskRun(taskRunId: TaskRunIdValue, actingAgentId: AgentIdValue): void {
     this.logger.info(
       { taskRunId, actingAgentId },
-      "Attempting to destroy task run"
+      "Attempting to destroy task run",
     );
     this.ac.checkPermission(taskRunId, actingAgentId, WRITE_ONLY_ACCESS);
 
@@ -1554,7 +1621,7 @@ export class TaskManager extends WorkspaceRestorable {
     if (taskRun.status === "EXECUTING") {
       this.logger.debug(
         { taskRunId },
-        "Stopping executing task before removal"
+        "Stopping executing task before removal",
       );
       this.stopTaskRun(taskRunId, actingAgentId);
     }
@@ -1562,7 +1629,7 @@ export class TaskManager extends WorkspaceRestorable {
     if (taskRun.isOccupied) {
       this.logger.debug(
         { taskRunId },
-        "Releasing task occupancy before removal"
+        "Releasing task occupancy before removal",
       );
       this.releaseTaskRunOccupancy(taskRunId, actingAgentId);
     }
@@ -1580,7 +1647,7 @@ export class TaskManager extends WorkspaceRestorable {
     const poolSet = this.getTaskTypeVersionSet(
       taskKind,
       taskType,
-      taskConfigVersion
+      taskConfigVersion,
     );
     if (poolSet) {
       poolSet.delete(taskRunId);
@@ -1591,7 +1658,7 @@ export class TaskManager extends WorkspaceRestorable {
           taskType,
           taskConfigVersion,
         },
-        "Removed task run from pool"
+        "Removed task run from pool",
       );
     } else {
       throw new Error(`Missing pool`);
@@ -1601,10 +1668,10 @@ export class TaskManager extends WorkspaceRestorable {
       // Remove pool version array set item
       const poolVersionSetsArray = this.getTaskTypeVersionSetsArray(
         taskKind,
-        taskType
+        taskType,
       )!;
       const poolVersionSet = poolVersionSetsArray.findIndex(
-        (it) => it[0] === taskConfigVersion
+        (it) => it[0] === taskConfigVersion,
       );
       poolVersionSetsArray.splice(poolVersionSet, 1);
     }
@@ -1616,7 +1683,7 @@ export class TaskManager extends WorkspaceRestorable {
         taskType,
         taskConfigVersion,
       },
-      "Task run destroyed successfully"
+      "Task run destroyed successfully",
     );
 
     this.stateLogger.logTaskRunDestroy({
@@ -1626,7 +1693,7 @@ export class TaskManager extends WorkspaceRestorable {
     const [poolStats, versions] = this.getPoolStats(
       taskKind,
       taskType,
-      actingAgentId
+      actingAgentId,
     );
     this.stateLogger.logPoolChange({
       taskTypeId: taskSomeIdToTypeValue(taskRun),
@@ -1635,10 +1702,13 @@ export class TaskManager extends WorkspaceRestorable {
     });
   }
 
-  findTaskRunsOwnedBy(agentId: AgentIdValue, actingAgentId: AgentIdValue) {
+  private findTaskRunsOwnedBy(
+    agentId: AgentIdValue,
+    actingAgentId: AgentIdValue,
+  ) {
     this.logger.info(
       { agentId, actingAgentId },
-      "Looking for running tasks owned by agent"
+      "Looking for running tasks owned by agent",
     );
     const result = [];
     for (const task of this.taskRuns.values()) {
@@ -1646,7 +1716,7 @@ export class TaskManager extends WorkspaceRestorable {
         this.ac.checkPermission(
           task.taskRunId,
           actingAgentId,
-          READ_ONLY_ACCESS
+          READ_ONLY_ACCESS,
         );
         result.push(clone(task));
       }
@@ -1655,9 +1725,41 @@ export class TaskManager extends WorkspaceRestorable {
     return result;
   }
 
+  findInteractionChildrenTaskRuns(
+    interactionTaskRunId: TaskRunIdValue,
+    actingAgentId: AgentIdValue,
+  ) {
+    this.ac.checkPermission(
+      interactionTaskRunId,
+      actingAgentId,
+      READ_ONLY_ACCESS,
+    );
+    return this._findInteractionChildrenTaskRuns(interactionTaskRunId);
+  }
+
+  private _findInteractionChildrenTaskRuns(
+    interactionTaskRunId: TaskRunIdValue,
+  ) {
+    this.logger.info(
+      { interactionTaskRunId },
+      `Looking for task runs initiate by interaction task run`,
+    );
+    const result = [];
+    for (const taskRun of this.taskRuns.values()) {
+      if (
+        taskRun.initiatingTaskRunId === interactionTaskRunId &&
+        taskRun.taskRunId !== interactionTaskRunId
+      ) {
+        result.push(taskRun);
+      }
+    }
+
+    return result;
+  }
+
   private abortTaskRun(
     taskRunId: TaskRunIdValue,
-    actingAgentId?: AgentIdValue
+    actingAgentId?: AgentIdValue,
   ) {
     this.logger.info({ taskRunId, actingAgentId }, "Task execution aborted");
 
@@ -1722,17 +1824,17 @@ export class TaskManager extends WorkspaceRestorable {
    */
   private setTaskRunOccupied(
     taskRunId: TaskRunIdValue,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ): boolean {
     this.logger.info(
       { taskRunId, agentId: actingAgentId },
-      "Setting task run as occupied"
+      "Setting task run as occupied",
     );
     this.ac.createPermissions(
       taskRunId,
       actingAgentId,
       FULL_ACCESS,
-      TASK_MANAGER_USER
+      TASK_MANAGER_USER,
     );
 
     const taskRun = this.getTaskRun(taskRunId, actingAgentId);
@@ -1742,7 +1844,7 @@ export class TaskManager extends WorkspaceRestorable {
           taskRunId,
           exists: !!taskRun,
         },
-        "Task not available for occupancy"
+        "Task not available for occupancy",
       );
       return false;
     }
@@ -1769,7 +1871,7 @@ export class TaskManager extends WorkspaceRestorable {
           taskRunId,
           timeoutMs: this.options.occupancyTimeoutMs,
         },
-        "Setting occupancy timeout"
+        "Setting occupancy timeout",
       );
 
       // Use the task's abort scope for the timeout
@@ -1780,7 +1882,7 @@ export class TaskManager extends WorkspaceRestorable {
 
     this.logger.info(
       { taskRunId, actingAgentId },
-      "Task occupied successfully"
+      "Task occupied successfully",
     );
     return true;
   }
@@ -1791,18 +1893,18 @@ export class TaskManager extends WorkspaceRestorable {
    */
   private releaseTaskRunOccupancy(
     taskRunId: TaskRunIdValue,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ): boolean {
     this.logger.info(
       { taskRunId, agentId: actingAgentId },
-      "Releasing task occupancy"
+      "Releasing task occupancy",
     );
 
     const taskRun = this.getTaskRun(taskRunId, actingAgentId);
     if (!taskRun || !taskRun.isOccupied) {
       this.logger.debug(
         { taskRunId, exists: !!taskRun },
-        "Task not available for release"
+        "Task not available for release",
       );
       return false;
     }
@@ -1830,7 +1932,7 @@ export class TaskManager extends WorkspaceRestorable {
     agentKind: AgentKindEnum,
     agentType: AgentTypeValue,
     agentConfigVersion: AgentConfigVersionValue,
-    availableCount: number
+    availableCount: number,
   ) {
     if (!this.agentAvailable.length) {
       return;
@@ -1848,7 +1950,11 @@ export class TaskManager extends WorkspaceRestorable {
       }
 
       this.awaitingTasksForAgents.splice(index, 1);
-      this.scheduleStartTaskRun(taskRunId, TASK_MANAGER_USER);
+
+      const taskRun = this.getTaskRun(taskRunId, TASK_MANAGER_USER);
+      this.scheduleStartTaskRun(taskRunId, TASK_MANAGER_USER, {
+        initiatingTaskRunId: taskRun.initiatingTaskRunId,
+      });
       rest--;
       if (!rest) {
         return;
@@ -1860,18 +1966,18 @@ export class TaskManager extends WorkspaceRestorable {
   addBlockingTaskRuns(
     taskRunId: TaskRunIdValue,
     blockingTaskRunIds: TaskRunIdValue[],
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ) {
     this.logger.info(
       { taskRunId, actingAgentId, blockingTaskRunIds },
-      "Add blocking task run"
+      "Add blocking task run",
     );
 
     for (const blockingTaskRunId of blockingTaskRunIds) {
       const blockingTaskRun = this.getTaskRun(
         blockingTaskRunId,
         actingAgentId,
-        WRITE_ONLY_ACCESS
+        WRITE_ONLY_ACCESS,
       );
       this._updateTaskRun(blockingTaskRunId, blockingTaskRun, {
         blockedByTaskRunIds: [taskRunId],
@@ -1881,7 +1987,7 @@ export class TaskManager extends WorkspaceRestorable {
     const taskRun = this.getTaskRun(
       taskRunId,
       actingAgentId,
-      WRITE_ONLY_ACCESS
+      WRITE_ONLY_ACCESS,
     );
 
     return this._updateTaskRun(taskRunId, taskRun, {
@@ -1895,16 +2001,16 @@ export class TaskManager extends WorkspaceRestorable {
   updateTaskRun(
     taskRunId: TaskRunIdValue,
     update: Partial<Pick<TaskRun, "taskRunInput">>,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ) {
     this.logger.info(
       { taskRunId, actingAgentId, update },
-      "Updating task status"
+      "Updating task status",
     );
     const taskRun = this.getTaskRun(
       taskRunId,
       actingAgentId,
-      WRITE_ONLY_ACCESS
+      WRITE_ONLY_ACCESS,
     );
     return this._updateTaskRun(taskRunId, taskRun, update);
   }
@@ -1912,17 +2018,17 @@ export class TaskManager extends WorkspaceRestorable {
   private _updateTaskRun(
     taskRunId: TaskRunIdValue,
     taskRun: TaskRun,
-    update: Partial<TaskRun>
+    update: Partial<TaskRun>,
   ): TaskRun {
     const modifiedUpdate = clone(update);
     if (modifiedUpdate.currentTrajectory) {
       modifiedUpdate.currentTrajectory = taskRun.currentTrajectory.concat(
-        modifiedUpdate.currentTrajectory
+        modifiedUpdate.currentTrajectory,
       );
     }
     if (modifiedUpdate.blockedByTaskRunIds) {
       modifiedUpdate.blockedByTaskRunIds = taskRun.blockedByTaskRunIds.concat(
-        modifiedUpdate.blockedByTaskRunIds
+        modifiedUpdate.blockedByTaskRunIds,
       );
 
       if (modifiedUpdate.blockedByTaskRunIds.length) {
@@ -1932,7 +2038,7 @@ export class TaskManager extends WorkspaceRestorable {
 
     if (modifiedUpdate.blockingTaskRunIds) {
       modifiedUpdate.blockingTaskRunIds = taskRun.blockingTaskRunIds.concat(
-        modifiedUpdate.blockingTaskRunIds
+        modifiedUpdate.blockingTaskRunIds,
       );
     }
     updateDeepPartialObject(taskRun, modifiedUpdate);
@@ -1942,7 +2048,7 @@ export class TaskManager extends WorkspaceRestorable {
       const [poolStats, versions] = this.getPoolStats(
         taskKind,
         taskType,
-        TASK_MANAGER_USER
+        TASK_MANAGER_USER,
       );
       this.stateLogger.logPoolChange({
         taskTypeId: taskSomeIdToTypeValue({ taskKind, taskType }),
@@ -1956,16 +2062,43 @@ export class TaskManager extends WorkspaceRestorable {
   /**
    * Gets all task runs visible to the agent.
    */
-  getAllTaskRuns(agentId: AgentIdValue): TaskRun[] {
+  getAllTaskRuns(
+    agentId: AgentIdValue,
+    filter?: { taskKind: TaskKindValue; taskType?: TaskTypeValue },
+  ): TaskRun[] {
     this.logger.info({ agentId }, "Getting all task runs");
 
-    const taskRuns = Array.from(this.taskRuns.values()).filter((taskRun) =>
-      this.ac.hasPermission(taskRun.taskRunId, agentId, READ_ONLY_ACCESS)
-    );
+    const taskRuns = Array.from(this.taskRuns.values()).filter((taskRun) => {
+      // First check permission
+      const hasPermission = this.ac.hasPermission(
+        taskRun.taskRunId,
+        agentId,
+        READ_ONLY_ACCESS,
+      );
+
+      if (!hasPermission) {
+        return false;
+      }
+
+      // Then apply additional filters if they exist
+      if (filter) {
+        // Always filter by taskKind
+        if (taskRun.taskKind !== filter.taskKind) {
+          return false;
+        }
+
+        // Optionally filter by taskType if provided
+        if (filter.taskType && taskRun.taskType !== filter.taskType) {
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     this.logger.debug(
       { agentId, count: taskRuns.length },
-      "Retrieved task runs"
+      "Retrieved task runs",
     );
     return taskRuns;
   }
@@ -1992,7 +2125,7 @@ export class TaskManager extends WorkspaceRestorable {
    */
   private async executeTask(
     taskRunId: TaskRunIdValue,
-    actingAgentId: AgentIdValue
+    actingAgentId: AgentIdValue,
   ): Promise<void> {
     this.logger.info({ taskRunId, agentId: actingAgentId }, "Executing task");
     this.ac.checkPermission(taskRunId, actingAgentId, READ_EXECUTE_ACCESS);
@@ -2009,7 +2142,7 @@ export class TaskManager extends WorkspaceRestorable {
     if (retryAttempt > 0) {
       this.logger.debug(
         { retryAttempt, maxRetries: taskRun.config.maxRetries },
-        "Retry attempt"
+        "Retry attempt",
       );
       if (
         !!taskRun.config.maxRetries &&
@@ -2025,7 +2158,7 @@ export class TaskManager extends WorkspaceRestorable {
           taskRunId,
           reason: taskRun.status === "COMPLETED" ? "completed" : "occupied",
         },
-        "Skipping task execution"
+        "Skipping task execution",
       );
       return;
     }
@@ -2057,7 +2190,7 @@ export class TaskManager extends WorkspaceRestorable {
           lastRunAt: taskRun.lastRunAt,
           nextRunAt: taskRun.nextRunAt,
         },
-        "Executing task callback"
+        "Executing task callback",
       );
 
       const emit = this.emit.bind(this);
@@ -2067,183 +2200,219 @@ export class TaskManager extends WorkspaceRestorable {
         throw new AbortError();
       }
 
+      // Add last interaction output to the agent memory
+      let addToMemory: (AssistantMessage | ToolMessage)[] | undefined =
+        undefined;
+      if (taskRun.taskRunKind === "interaction") {
+        const allTerminatedInteractionTaskRuns = this.getAllTaskRuns(
+          TASK_MANAGER_USER,
+          {
+            taskKind: taskRun.taskKind,
+            taskType: taskRun.taskType,
+          },
+        ).filter((taskRun) =>
+          isTaskRunTerminationStatus(taskRun.status),
+        ) as InteractionTaskRun[];
+        const lastTaskRun = allTerminatedInteractionTaskRuns.length
+          ? allTerminatedInteractionTaskRuns.at(-1)
+          : null;
+        if (lastTaskRun?.response) {
+          // FIXME Sending history of tool calls don't work
+          // addToMemory = aggregateTrajectoryEntries([
+          //   ...lastTaskRun.currentTrajectory,
+          // ]);
+          addToMemory = [
+            new AssistantMessage(`Final response: ${lastTaskRun?.response}`),
+          ];
+        }
+      }
+
       const logger = this.logger;
       // Wrap the onTaskStart call with abort handling
       await Promise.race([
-        this.onTaskStart(taskRun, this, {
-          onAwaitingAgentAcquired(taskRunId, taskManager) {
-            logger.debug({ taskRunId }, "Awaiting to agent acquired");
-            // Check if aborted before making state changes
-            if (executionSignal.aborted) {
-              return;
-            }
-            taskManager.setTaskRunAwaitingAgent(taskRunId);
-          },
-          onAgentAcquired(taskRunId, agentId, taskManager) {
-            logger.debug({ taskRunId, agentId }, "Agent acquired");
-            // Check if aborted before making state changes
-            if (executionSignal.aborted) {
-              return;
-            }
-            taskManager.setTaskRunOccupied(taskRunId, agentId);
-          },
-          onAgentUpdate(key, value, taskRunId, agentId, taskManager) {
-            logger.debug({ key, value, taskRunId, agentId }, "Agent update");
-            // Check if aborted before making state changes
-            if (executionSignal.aborted) {
-              return;
-            }
-            const taskRun = taskManager.getTaskRun(
-              taskRunId,
-              agentId,
-              READ_WRITE_ACCESS
-            );
-            taskManager._updateTaskRun(taskRunId, taskRun, {
-              currentTrajectory: [
-                { timestamp: new Date(), agentId, key, value },
-              ],
-            });
-            emit("task_run:trajectory_update", clone(taskRun));
-          },
-          onAgentComplete(output, taskRunId, agentId, taskManager) {
-            logger.debug({ taskRunId, agentId }, "Agent complete");
-            // Check if aborted before making state changes
-            if (executionSignal.aborted) {
-              return;
-            }
-
-            const taskRun = taskManager.getTaskRun(
-              taskRunId,
-              agentId,
-              READ_WRITE_ACCESS
-            );
-            const trajectory = clone(taskRun.currentTrajectory);
-            taskManager._updateTaskRun(taskRunId, taskRun, {
-              completedRuns: taskRun.completedRuns + 1,
-              currentTrajectory: [],
-            });
-
-            // Record history entry
-            taskManager.addHistoryEntry(taskRunId, agentId, {
-              timestamp: new Date(),
-              terminalStatus: "COMPLETED",
-              output,
-              runNumber: taskRun.completedRuns,
-              maxRuns: taskRun.config.maxRepeats,
-              retryAttempt: taskRun.currentRetryAttempt,
-              maxRepeats: taskRun.config.maxRepeats,
-              agentId: agentId,
-              trajectory,
-              executionTimeMs: Date.now() - startTime,
-            });
-
-            emit("task_run:complete", clone(taskRun));
-
-            taskManager.logger.debug(
-              {
+        this.onTaskStart(
+          taskRun,
+          this,
+          {
+            onAwaitingAgentAcquired(taskRunId, taskManager) {
+              logger.debug({ taskRunId }, "Awaiting to agent acquired");
+              // Check if aborted before making state changes
+              if (executionSignal.aborted) {
+                return;
+              }
+              taskManager.setTaskRunAwaitingAgent(taskRunId);
+            },
+            onAgentAcquired(taskRunId, agentId, taskManager) {
+              logger.debug({ taskRunId, agentId }, "Agent acquired");
+              // Check if aborted before making state changes
+              if (executionSignal.aborted) {
+                return;
+              }
+              taskManager.setTaskRunOccupied(taskRunId, agentId);
+            },
+            onAgentUpdate(key, value, taskRunId, agentId, taskManager) {
+              logger.debug({ key, value, taskRunId, agentId }, "Agent update");
+              // Check if aborted before making state changes
+              if (executionSignal.aborted) {
+                return;
+              }
+              const taskRun = taskManager.getTaskRun(
                 taskRunId,
-                completedRuns: taskRun.completedRuns,
-                maxRuns: taskRun.config.maxRepeats,
-              },
-              "Task executed successfully"
-            );
+                agentId,
+                READ_WRITE_ACCESS,
+              );
+              taskManager._updateTaskRun(taskRunId, taskRun, {
+                currentTrajectory: [
+                  { timestamp: new Date(), agentId, key, value },
+                ],
+              });
+              emit("task_run:trajectory_update", clone(taskRun));
+            },
+            onAgentComplete(output, taskRunId, agentId, taskManager) {
+              logger.debug({ taskRunId, agentId }, "Agent complete");
+              // Check if aborted before making state changes
+              if (executionSignal.aborted) {
+                return;
+              }
 
-            // Check if we've reached maxRuns
-            if (
-              !taskRun.config.maxRepeats ||
-              (taskRun.config.maxRepeats &&
-                taskRun.completedRuns >= taskRun.config.maxRepeats)
-            ) {
-              taskManager.stopTaskRun(taskRunId, agentId, "COMPLETED");
-              taskManager.logger.info(
+              const taskRun = taskManager.getTaskRun(
+                taskRunId,
+                agentId,
+                READ_WRITE_ACCESS,
+              );
+              const trajectory = clone(taskRun.currentTrajectory);
+              taskManager._updateTaskRun(taskRunId, taskRun, {
+                completedRuns: taskRun.completedRuns + 1,
+                currentTrajectory: [],
+              });
+
+              // Record history entry
+              taskManager.addHistoryEntry(taskRunId, agentId, {
+                timestamp: new Date(),
+                terminalStatus: "COMPLETED",
+                output,
+                runNumber: taskRun.completedRuns,
+                maxRuns: taskRun.config.maxRepeats,
+                retryAttempt: taskRun.currentRetryAttempt,
+                maxRepeats: taskRun.config.maxRepeats,
+                agentId: agentId,
+                trajectory,
+                executionTimeMs: Date.now() - startTime,
+              });
+
+              emit("task_run:complete", clone(taskRun));
+
+              taskManager.logger.debug(
                 {
                   taskRunId,
                   completedRuns: taskRun.completedRuns,
                   maxRuns: taskRun.config.maxRepeats,
                 },
-                "Task reached maximum runs and has been stopped"
+                "Task executed successfully",
               );
-            } else {
-              taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
-            }
-          },
-          async onAgentError(err, taskRunId, agentId, taskManager) {
-            logger.debug({ taskRunId, agentId, err }, "Agent error");
-            // Check if aborted before making state changes
-            if (executionSignal.aborted) {
-              return;
-            }
 
-            let error;
-            if (err instanceof FrameworkError) {
-              error = err.explain();
-            } else {
-              error = err instanceof Error ? err.message : String(err);
-            }
+              // Check if we've reached maxRuns
+              if (
+                !taskRun.config.maxRepeats ||
+                (taskRun.config.maxRepeats &&
+                  taskRun.completedRuns >= taskRun.config.maxRepeats)
+              ) {
+                taskManager.stopTaskRun(taskRunId, agentId, "COMPLETED");
+                taskManager.logger.info(
+                  {
+                    taskRunId,
+                    completedRuns: taskRun.completedRuns,
+                    maxRuns: taskRun.config.maxRepeats,
+                  },
+                  "Task reached maximum runs and has been stopped",
+                );
+              } else {
+                taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
+              }
+            },
+            async onAgentError(err, taskRunId, agentId, taskManager) {
+              logger.debug({ taskRunId, agentId, err }, "Agent error");
+              // Check if aborted before making state changes
+              if (executionSignal.aborted) {
+                return;
+              }
 
-            const taskRun = taskManager.getTaskRun(taskRunId, agentId);
-            const trajectory = clone(taskRun.currentTrajectory);
+              let error;
+              if (err instanceof FrameworkError) {
+                error = err.explain();
+              } else {
+                error = err instanceof Error ? err.message : String(err);
+              }
 
-            taskManager._updateTaskRun(taskRunId, taskRun, {
-              errorCount: taskRun.errorCount + 1,
-              completedRuns: taskRun.completedRuns + 1,
-              currentTrajectory: [],
-            });
-            const retryAttempt = taskRun.currentRetryAttempt;
+              const taskRun = taskManager.getTaskRun(taskRunId, agentId);
+              const trajectory = clone(taskRun.currentTrajectory);
 
-            // Record history entry
-            taskManager.addHistoryEntry(taskRunId, agentId, {
-              timestamp: new Date(),
-              terminalStatus: "FAILED",
-              error,
-              runNumber: taskRun.completedRuns,
-              maxRuns: taskRun.config.maxRepeats,
-              retryAttempt,
-              maxRepeats: taskRun.config.maxRepeats,
-              agentId: agentId,
-              trajectory,
-              executionTimeMs: Date.now() - startTime,
-            });
+              taskManager._updateTaskRun(taskRunId, taskRun, {
+                errorCount: taskRun.errorCount + 1,
+                completedRuns: taskRun.completedRuns + 1,
+                currentTrajectory: [],
+              });
+              const retryAttempt = taskRun.currentRetryAttempt;
 
-            emit("task_run:error", clone(taskRun));
-
-            taskManager.logger.error(
-              {
-                taskRunId,
+              // Record history entry
+              taskManager.addHistoryEntry(taskRunId, agentId, {
+                timestamp: new Date(),
+                terminalStatus: "FAILED",
+                error,
                 runNumber: taskRun.completedRuns,
                 maxRuns: taskRun.config.maxRepeats,
                 retryAttempt,
                 maxRepeats: taskRun.config.maxRepeats,
-                errorCount: taskRun.errorCount,
-                error,
-              },
-              `Task execution failed ${error}`
-            );
-
-            if (taskManager.options.errorHandler) {
-              taskManager.options.errorHandler(err as Error, taskRunId);
-            }
-
-            taskManager.logger.debug(
-              { taskRunId },
-              "Releasing task occupancy before removal"
-            );
-
-            if (retryAttempt >= (taskRun.config.maxRetries || 2)) {
-              taskManager.stopTaskRun(taskRunId, agentId, "FAILED");
-            } else {
-              taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
-              taskManager._updateTaskRun(taskRunId, taskRun, {
-                currentRetryAttempt: retryAttempt + 1,
-                status: "FAILED",
+                agentId: agentId,
+                trajectory,
+                executionTimeMs: Date.now() - startTime,
               });
-              taskManager.scheduleStartTaskRun(
-                taskRunId,
-                taskRun.config.ownerAgentId
+
+              emit("task_run:error", clone(taskRun));
+
+              taskManager.logger.error(
+                {
+                  taskRunId,
+                  runNumber: taskRun.completedRuns,
+                  maxRuns: taskRun.config.maxRepeats,
+                  retryAttempt,
+                  maxRepeats: taskRun.config.maxRepeats,
+                  errorCount: taskRun.errorCount,
+                  error,
+                },
+                `Task execution failed ${error}`,
               );
-            }
+
+              if (taskManager.options.errorHandler) {
+                taskManager.options.errorHandler(err as Error, taskRunId);
+              }
+
+              taskManager.logger.debug(
+                { taskRunId },
+                "Releasing task occupancy before removal",
+              );
+
+              if (retryAttempt >= (taskRun.config.maxRetries || 2)) {
+                taskManager.stopTaskRun(taskRunId, agentId, "FAILED");
+              } else {
+                taskManager.releaseTaskRunOccupancy(taskRunId, agentId);
+                taskManager._updateTaskRun(taskRunId, taskRun, {
+                  currentRetryAttempt: retryAttempt + 1,
+                  status: "FAILED",
+                });
+
+                taskManager.scheduleStartTaskRun(
+                  taskRunId,
+                  taskRun.config.ownerAgentId,
+                  {
+                    initiatingTaskRunId: taskRun.initiatingTaskRunId!,
+                  },
+                );
+              }
+            },
           },
-        }),
+          addToMemory,
+        ),
         // Create a promise that rejects when the abort signal is triggered
         new Promise<never>((_, reject) => {
           executionSignal.addEventListener(
@@ -2251,7 +2420,7 @@ export class TaskManager extends WorkspaceRestorable {
             () => {
               reject(new AbortError("Task execution was aborted"));
             },
-            { once: true }
+            { once: true },
           );
         }),
       ]);
@@ -2267,7 +2436,7 @@ export class TaskManager extends WorkspaceRestorable {
         // Log the error
         this.logger.error(
           { err, taskRunId, actingAgentId },
-          "Unexpected error during task execution"
+          "Unexpected error during task execution",
         );
       }
 
@@ -2287,7 +2456,7 @@ export class TaskManager extends WorkspaceRestorable {
   private addHistoryEntry(
     taskRunId: TaskRunIdValue,
     actingAgentId: AgentIdValue,
-    entry: TaskRunHistoryEntry
+    entry: TaskRunHistoryEntry,
   ): void {
     const taskRun = this.getTaskRun(taskRunId, actingAgentId);
     taskRun.history.push(entry);
@@ -2318,7 +2487,7 @@ export class TaskManager extends WorkspaceRestorable {
       startDate?: Date;
       endDate?: Date;
       status?: TaskRunTerminalStatusEnum;
-    } = {}
+    } = {},
   ): TaskRunHistoryEntry[] {
     this.logger.trace(
       {
@@ -2326,7 +2495,7 @@ export class TaskManager extends WorkspaceRestorable {
         agentId: actingAgentId,
         options,
       },
-      "Getting task history"
+      "Getting task history",
     );
     this.ac.checkPermission(taskRunId, actingAgentId, READ_ONLY_ACCESS);
 
@@ -2336,7 +2505,7 @@ export class TaskManager extends WorkspaceRestorable {
     // Apply filters
     if (options.startDate) {
       history = history.filter(
-        (entry) => entry.timestamp >= options.startDate!
+        (entry) => entry.timestamp >= options.startDate!,
       );
     }
     if (options.endDate) {

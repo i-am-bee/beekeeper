@@ -134,6 +134,11 @@ process.on("uncaughtException", (error) => {
   shutdown("UncaughtException");
 });
 
+process.on("unhandledRejection", (error) => {
+  logger.error(error, "Unhandled rejection:");
+  shutdown("UnhandledRejection");
+});
+
 // Run the application
 main().catch((error) => {
   logger.error(error, "Application error:");

@@ -682,6 +682,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       blockedByTaskRunIds,
       taskRunKind,
       originTaskRunId,
+      initiatingTaskRunId,
     } = taskRunInfo.taskRun;
 
     let interactionStatus: InteractionTaskRunStatusEnum | null = null;
@@ -701,6 +702,9 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
           `${st.label("Id")}: ${st.taskRunId(stringToTaskRun(taskRunId))} (${st.label(taskRunId)})`,
           originTaskRunId
             ? `${st.label("Origin Task Run Id")}: ${st.taskRunId(stringToTaskRun(originTaskRunId))} (${st.label(originTaskRunId)})`
+            : null,
+          initiatingTaskRunId
+            ? `${st.label("Initiating Task Run Id")}: ${st.taskRunId(stringToTaskRun(initiatingTaskRunId))} (${st.label(initiatingTaskRunId)})`
             : null,
           blockingTaskRunIds?.length
             ? `${st.label("Blocking")}: \n${blockingTaskRunIds.map((blockedByTaskRunId) => `${st.taskRunId(stringToTaskRun(blockedByTaskRunId))} (${st.label(blockedByTaskRunId)})`).join("\n")}`

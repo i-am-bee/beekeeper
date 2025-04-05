@@ -6,6 +6,7 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { BaseAgentFactory, CreateAgentInput } from "./base/agent-factory.js";
 import { supervisor } from "./index.js";
+import { AssistantMessage, ToolMessage } from "beeai-framework/backend/message";
 
 export class AgentFactory extends BaseAgentFactory<ReActAgent> {
   createAgent<TCreateInput extends CreateAgentInput = CreateAgentInput>(
@@ -72,7 +73,12 @@ export class AgentFactory extends BaseAgentFactory<ReActAgent> {
     prompt: string,
     onUpdate: (key: string, value: string) => void,
     signal: AbortSignal,
+    addToMemory?: (AssistantMessage | ToolMessage)[],
   ): Promise<string> {
+    if (addToMemory) {
+      agent.memory.addMany(addToMemory);
+    }
+
     const resp = await agent
       .run({ prompt }, { signal })
       .observe((emitter) => {
