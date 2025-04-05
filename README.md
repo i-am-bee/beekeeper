@@ -22,8 +22,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/Beekeeper.jpg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/Beekeeper.jpg">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/beekeeper-diagram.jpg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/beekeeper-diagram.jpg">
     <img alt="Beekeeper" width="100%">
   </picture>
 </p>
