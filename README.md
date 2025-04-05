@@ -128,12 +128,12 @@ SEARCH_TOOL="duckduckgo"
 
 | Step | Action                                           | Explanation                                                                                      |
 |------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| **1** | Run:<br> `WORKSPACE=trip-planner mise interactive`  | Run this command to start the interactive mode of the `mise` tool. This will allow you to input prompts easily and save your work in `output/workspaces/trip-planner`. |
+| **1** | Run:<br> `WORKSPACE=trip_planner mise interactive`  | Run this command to start the interactive mode of the `mise` tool. This will allow you to input prompts easily and save your work in `output/workspaces/trip_planner`. |
 | **2** | Split the terminal, then run:<br> `mise monitor`  | View a live activity feed of the platform's tasks and agents. |
 | **3** | Input the following prompt: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together an itinerary. I want to try the best food available in the city. I enjoy Seafood and Italian cuisine.` | Observe the supervisor agent create tasks and generate specialized agents (e.g., `itinerary_planner`, and `restaurant_researcher`). |
 | **4** | Modify an existing agent:<br> `Can you change the instructions of the restaurant researcher to only suggest restaurants that offer gluten free?` | Watch the supervisor agent update the instructions of the `restaurant_researcher`. |
 | **5** | Add more agents:<br> `I also want suggestions for the best hotels around the North End Boston.` | Observe the supervisor agent create an additional agent focused on accomodations. |
-| **6** | Now that you have all your agents set up, close out of the session (`esc` 2x, click yes) and start fresh:<br> `WORKSPACE=trip-planner mise interactive` | Revisit your multi-agent system at any time using this command. All tasks and agents are preserved in `output/workspaces/trip-planner`. |
+| **6** | Now that you have all your agents set up, close out of the session (`esc` 2x, click yes) and start fresh:<br> `WORKSPACE=trip_planner mise interactive` | Revisit your multi-agent system at any time using this command. All tasks and agents are preserved in `output/workspaces/trip_planner`. |
 | **7** | Finally, engage all agents with a prompt: `I'm traveling to Boston MA next week for 3 days. I want some excellent restaurant recommendations and hotel suggestions.` | Notice all agent configurations are preserved, allowing you to build on your work. For example, there is no need to specify gluten-free restaurants since your restaurant agents configuration is preserved. |
 
 **You've just built your first multi-agent system with Beekeeper 👏**
@@ -155,17 +155,16 @@ To start, run:
 mise interactive
 ```
 
-Use this mode to:
-- **Define goals** – Get guidance through conversation.
-- **Fine-tune settings** – Adjust agents and tasks iteratively.
-- **Modify in real time** – Tweak or abort tasks mid-process.
-
-> [!Important]
-> To avoid losing your work, always define a workspace when running `WORKSPACE=your_workspace mise interactive`.
+Use this mode when you want to:
+- 🧭 Define goals - Get real-time guidance
+- 🎛️ Tune settings - Adjust agents and tasks as you go
+- 🛠️ Modify live — Pause, tweak, or stop tasks mid-run
 
 > [!TIP]
-> **Want to monitor the process?**<br>
-> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
+> Monitor everything in another terminal: `mise monitor`.
+
+> [!Important]
+> To avoid losing your work, always define a workspace: `WORKSPACE=trip_planner mise interactive`.
 
 ### Autonomous mode
 
@@ -176,17 +175,16 @@ To start, run:
 mise autonomous <<< "Hi, can you create a poem about each of these topics: bee, hive, queen, sun, flowers?"
 ```
 
-What happens:
-- **Single-step execution** – One command, one result.
-- **Hands-free processing** – No interaction needed.
-- **Automatic completion** – The system shuts down after execution.
-
-> [!Important]
-> To avoid losing your work, always define a workspace.
+In this mode:
+- ⚡ One command, one result
+- 👐 Zero interaction needed
+- 💤 Auto-shutdown after execution
 
 > [!TIP]
-> **Want to monitor the process?**<br>
-> Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
+> Monitor everything in another terminal: `mise monitor`.
+
+> [!Important]
+> To avoid losing your work, always define a workspace: `WORKSPACE=your_workspace mise autonomous <<< "your_prompt"`.
 
 ---
 
