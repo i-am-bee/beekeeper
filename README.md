@@ -47,6 +47,8 @@ These components enable seamless task management by coordinating specialized AI 
 - 🖥️ **Unified interface**: Manage all AI agents from one central hub.
 - 📡 **Active monitoring**: Get real-time insights to detect and fix issues quickly.
 
+---
+
 ## Installation
 [Mise-en-place](https://mise.jdx.dev/) is used to manage tool versions (`python`, `uv`, `nodejs`, `pnpm`...), run tasks, and handle environments, automatically downloading required tools.
 
@@ -120,6 +122,8 @@ SEARCH_TOOL="duckduckgo"
 ```
 </details>
 
+---
+
 ## Quick start
 
 | Step | Action                                           | Explanation                                                                                      |
@@ -132,15 +136,15 @@ SEARCH_TOOL="duckduckgo"
 | **6** | Now that you have all your agents set up, close out of the session (`esc` 2x, click yes) and start fresh:<br> `WORKSPACE=trip-planner mise interactive` | Revisit your multi-agent system at any time using this command. All tasks and agents are preserved in `output/workspaces/trip-planner`. |
 | **7** | Finally, engage all agents with a prompt: `I'm traveling to Boston MA next week for 3 days. I want some excellent restaurant recommendations and hotel suggestions.` | Notice all agent configurations are preserved, allowing you to build on your work. For example, there is no need to specify gluten-free restaurants since your restaurant agents configuration is preserved. |
 
-You've just built your first multi-agent system with a supervisor agent 👏 Now you're ready to iterate, expand, or even create something completely new!
+**You've just built your first multi-agent system with a supervisor agent 👏**
 
-> [!Important]
-> All tasks and agents are preserved in `output/workspaces/trip-planner`.<br>
-> To avoid losing your work, always define a workspace when running `mise interactive`.
+Now you're ready to iterate, expand, or even create something completely new!
 
 ## Interaction modes
 
 The system operates in two modes: **Interactive** and **Autonomous**.
+
+---
 
 ### Interactive mode
 
@@ -155,6 +159,9 @@ Use this mode to:
 - **Define goals** – Get guidance through conversation.
 - **Fine-tune settings** – Adjust agents and tasks iteratively.
 - **Modify in real time** – Tweak or abort tasks mid-process.
+
+> [!Important]
+> To avoid losing your work, always define a workspace when running `WORKSPACE=your_workspace mise interactive`.
 
 > [!TIP]
 > **Want to monitor the process?**<br>
@@ -174,9 +181,14 @@ What happens:
 - **Hands-free processing** – No interaction needed.
 - **Automatic completion** – The system shuts down after execution.
 
+> [!Important]
+> To avoid losing your work, always define a workspace.
+
 > [!TIP]
 > **Want to monitor the process?**<br>
 > Open another terminal and run: `mise monitor`. This provides a live view of the platform’s activity.
+
+---
 
 ## Workspaces
 
