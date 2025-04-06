@@ -1136,11 +1136,14 @@ export class TaskManager extends WorkspaceRestorable {
       }
     }
 
+    const hasUnfinishedBlockingTasks = !!blockedByTaskRunIds.filter(
+      (id) => (options?.originTaskRunId ?? taskRunId) !== id,
+    ).length;
     const input = serializeTaskRunInput({
       context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
       input: taskRunInput,
       options: {
-        hasUnfinishedBlockingTasks: !!options?.blockedByTaskRunIds?.length,
+        hasUnfinishedBlockingTasks,
       },
     });
 
@@ -1208,8 +1211,8 @@ export class TaskManager extends WorkspaceRestorable {
       this.ac.createResource(taskRunId, actingAgentId, actingAgentId);
     }
 
-    if (options?.blockedByTaskRunIds) {
-      for (const blockedByTaskRunId of options.blockedByTaskRunIds) {
+    if (blockedByTaskRunIds) {
+      for (const blockedByTaskRunId of blockedByTaskRunIds) {
         const blockedByTaskRun = this.getTaskRun(
           blockedByTaskRunId,
           actingAgentId,
@@ -2217,12 +2220,10 @@ export class TaskManager extends WorkspaceRestorable {
           ? allTerminatedInteractionTaskRuns.at(-1)
           : null;
         if (lastTaskRun?.response) {
-          // FIXME Sending history of tool calls don't work
-          // addToMemory = aggregateTrajectoryEntries([
-          //   ...lastTaskRun.currentTrajectory,
-          // ]);
           addToMemory = [
-            new AssistantMessage(`Final response: ${lastTaskRun?.response}`),
+            new AssistantMessage(
+              `The full final response of the previous interaction task \`${lastTaskRun.taskRunId}\` (NOTE: This message is the result of different tool calls that are not provided before this message to save costs):\n${lastTaskRun.response}`,
+            ),
           ];
         }
       }
