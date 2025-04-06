@@ -130,7 +130,7 @@ SEARCH_TOOL="duckduckgo"
 |------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
 | **1** | Run:<br> `WORKSPACE=trip_planner mise interactive`  | Run this command to start the interactive mode of the `mise` tool. This will allow you to input prompts easily and save your work in `output/workspaces/trip_planner`. |
 | **2** | Split the terminal, then run:<br> `mise monitor`  | View a live activity feed of the platform's tasks and agents. |
-| **3** | Input the following prompt: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together an itinerary. I want to try the best food available in the city. I enjoy Seafood and Italian cuisine.` | Observe the supervisor agent create tasks and generate specialized agents (e.g., `itinerary_planner`, and `restaurant_researcher`). |
+| **3** | Input the following prompt: <br> `I'm planning a trip to Boston, MA next week and could use some help putting together a simple 3-day itinerary. I've already booked my flights and will be staying in the Back Bay area. I'd like to explore historical sites, attend a local hockey or football game, and enjoy some great food. Could you suggest a good restaurant for dinner each day? I'd like to try Italian, Chinese, and French cuisine.` | Observe the supervisor agent create tasks and generate specialized agents. |
 | **4** | Modify an existing agent:<br> `Can you change the instructions of the restaurant researcher to only suggest restaurants that offer gluten free?` | Watch the supervisor agent update the instructions of the `restaurant_researcher`. |
 | **5** | Add more agents:<br> `I also want suggestions for the best hotels around the North End Boston.` | Observe the supervisor agent create an additional agent focused on accomodations. |
 | **6** | Now that you have all your agents set up, close out of the session (`esc` 2x, click yes) and start fresh:<br> `WORKSPACE=trip_planner mise interactive` | Revisit your multi-agent system at any time using this command. All tasks and agents are preserved in `output/workspaces/trip_planner`. |
@@ -140,11 +140,11 @@ SEARCH_TOOL="duckduckgo"
 
 Now you're ready to iterate, expand, or even create something completely new!
 
+---
+
 ## Interaction modes
 
 The system operates in two modes: **Interactive** and **Autonomous**.
-
----
 
 ### Interactive mode
 
@@ -207,3 +207,31 @@ To create or switch to a different workspace, set the `WORKSPACE` variable when 
 ```bash
 WORKSPACE=my_workspace mise interactive
 ```
+
+---
+
+## Contribute
+
+We're passionate about building a better Beekeeper, and we couldn't do it without your help! Our project is open-source and community-driven.
+
+- **Want to share an idea or have a question?** Reach out to us on [Discord]((https://discord.com/invite/NradeA6ZNF)).
+- **Find a bug or have a feature request?** Open an [issue](https://github.com/i-am-bee/beekeeper/issues).
+- **Want to contribute?** Check out our [contribution guidelines](./CONTRIBUTING.md).
+
+We appreciate all types of contributions!
+
+## Maintainers
+
+For information about maintainers, see [MAINTAINERS.md](./MAINTAINERS.md).
+
+## Code of conduct
+
+This project and everyone participating in it are governed by the [Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the full text so that you know which actions may or may not be tolerated.
+
+## Legal notice
+
+All content in these repositories including code has been provided by IBM under the associated open source software license and IBM is under no obligation to provide enhancements, updates, or support. IBM developers produced this code as an open source project (not as an IBM product), and IBM makes no assertions as to the level of quality nor security, and will not be maintaining this code going forward.
+
+---
+
+Developed by contributors to the BeeAI project, this initiative is part of the [Linux Foundation AI & Data program](https://lfaidata.foundation/projects/). Its development follows open, collaborative, and community-driven practices.
