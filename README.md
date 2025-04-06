@@ -16,7 +16,7 @@
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
 
-[Overview](#overview) - [Key Features](#key-features) - [Installation](#installation) - [Quick start](#quick-start) - [Contribute](#contribute)
+[Overview](#overview) - [Key Features](#key-features) - [Installation](#installation) - [Quickstart](#quickstart) - [Contribute](#contribute)
 
 </div>
 
@@ -124,7 +124,7 @@ SEARCH_TOOL="duckduckgo"
 
 ---
 
-## Quick start
+## Quickstart
 
 | Step | Action                                           | Explanation                                                                                      |
 |------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
