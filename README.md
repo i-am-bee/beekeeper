@@ -16,7 +16,7 @@
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
 
-[Overview](#overview) - [Key Features](#key-features) - [Installation](#installation) - [Quick start](#quick-start) - [Interaction Modes](#interaction-modes) - [Workspaces](#workspaces)
+[Overview](#overview) - [Key Features](#key-features) - [Installation](#installation) - [Quick start](#quick-start) - [Interaction Modes](#interaction-modes) - [Workspaces](#workspaces) - [Contribute](#contribute)
 
 </div>
 
@@ -214,7 +214,7 @@ WORKSPACE=my_workspace mise interactive
 
 We're passionate about building a better Beekeeper, and we couldn't do it without your help! Our project is open-source and community-driven.
 
-- **Want to share an idea or have a question?** Reach out to us on [Discord]((https://discord.com/invite/NradeA6ZNF)).
+- **Want to share an idea or have a question?** Reach out to us on [Discord](https://discord.com/invite/NradeA6ZNF).
 - **Find a bug or have a feature request?** Open an [issue](https://github.com/i-am-bee/beekeeper/issues).
 - **Want to contribute?** Check out our [contribution guidelines](./CONTRIBUTING.md).
 
