@@ -1497,23 +1497,39 @@ export class TaskManager extends WorkspaceRestorable {
 
       const hasFailed = finalStatus === "FAILED";
 
-      const interactionChildrenTaskRuns = this._findInteractionChildrenTaskRuns(
-        taskRunId,
-      ).filter(
+      const interactionChildrenTaskRuns =
+        this._findInteractionChildrenTaskRuns(interactionTaskRunId);
+      const hasUnfinishedChildrenTasks = !!interactionChildrenTaskRuns.filter(
         (childTaskRun) => !isTaskRunTerminationStatus(childTaskRun.status),
-      );
-      const hasUnfinishedChildrenTasks = !!interactionChildrenTaskRuns.length;
+      ).length;
 
       if (hasFailed || !hasUnfinishedChildrenTasks) {
+        let response;
+        if (!hasFailed) {
+          // Find last tasks in the hierarchy and collect their outputs
+          const lastTasks = interactionChildrenTaskRuns.filter(
+            (taskRun) => taskRun.blockingTaskRunIds.length === 0,
+          );
+          if (lastTasks.length) {
+            response = lastTasks
+              .map((taskRun) => taskRunOutput(taskRun, false))
+              .join("\n\n");
+          } else {
+            response = taskRunOutput(interactionTaskRun);
+          }
+        } else {
+          response = taskRunError(taskRun);
+        }
+
         this._updateTaskRun(interactionTaskRun.taskRunId, interactionTaskRun, {
           interactionStatus: hasFailed ? "FAILED" : "COMPLETED",
-          response: !hasFailed
-            ? taskRunOutput(taskRun, false)
-            : taskRunError(taskRun),
+          response,
         });
       }
     };
 
+    let shouldCloseInteraction = false;
+    let interactionTaskRunId;
     if (taskRun.taskRunKind === "interaction") {
       const interactionChildrenTaskRuns =
         this._findInteractionChildrenTaskRuns(taskRunId);
@@ -1523,8 +1539,8 @@ export class TaskManager extends WorkspaceRestorable {
           this.stopTaskRun(childTask.taskRunId, actingAgentId, finalStatus);
         }
       } else {
-        // Closing interaction
-        closeInteraction(taskRunId, finalStatus);
+        shouldCloseInteraction = true;
+        interactionTaskRunId = taskRunId;
       }
     } else if (taskRun.taskRunKind === "automatic") {
       // Process blocking tasks
@@ -1571,7 +1587,8 @@ export class TaskManager extends WorkspaceRestorable {
           }
         }
       } else {
-        closeInteraction(taskRun.initiatingTaskRunId! /* FIXME */, finalStatus);
+        shouldCloseInteraction = true;
+        interactionTaskRunId = taskRun.initiatingTaskRunId! /* FIXME */;
       }
     }
 
@@ -1579,6 +1596,13 @@ export class TaskManager extends WorkspaceRestorable {
       status: finalStatus,
       nextRunAt: undefined,
     });
+
+    if (shouldCloseInteraction) {
+      if (!interactionTaskRunId) {
+        throw new Error(`Missing interaction task run ID`);
+      }
+      closeInteraction(interactionTaskRunId, finalStatus);
+    }
 
     this.logger.info({ taskRunId, finalStatus }, "Task stopped successfully");
 

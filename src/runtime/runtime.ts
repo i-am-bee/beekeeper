@@ -3,6 +3,7 @@ import { AgentRegistry } from "@/agents/registry/registry.js";
 import { PROCESS_AND_PLAN_TASK_NAME } from "@/agents/supervisor.js";
 import { RuntimeOutput } from "@/runtime/dto.js";
 import {
+  InteractionTaskRun,
   isTaskRunTerminationStatus,
   TaskRun,
   TaskRunIdValue,
@@ -210,8 +211,8 @@ export class Runtime {
         const interactionTaskRun = this.taskManager.getTaskRun(
           interactionTaskRunId,
           RUNTIME_USER,
-        );
-        if (isTaskRunTerminationStatus(interactionTaskRun.status)) {
+        ) as InteractionTaskRun;
+        if (isTaskRunTerminationStatus(interactionTaskRun.interactionStatus)) {
           if (!active.length) {
             this.logger.debug(
               `There are ${active.length} unfinished task. Closing loop.`,
