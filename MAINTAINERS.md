@@ -11,4 +11,4 @@ Maintainers are listed in alphabetical order by last name.
 | Aleš Kalfas | [aleskalfas](https://github.com/aleskalfas) |
 | Jenna Winkler | [jenna-winkler](https://github.com/jenna-winkler) |
 
-For more details on the process of becoming a maintainer, see the [Project Governance](https://github.com/i-am-bee/community/blob/main/GOVERNANCE.md) document.
+For more details on the process of becoming a maintainer, see the [Governance](https://github.com/i-am-bee/community/blob/main/GOVERNANCE.md) document.
