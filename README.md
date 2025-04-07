@@ -49,6 +49,9 @@ Beekeeper offers several key features:
 - 🚀 **Parallel scalability**: Run multiple agents simultaneously for complex tasks.
 - 🖥️ **Unified interface**: Manage all AI agents from one central hub.
 - 📡 **Active monitoring**: Get real-time insights to detect and fix issues quickly.
+- 
+
+🎥 Check out our [demo video]()
 
 ---
 
@@ -212,6 +215,10 @@ To create or switch to a different workspace, set the `WORKSPACE` variable when 
 ```bash
 WORKSPACE=my_workspace mise interactive
 ```
+
+## Documentation
+
+🚧 Comprehensive documentation is under construction.
 
 ---
 
