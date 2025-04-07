@@ -218,7 +218,7 @@ WORKSPACE=my_workspace mise interactive
 
 ## Documentation
 
-🚧 Comprehensive documentation is under construction.
+🚧 Comprehensive documentation is under construction. Any questions, reach out to us on [Discord](https://discord.com/invite/NradeA6ZNF)!
 
 ---
 
