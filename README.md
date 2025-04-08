@@ -34,6 +34,8 @@
 
 At the heart of Beekeeper is a **supervisor agent**, responsible for orchestrating specialized agents to achieve specific objectives. Its modular architecture enables the system to dynamically allocate resources and coordinate task execution. Just describe your objective, and Beekeeper coordinates specialized agents to get it done.
 
+🎥 See Beekeeper in action by watching the [demo video](https://youtu.be/byilNj3rmN8?si=H9M3P3e7QQNp0kGa)!
+
 ### Core components
 
 At its core, Beekeeper consists of three primary components:
@@ -49,10 +51,6 @@ Beekeeper offers several key features:
 - 🚀 **Parallel scalability**: Run multiple agents simultaneously for complex tasks.
 - 🖥️ **Unified interface**: Manage all AI agents from one central hub.
 - 📡 **Active monitoring**: Get real-time insights to detect and fix issues quickly.
-- 
-
-🎥 Check out our [demo video](https://youtu.be/byilNj3rmN8?si=H9M3P3e7QQNp0kGa)
-
 
 ---
 
