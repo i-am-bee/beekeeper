@@ -34,9 +34,7 @@ export const LLMFactories: Record<
   [Providers.OPENAI]: (type: AgentKindEnum) =>
     new OpenAIChatModel(getEnv(env("OPENAI_MODEL", type)) || "gpt-4o"),
   [Providers.OLLAMA]: (type: AgentKindEnum) =>
-    new OllamaChatModel(getEnv(env("OLLAMA_MODEL", type)) || "llama3.1:8b", {
-      structuredOutputs: true,
-    }),
+    new OllamaChatModel(getEnv(env("OLLAMA_MODEL", type)) || "llama3.1:8b"),
 };
 
 export function getChatLLM(

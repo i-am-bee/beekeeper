@@ -96,7 +96,7 @@ OPENAI_MODEL_OPERATOR="gpt-4o"
 LLM_BACKEND="openai"
 
 ## Ollama
-OLLAMA_HOST="http://0.0.0.0:11434"
+OLLAMA_BASE_URL="http://0.0.0.0:11434/api"
 OLLAMA_MODEL_SUPERVISOR="deepseek-r1:8b"
 OLLAMA_MODEL_OPERATOR="deepseek-r1:8b"
 ```
