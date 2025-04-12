@@ -18,7 +18,6 @@ export abstract class BaseMonitor {
       this.screen = blessed.screen({
         smartCSR: true,
         title: (arg as ScreenInput).title,
-        debug: true,
       });
       this.parent = this.screen;
     } else {

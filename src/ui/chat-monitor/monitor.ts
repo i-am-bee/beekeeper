@@ -57,6 +57,7 @@ export class ChatMonitor extends BaseMonitor {
       left: 0,
       top: 0,
       tags: true,
+      keys: true,
     });
 
     this.chatFilterBox = blessed.box({
@@ -66,6 +67,7 @@ export class ChatMonitor extends BaseMonitor {
       left: 0,
       top: 0,
       tags: true,
+      keys: true,
     });
 
     // Create filter boxes
@@ -171,16 +173,28 @@ export class ChatMonitor extends BaseMonitor {
         return;
       }
 
+      this.screen.saveFocus();
+
+      const onCancel = () => {
+        this.screen.restoreFocus(); // Return focus to textbox
+        this.screen.render();
+      };
+
       // If processing, ask if user wants to abort before exiting
       if (this.isProcessing) {
         this.closeDialog.show({
           title: "Operation in Progress",
           message: "Abort operation and exit?",
           onConfirm: () => this.abortOperation(() => process.exit(0)),
+          onCancel,
         });
       } else {
-        this.closeDialog.show();
+        this.closeDialog.show({
+          onCancel,
+        });
       }
+
+      this.screen.render();
     });
 
     // Add Ctrl+A as shortcut for abort

@@ -1,49 +1,73 @@
 import blessed from "neo-blessed";
+import {
+  ControllableContainer,
+  ControllableElement,
+  ControlsManager,
+} from "../controls/controls-manager.js";
+import { NavigationDirection } from "../controls/navigation.js";
+import { UIColors } from "../colors.js";
 
 export class CloseDialog {
-  private dialog: blessed.Widgets.BoxElement;
+  private dialog: ControllableContainer;
   private title: blessed.Widgets.TextElement;
   private message: blessed.Widgets.TextElement;
   private screen: blessed.Widgets.Screen;
-  private confirmButton: blessed.Widgets.ButtonElement;
-  private cancelButton: blessed.Widgets.ButtonElement;
+  private confirmBtn: ControllableElement;
+  private cancelBtn: ControllableElement;
   private isVisible = false;
   private onConfirm: () => void;
   private onCancel: () => void;
+  private controlsManager: ControlsManager;
+  private initiatorElementId?: string;
 
-  constructor(screen: blessed.Widgets.Screen) {
+  constructor(
+    screen: blessed.Widgets.Screen,
+    controlsManager: ControlsManager,
+  ) {
     this.screen = screen;
+    this.controlsManager = controlsManager;
     this.onConfirm = () => process.exit(0); // Default action
     this.onCancel = () => {
       this.hide();
     }; // Default action
 
     // Create dialog box
-    this.dialog = blessed.box({
-      parent: this.screen,
-      top: "center",
-      left: "center",
-      width: 50,
-      height: 10,
-      tags: true,
-      border: {
-        type: "line",
-      },
-      style: {
+    this.dialog = this.controlsManager.add({
+      kind: "container",
+      name: "dialog",
+      element: blessed.box({
+        parent: this.screen,
+        top: "center",
+        left: "center",
+        width: 50,
+        height: 10,
+        tags: true,
+        focusable: false,
+        keys: false,
+        mouse: false,
         border: {
-          fg: "red",
+          type: "line",
         },
-        bg: "black",
-      },
-      hidden: true, // Initially hidden
+        style: {
+          border: {
+            fg: "red",
+          },
+          bg: "black",
+        },
+        hidden: true, // Initially hidden
+      }),
+      parent: this.controlsManager.screen,
     });
 
     // Dialog title
     this.title = blessed.text({
-      parent: this.dialog,
+      parent: this.dialog.element,
       top: 1,
       left: "center",
       content: "Confirm Exit",
+      focusable: false,
+      keys: false,
+      mouse: false,
       style: {
         bold: true,
         fg: "white",
@@ -52,8 +76,11 @@ export class CloseDialog {
 
     // Dialog message
     this.message = blessed.text({
-      parent: this.dialog,
+      parent: this.dialog.element,
       top: 3,
+      focusable: false,
+      keys: false,
+      mouse: false,
       left: "center",
       content: "Are you sure you want to exit?",
       style: {
@@ -62,94 +89,161 @@ export class CloseDialog {
     });
 
     // Confirm button
-    this.confirmButton = blessed.button({
+    this.confirmBtn = this.controlsManager.add({
+      kind: "element",
+      name: "confirmBtn",
+      element: blessed.button({
+        parent: this.dialog.element,
+        top: 6,
+        left: "25%-8",
+        width: 10,
+        height: 1,
+        content: "Yes",
+        focusable: false,
+        keys: false,
+        mouse: false,
+        style: {
+          fg: UIColors.white.white,
+          focus: {
+            bg: UIColors.red.red,
+          },
+        },
+        tags: true,
+      }),
       parent: this.dialog,
-      top: 6,
-      left: "25%-8",
-      width: 10,
-      height: 1,
-      content: "Yes",
-      style: {
-        bg: "red",
-        fg: "white",
-        focus: {
-          bg: "brightRed",
-        },
-        hover: {
-          bg: "brightRed",
-        },
-      },
-      tags: true,
-      mouse: true,
     });
 
     // Cancel button
-    this.cancelButton = blessed.button({
+    this.cancelBtn = this.controlsManager.add({
+      kind: "element",
+      name: "cancelBtn",
+      element: blessed.button({
+        parent: this.dialog.element,
+        top: 6,
+        left: "75%-8",
+        width: 10,
+        height: 1,
+        content: "No",
+        focusable: false,
+        keys: false,
+        mouse: false,
+        style: {
+          fg: UIColors.white.white,
+          focus: {
+            bg: UIColors.blue.blue,
+          },
+        },
+        tags: true,
+      }),
       parent: this.dialog,
-      top: 6,
-      left: "75%-8",
-      width: 10,
-      height: 1,
-      content: "No",
-      style: {
-        bg: "blue",
-        fg: "white",
-        focus: {
-          bg: "brightBlue",
-        },
-        hover: {
-          bg: "brightBlue",
-        },
-      },
-      tags: true,
-      mouse: true,
     });
 
-    // Set up event handlers
-    this.setupEventHandlers();
+    this.setupControls();
   }
 
-  private setupEventHandlers() {
-    // Confirm button handler
-    this.confirmButton.on("press", () => {
-      this.onConfirm();
+  private setupControls(shouldRender = true) {
+    // Navigation
+    this.controlsManager.updateNavigation(this.confirmBtn.id, {
+      right: this.cancelBtn.id,
+      next: this.cancelBtn.id,
+    });
+    this.controlsManager.updateNavigation(this.cancelBtn.id, {
+      left: this.confirmBtn.id,
+      previous: this.confirmBtn.id,
     });
 
-    // Cancel button handler
-    this.cancelButton.on("press", () => {
-      this.onCancel();
+    // Shortcuts
+    this.controlsManager.updateKeyActions(this.dialog.id, {
+      kind: "exclusive",
+      actions: [
+        {
+          key: ["C-c", "escape"],
+          action: {
+            description: "Cancel",
+            listener: () => {
+              this.onCancel();
+            },
+          },
+        },
+        {
+          key: "left",
+          action: {
+            description: "Move to the element on the left",
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.LEFT);
+            },
+          },
+        },
+        {
+          key: "right",
+          action: {
+            description: "Move to the element on the right",
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.RIGHT);
+            },
+          },
+        },
+        {
+          key: "tab",
+          action: {
+            description: "Move to the next element",
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.NEXT);
+            },
+          },
+        },
+        {
+          key: "S-tab",
+          action: {
+            description: "Move to the previous element",
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.PREVIOUS);
+            },
+          },
+        },
+      ],
     });
 
-    // Handle Escape key to cancel
-    this.dialog.key(["escape"], () => {
-      this.onCancel();
+    this.controlsManager.updateKeyActions(this.cancelBtn.id, {
+      kind: "override",
+      actions: [
+        {
+          key: "enter",
+          action: {
+            description: "Cancel",
+            listener: () => {
+              this.onCancel();
+            },
+          },
+        },
+      ],
     });
 
-    // Handle Enter key on focused button
-    this.dialog.key(["enter"], () => {
-      const focused = this.screen.focused;
-      if (focused === this.confirmButton) {
-        this.onConfirm();
-      } else if (focused === this.cancelButton) {
-        this.onCancel();
-      }
+    this.controlsManager.updateKeyActions(this.confirmBtn.id, {
+      kind: "override",
+      actions: [
+        {
+          key: "enter",
+          action: {
+            description: "Exit app",
+            listener: () => {
+              this.onConfirm();
+            },
+          },
+        },
+      ],
     });
 
-    // Handle Tab key for navigation between buttons
-    this.dialog.key(["tab"], () => {
-      const focused = this.screen.focused;
-      if (focused === this.confirmButton) {
-        this.cancelButton.focus();
-      } else {
-        this.confirmButton.focus();
-      }
-    });
+    if (shouldRender) {
+      this.screen.render();
+    }
   }
 
   /**
    * Show the dialog
    */
   public show(
+    initiatorElementId: string,
     options: {
       onConfirm?: () => void;
       onCancel?: () => void;
@@ -157,17 +251,15 @@ export class CloseDialog {
       title?: string;
     } = {},
   ): void {
+    this.initiatorElementId = initiatorElementId;
+
     // Update handlers if provided
     if (options.onConfirm) {
       this.onConfirm = options.onConfirm;
-    } else {
-      this.onConfirm = () => process.exit(0);
     }
 
     if (options.onCancel) {
       this.onCancel = options.onCancel;
-    } else {
-      this.onCancel = () => this.hide();
     }
 
     // Update message and title if provided
@@ -180,9 +272,9 @@ export class CloseDialog {
     }
 
     // Show dialog and focus on cancel button by default (safer option)
-    this.dialog.show();
-    this.cancelButton.focus();
+    this.dialog.element.show();
     this.isVisible = true;
+    this.controlsManager.focus(this.cancelBtn.id);
     this.screen.render();
   }
 
@@ -190,8 +282,13 @@ export class CloseDialog {
    * Hide the dialog
    */
   public hide(): void {
-    this.dialog.hide();
+    this.dialog.element.hide();
     this.isVisible = false;
+
+    if (!this.initiatorElementId) {
+      throw new Error(`Initiator element id is missing`);
+    }
+    this.controlsManager.focus(this.initiatorElementId);
     this.screen.render();
   }
 
