@@ -2,6 +2,7 @@ import blessed from "neo-blessed";
 import {
   ControllableContainer,
   ControllableElement,
+  ControllableScreen,
   ControlsManager,
 } from "../controls/controls-manager.js";
 import { NavigationDirection } from "../controls/navigation.js";
@@ -11,7 +12,7 @@ export class CloseDialog {
   private dialog: ControllableContainer;
   private title: blessed.Widgets.TextElement;
   private message: blessed.Widgets.TextElement;
-  private screen: blessed.Widgets.Screen;
+  private screen: ControllableScreen;
   private confirmBtn: ControllableElement;
   private cancelBtn: ControllableElement;
   private isVisible = false;
@@ -20,12 +21,9 @@ export class CloseDialog {
   private controlsManager: ControlsManager;
   private initiatorElementId?: string;
 
-  constructor(
-    screen: blessed.Widgets.Screen,
-    controlsManager: ControlsManager,
-  ) {
-    this.screen = screen;
+  constructor(controlsManager: ControlsManager) {
     this.controlsManager = controlsManager;
+    this.screen = this.controlsManager.screen;
     this.onConfirm = () => process.exit(0); // Default action
     this.onCancel = () => {
       this.hide();
@@ -36,7 +34,7 @@ export class CloseDialog {
       kind: "container",
       name: "dialog",
       element: blessed.box({
-        parent: this.screen,
+        parent: this.screen.element,
         top: "center",
         left: "center",
         width: 50,
@@ -235,7 +233,7 @@ export class CloseDialog {
     });
 
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -275,7 +273,7 @@ export class CloseDialog {
     this.dialog.element.show();
     this.isVisible = true;
     this.controlsManager.focus(this.cancelBtn.id);
-    this.screen.render();
+    this.screen.element.render();
   }
 
   /**
@@ -289,7 +287,7 @@ export class CloseDialog {
       throw new Error(`Initiator element id is missing`);
     }
     this.controlsManager.focus(this.initiatorElementId);
-    this.screen.render();
+    this.screen.element.render();
   }
 
   /**

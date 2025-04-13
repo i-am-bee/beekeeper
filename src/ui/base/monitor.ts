@@ -1,8 +1,13 @@
 import blessed from "neo-blessed";
+import {
+  ControllableContainer,
+  ControllableScreen,
+  ControlsManager,
+} from "../controls/controls-manager.js";
 
 export interface ParentInput {
-  screen: blessed.Widgets.Screen;
-  parent: blessed.Widgets.BoxElement;
+  parent: ControllableContainer | ControllableScreen;
+  controlsManager: ControlsManager;
 }
 
 export interface ScreenInput {
@@ -10,19 +15,24 @@ export interface ScreenInput {
 }
 
 export abstract class BaseMonitor {
-  protected screen: blessed.Widgets.Screen;
-  protected parent: blessed.Widgets.Node;
+  protected controlsManager: ControlsManager;
+  protected screen: ControllableScreen;
+  protected parent: ControllableContainer | ControllableScreen;
 
   constructor(arg: ParentInput | ScreenInput) {
     if ((arg as ScreenInput).title) {
-      this.screen = blessed.screen({
-        smartCSR: true,
-        title: (arg as ScreenInput).title,
-      });
+      this.controlsManager = new ControlsManager(
+        blessed.screen({
+          smartCSR: true,
+          title: (arg as ScreenInput).title,
+        }),
+      );
+      this.screen = this.controlsManager.screen;
       this.parent = this.screen;
     } else {
-      const { screen, parent } = arg as ParentInput;
-      this.screen = screen;
+      const { parent, controlsManager } = arg as ParentInput;
+      this.controlsManager = controlsManager;
+      this.screen = this.controlsManager.screen;
       this.parent = parent;
     }
   }

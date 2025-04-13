@@ -106,7 +106,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
 
     // Left column - Pools and Agents (30%)
     this.agentPoolList = blessed.list({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "30%",
       height: "30%",
       left: 0,
@@ -123,7 +123,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     });
 
     this.agentVersionsList = blessed.list({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "30%",
       height: "20%",
       left: 0,
@@ -141,7 +141,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     });
 
     this.agentList = blessed.list({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "30%",
       height: "50%",
       left: 0,
@@ -160,7 +160,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
 
     // Center column - Details and Tools (40%)
     this.agentConfigDetail = blessed.box({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "70%",
       height: "40%",
       left: "30%",
@@ -177,7 +177,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     });
 
     this.agentDetail = blessed.box({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "70%",
       height: "60%",
       left: "30%",
@@ -270,7 +270,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     });
 
     this.setupEventHandlers();
-    this.screen.render();
+    this.screen.element.render();
   }
 
   private onPoolSelect(selectedIndex: number) {
@@ -353,7 +353,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
       }
     }
 
-    this.screen.render();
+    this.screen.element.render();
   }
 
   private setupEventHandlers() {
@@ -389,10 +389,10 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
       component.on("mouse", (data) => {
         if (data.action === "wheelup") {
           component.scroll(-1);
-          this.screen.render();
+          this.screen.element.render();
         } else if (data.action === "wheeldown") {
           component.scroll(1);
-          this.screen.render();
+          this.screen.element.render();
         }
       });
     });
@@ -412,7 +412,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
 
     // Render
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -471,7 +471,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
 
     this.updateAgentVersionsList(false);
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -535,7 +535,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     );
     this.updateAgentList(false);
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -613,7 +613,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
       this.agentListItemsData.length ? "" : AGENT_LIST_DEFAULT_TEXT,
     );
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -624,7 +624,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     if (!agentConfig) {
       this.agentConfigDetail.setContent(AGENT_TEMPLATE_DETAIL_DEFAULT_TEXT);
       if (shouldRender) {
-        this.screen.render();
+        this.screen.element.render();
       }
       return;
     }
@@ -649,7 +649,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     ].join("\n");
     this.agentConfigDetail.setContent(details);
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -670,7 +670,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
       this.assignmentsTabButton.hide();
       this.historyTabButton.hide();
       if (shouldRender) {
-        this.screen.render();
+        this.screen.element.render();
       }
       return;
     }
@@ -782,7 +782,7 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
     this.agentDetail.setContent("\n\n" + content);
 
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 

@@ -9,5 +9,23 @@ export enum NavigationDirection {
   OUT = "out",
 }
 
-export type NavigationMap<T> = Partial<Record<NavigationDirection, T>>;
-export type NavigationTransitions = NavigationMap<string>;
+export type Effect = () => void;
+
+export interface NavigationTransitions {
+  next?: string;
+  nextEffect?: Effect;
+  previous?: string;
+  previousEffect?: Effect;
+  up?: string;
+  upEffect?: Effect;
+  down?: string;
+  downEffect?: Effect;
+  left?: string;
+  leftEffect?: Effect;
+  right?: string;
+  rightEffect?: Effect;
+  in?: string;
+  inEffect?: Effect;
+  out?: string;
+  outEffect?: Effect;
+}

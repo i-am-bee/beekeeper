@@ -1,16 +1,15 @@
 import blessed from "neo-blessed";
-import { BaseMonitor } from "../../src/ui/base/monitor.js";
-import { UIColors } from "../../src/ui/colors.js";
+import { BaseMonitor } from "../../../src/ui/base/monitor.js";
+import { UIColors } from "../../../src/ui/colors.js";
 import {
   ControllableContainer,
   ControllableElement,
   ControlsManager,
-} from "../../src/ui/controls/controls-manager.js";
-import { CloseDialog } from "@/ui/shared/close-dialog.js";
-import { NavigationDirection } from "../../src/ui/controls/navigation.js";
+} from "../../../src/ui/controls/controls-manager.js";
+import { CloseDialog } from "../../../src/ui/shared/close-dialog.js";
+import { NavigationDirection } from "../../../src/ui/controls/navigation.js";
 
 class Monitor extends BaseMonitor {
-  private controlsManager: ControlsManager;
   private container: ControllableContainer;
   private leftColumn: ControllableContainer;
   private textInput: ControllableElement;
@@ -128,7 +127,7 @@ class Monitor extends BaseMonitor {
       parent: this.container,
     });
 
-    this.closeDialog = new CloseDialog(this.screen, this.controlsManager);
+    this.closeDialog = new CloseDialog(this.controlsManager);
     this.setupControls();
   }
 
@@ -318,7 +317,7 @@ class Monitor extends BaseMonitor {
     this.controlsManager.focus(this.container.id, false);
 
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 }

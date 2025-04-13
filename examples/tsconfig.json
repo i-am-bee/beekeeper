@@ -3,11 +3,6 @@
   "compilerOptions": {
     "baseUrl": "..",
     "rootDir": "..",
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
   },
   "exclude": [
     "../tests",

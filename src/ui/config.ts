@@ -108,6 +108,10 @@ export const UIConfig = {
     version: { fg: UIColors.gray.cool_gray, bold: false },
   } satisfies StyleCategory,
 
+  colors: {
+    focused: UIColors.blue.cyan,
+  },
+
   status: {
     CREATED: { fg: UIColors.yellow.yellow, icon: "◆" }, // Diamond
     EXECUTING: { fg: UIColors.green.green, icon: "▶" }, // Play triangle
@@ -159,6 +163,11 @@ export const UIConfig = {
   borders: {
     type: "line",
     fg: UIColors.white.white,
+    focus: {
+      border: {
+        fg: UIColors.blue.cyan,
+      },
+    },
   },
 
   list: {
@@ -247,13 +256,21 @@ export function applyAgentKindIdStyle(agentKindId: AgentKindId) {
   return applyStyle(agentKindId.agentKind, clone(style));
 }
 
-export function applyAgentIdStyle(agentId: AgentId | AgentTypeId) {
-  const style = UIConfig.labels.agentId[agentId.agentKind as AgentKindEnum];
-  const isAgentId = (agentId as AgentId).agentNum != null;
-  return applyStyle(
-    `${style.icon} ${agentId.agentType}${isAgentId ? `[${(agentId as AgentId).agentNum}]` : ""}`,
-    { ...style },
-  );
+export function applyAgentIdStyle(
+  input: AgentId | AgentTypeId,
+  includeVersion = true,
+) {
+  const style = UIConfig.labels.agentId[input.agentKind as AgentKindEnum];
+  if ((input as AgentId).agentNum != null) {
+    const agentId = input as AgentId;
+    return applyStyle(
+      `${style.icon} ${agentId.agentType}[${agentId.agentNum}]${includeVersion ? ` ${versionNum(agentId.agentConfigVersion)}` : ""}`,
+      { ...style },
+    );
+  } else {
+    const agentId = input as AgentTypeId;
+    return applyStyle(`${style.icon} ${agentId.agentType}`, { ...style });
+  }
 }
 
 export function applyToolsStyle(tools: AvailableTool[]) {
@@ -311,8 +328,8 @@ export function agentKindId(value: AgentKindId) {
 export function agentTypeId(value: AgentTypeId) {
   return applyAgentIdStyle(value);
 }
-export function agentId(value: AgentId | AgentTypeId) {
-  return applyAgentIdStyle(value);
+export function agentId(value: AgentId | AgentTypeId, includeVersion = true) {
+  return applyAgentIdStyle(value, includeVersion);
 }
 export function agentKind(value: AgentKindValue) {
   return applyStyle(value, UIConfig.labels.agentKind);
@@ -370,7 +387,7 @@ export function agentPool(agentPool: {
 }
 
 export function agent(agent: AgentInfo) {
-  return `${agentId(stringToAgent(agent.agentId))} ${versionNum(agent.agentConfigVersion)} ${bool(agent.inUse, agent.inUse ? DEFAULT_VERSION : BUSY_IDLE)}`;
+  return `${agentId(stringToAgent(agent.agentId), false)} ${versionNum(agent.agentConfigVersion)} ${bool(agent.inUse, agent.inUse ? DEFAULT_VERSION : BUSY_IDLE)}`;
 }
 
 export function applyTaskKindIdStyle(taskKindId: TaskKindId) {
