@@ -77,7 +77,7 @@ export class ControlsManager {
     options?: {
       onFocus?: (element: blessed.Widgets.Screen) => void;
       onBlur?: (element: blessed.Widgets.Screen) => void;
-    }
+    },
   ) {
     this._screen = {
       id: "screen",
@@ -97,7 +97,7 @@ export class ControlsManager {
   add(input: AddContainerInput): ControllableContainer;
   add(input: AddElementInput): ControllableElement;
   add(
-    input: AddContainerInput | AddElementInput
+    input: AddContainerInput | AddElementInput,
   ): ControllableContainer | ControllableElement {
     const parent = this.getContainer(input.parent.id);
     let element;
@@ -127,7 +127,7 @@ export class ControlsManager {
       const elIndex = element.parent.children.indexOf(element.id);
       if (elIndex === -1) {
         throw new Error(
-          `Can't find element with id:${id} in parent element with id:${element.parent.id}`
+          `Can't find element with id:${id} in parent element with id:${element.parent.id}`,
         );
       }
       element.parent.children.splice(elIndex, 1);
@@ -167,7 +167,7 @@ export class ControlsManager {
     const el = this.getElement(id);
     const path = this.getElementsOnPath(id);
     const keyBindings = createKeyBindings(
-      path.map((it) => it.keyActions).filter(isNonNullish)
+      path.map((it) => it.keyActions).filter(isNonNullish),
     );
 
     // Focus new

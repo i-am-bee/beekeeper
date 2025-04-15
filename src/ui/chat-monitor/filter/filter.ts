@@ -23,14 +23,14 @@ export class ChatFilter extends BaseMonitor {
 
   public on<K extends keyof ChatFilterEvents>(
     event: K,
-    listener: ChatFilterEvents[K]
+    listener: ChatFilterEvents[K],
   ): typeof this.emitter {
     return this.emitter.on(event, listener);
   }
 
   public off<K extends keyof ChatFilterEvents>(
     event: K,
-    listener: ChatFilterEvents[K]
+    listener: ChatFilterEvents[K],
   ): typeof this.emitter {
     return this.emitter.off(event, listener);
   }
@@ -76,7 +76,7 @@ export class ChatFilter extends BaseMonitor {
     this.messageTypeFilter.on("filter:expand", this.showRoleFilter.bind(this));
     this.messageTypeFilter.on(
       "filter:collapse",
-      this.hideRoleFilter.bind(this)
+      this.hideRoleFilter.bind(this),
     );
   }
 
@@ -85,15 +85,12 @@ export class ChatFilter extends BaseMonitor {
       this.messageTypeFilter.expandButton.id,
       {
         in: this.roleFilter.container.id,
-      }
+      },
     );
 
-    this.controlsManager.updateNavigation(
-      this.roleFilter.container.id,
-      {
-        out: this.messageTypeFilter.expandButton.id,
-      }
-    );
+    this.controlsManager.updateNavigation(this.roleFilter.container.id, {
+      out: this.messageTypeFilter.expandButton.id,
+    });
 
     // Navigation
     if (shouldRender) {
@@ -136,7 +133,7 @@ export class ChatFilter extends BaseMonitor {
       this.messageTypeFilter.expandButton.id,
       {
         in: undefined,
-      }
+      },
     );
     this.roleFilter.container.element.show();
     this.screen.element.render();
@@ -147,9 +144,9 @@ export class ChatFilter extends BaseMonitor {
       this.messageTypeFilter.expandButton.id,
       {
         in: this.roleFilter.container.id,
-      }
+      },
     );
-    this.roleFilter.container.element.hide();    
+    this.roleFilter.container.element.hide();
     this.screen.element.render();
   }
 

@@ -38,6 +38,7 @@ import { UIColors } from "./colors.js";
 export interface StyleItem {
   fg?: string;
   bold?: boolean;
+  underline?: boolean;
   icon?: string;
 }
 export type StyleItemVersioned = Record<string, StyleItem>;
@@ -218,6 +219,9 @@ export const applyStyle = (
   if (style.bold) {
     styled = `{bold}${styled}{/bold}`;
   }
+  if (style.underline) {
+    styled = `{underline}${styled}{/underline}`;
+  }
   return styled;
 };
 
@@ -303,8 +307,11 @@ export function label(value: string) {
   return applyStyle(value, UIConfig.labels.default);
 }
 
-export function system(value: string) {
-  return applyStyle(value, UIConfig.labels.system);
+export function system(value: string, highlighted?: boolean) {
+  return applyStyle(value, {
+    ...UIConfig.labels.system,
+    underline: highlighted,
+  });
 }
 
 export function agentConfigId(value: string) {
@@ -358,20 +365,29 @@ export function timestamp(timestamp: string | Date) {
 export function eventType(event: string) {
   return applyStyle(event, UIConfig.labels.eventType);
 }
-export function error(error: string) {
-  return applyStyle(error, UIConfig.labels.error);
+export function error(error: string, highlighted?: boolean) {
+  return applyStyle(error, {
+    ...UIConfig.labels.error,
+    underline: highlighted,
+  });
 }
 
 export function input(
   input: string,
   version?: typeof DEFAULT_VERSION | typeof AMBIENT_VERSION,
+  highlighted?: boolean,
 ) {
   const style = UIConfig.labels.input[version ?? DEFAULT_VERSION];
-  return applyStyle(input, style);
+  return applyStyle(input, { ...style, underline: highlighted });
 }
 
-export function output(output: string) {
-  return applyStyle(output, UIConfig.labels.output);
+export function output(
+  output: string,
+  version?: typeof DEFAULT_VERSION | typeof AMBIENT_VERSION,
+  highlighted?: boolean,
+) {
+  const style = UIConfig.labels.output[version ?? DEFAULT_VERSION];
+  return applyStyle(output, { ...style, underline: highlighted });
 }
 
 export function agentPoolStats(poolStats: AgentConfigPoolStats) {

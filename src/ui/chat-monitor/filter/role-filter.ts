@@ -35,14 +35,14 @@ export class RoleFilter extends BaseMonitor {
   // Events emitting
   public on<K extends keyof RoleFilterEvents>(
     event: K,
-    listener: RoleFilterEvents[K]
+    listener: RoleFilterEvents[K],
   ): typeof this.emitter {
     return this.emitter.on(event, listener);
   }
 
   public off<K extends keyof RoleFilterEvents>(
     event: K,
-    listener: RoleFilterEvents[K]
+    listener: RoleFilterEvents[K],
   ): typeof this.emitter {
     return this.emitter.off(event, listener);
   }
@@ -315,7 +315,7 @@ export class RoleFilter extends BaseMonitor {
   private updateSelectAllCheckbox() {
     // Check if all role checkboxes are checked or unchecked
     const allChecked = Object.keys(this.messageRoleFilters).every(
-      (role) => this.messageRoleFilters[role]
+      (role) => this.messageRoleFilters[role],
     );
 
     const selectedAllCheckboxEl = this._selectAllRolesCheckbox

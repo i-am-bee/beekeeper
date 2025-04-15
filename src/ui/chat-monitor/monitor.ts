@@ -10,11 +10,12 @@ import {
   ControllableContainer,
   ControllableElement,
 } from "../controls/controls-manager.js";
+import { Messages } from "./messages/messages.js";
 
 export class ChatMonitor extends BaseMonitor {
   private chatBox: ControllableContainer;
   private inputBox: ControllableElement;
-  private messagesBox: ControllableContainer;
+  private messages: Messages;
   private sendButton: ControllableElement;
   private abortButton: ControllableElement;
   private chatFilterBox: ControllableContainer;
@@ -22,13 +23,6 @@ export class ChatMonitor extends BaseMonitor {
   private closeDialog: CloseDialog;
   private abortCheckInterval: NodeJS.Timeout | null = null;
   private onAbort?: () => void;
-
-  private messages: {
-    role: string;
-    content: string;
-    timestamp: Date;
-    type: MessageTypeEnum;
-  }[] = [];
 
   private runtimeHandler: ChatRuntimeHandler;
   private _isProcessing = false;
@@ -90,20 +84,10 @@ export class ChatMonitor extends BaseMonitor {
       controlsManager: this.controlsManager,
     });
 
-    // Messages area - adjusted to make room for filter boxes
-    this.messagesBox = this.controlsManager.add({
-      kind: "container",
-      name: "messagesBox",
-      element: blessed.box({
-        parent: this.chatBox.element,
-        width: "100%",
-        height: "100%-12", // Adjusted for filter boxes at top and input at bottom
-        left: 0,
-        top: 7, // Space for type filter box
-        tags: true,
-        ...chatStyles.getMessagesBoxStyle(),
-      }),
+    this.messages = new Messages({
       parent: this.chatBox,
+      controlsManager: this.controlsManager,
+      getChatFilters: () => this.chatFilter.values,
     });
 
     // Input area
@@ -279,59 +263,17 @@ export class ChatMonitor extends BaseMonitor {
     }
   }
 
+  private addMessage(role: string, content: string, type: MessageTypeEnum) {
+    this.addMessage(role, content, type);
+    this.chatFilter.addRole(role);
+  }
+
   private async sendMessage(message: string, signal: AbortSignal) {
     // Add user message to chat
     this.addMessage("You", message, MessageTypeEnum.INPUT);
 
     // Send message via runtime handler
     await this.runtimeHandler.sendMessage(message, signal);
-  }
-
-  private addMessage(role: string, content: string, type: MessageTypeEnum) {
-    const timestamp = new Date();
-    this.messages.push({ role, content, timestamp, type });
-    this.chatFilter.addRole(role);
-    this.updateMessagesDisplay();
-  }
-
-  private updateMessagesDisplay(shouldRender = true) {
-    const filter = this.chatFilter.values;
-
-    // Filter messages based on current filter settings
-    const filteredMessages = this.messages.filter((msg) => {
-      // Check type filter
-      // INPUT and FINAL are always shown
-      const typeFilterPassed =
-        msg.type === MessageTypeEnum.INPUT ||
-        msg.type === MessageTypeEnum.FINAL ||
-        filter.messageTypes.includes(msg.type);
-
-      // Check role filter
-      const roleFilterPassed = filter.roles.includes(msg.role);
-
-      return typeFilterPassed && roleFilterPassed;
-    });
-
-    // Format and display filtered messages
-    const formattedMessages = filteredMessages
-      .map((msg) => {
-        return chatStyles.formatCompleteMessage(
-          msg.timestamp,
-          msg.role,
-          msg.content,
-          msg.type,
-        );
-      })
-      .join("\n");
-
-    this.messagesBox.element.setContent(formattedMessages);
-    this.messagesBox.element.scrollTo(
-      this.messagesBox.element.getScrollHeight(),
-    );
-
-    if (shouldRender) {
-      this.screen.element.render();
-    }
   }
 
   private setProcessingState(isProcessing: boolean) {
@@ -382,8 +324,7 @@ export class ChatMonitor extends BaseMonitor {
   }
 
   reset(shouldRender = true): void {
-    this.messages = [];
-    this.updateMessagesDisplay();
+    this.messages.reset(shouldRender);
     (this.inputBox.element as blessed.Widgets.TextareaElement).clearValue();
     this.chatFilter.reset(false);
     // Restart input value monitoring
@@ -506,7 +447,7 @@ export class ChatMonitor extends BaseMonitor {
 
     // Start monitoring input value changes
     this.startInputValueMonitoring();
-    this.updateMessagesDisplay(false);
+    this.messages.updateDisplay(false);
 
     this.screen.element.render();
   }
