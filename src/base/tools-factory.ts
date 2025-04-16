@@ -1,19 +1,49 @@
 import { Logger } from "beeai-framework";
 import { AnyTool } from "beeai-framework/tools/base";
 import { AvailableTool } from "@/agents/registry/dto.js";
+import { Disposable } from "@/utils/disposable.js";
 
 export type ToolFactoryMethod = () => AnyTool;
 
-export abstract class BaseToolsFactory {
-  protected readonly availableTools = new Map<string, AvailableTool>();
-  protected readonly factories = new Map<string, ToolFactoryMethod>();
-  private readonly logger: Logger;
+export abstract class BaseToolsFactory implements Disposable {
+  private _logger: Logger | null;
+  protected _availableTools: Map<string, AvailableTool> | null;
+  protected _factories: Map<string, ToolFactoryMethod> | null;
   private initialized = false;
+  private _disposed = false;
+
+  get logger() {
+    if (!this._logger) {
+      throw new Error(`Logger is missing`);
+    }
+    return this._logger;
+  }
+
+  get availableTools() {
+    if (!this._availableTools) {
+      throw new Error(`AvailableTools are missing`);
+    }
+    return this._availableTools;
+  }
+
+  get factories() {
+    if (!this._factories) {
+      throw new Error(`Factories are missing`);
+    }
+    return this._factories;
+  }
+
+  get disposed(): boolean {
+    return this._disposed;
+  }
 
   constructor(logger: Logger) {
-    this.logger = logger.child({
+    this._logger = logger.child({
       name: this.constructor.name,
     });
+
+    this._availableTools = new Map<string, AvailableTool>();
+    this._factories = new Map<string, ToolFactoryMethod>();
   }
 
   async init() {
@@ -57,5 +87,20 @@ export abstract class BaseToolsFactory {
       }
       return factory();
     });
+  }
+
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.factories.clear();
+    this._factories = null;
+
+    this.availableTools.clear();
+    this._availableTools = null;
+
+    this._logger = null;
+    this._disposed = true;
   }
 }

@@ -15,6 +15,7 @@ import {
 } from "@/tasks/manager/helpers.js";
 import { TaskManager } from "@/tasks/manager/manager.js";
 import { AbortError, AbortScope } from "@/utils/abort-scope.js";
+import { Disposable } from "@/utils/disposable.js";
 import { Logger } from "beeai-framework";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
 
@@ -30,20 +31,65 @@ export interface RuntimeConfig {
   logger: Logger;
 }
 
-export class Runtime {
-  protected readonly logger: Logger;
+export class Runtime implements Disposable {
+  protected _logger: Logger | null;
 
   private pollingIntervalMs: number;
   private timeoutMs: number;
 
-  private agentRegistry: AgentRegistry<unknown>;
-  private taskManager: TaskManager;
-  private supervisor: AgentWithInstance<ReActAgent>;
+  private _agentRegistry: AgentRegistry<unknown> | null;
+  private _taskManager: TaskManager | null;
+  private _supervisor: AgentWithInstance<ReActAgent> | null;
   private _isRunning = false;
-  private abortScope: AbortScope;
+  private _abortScope: AbortScope | null;
+  private _disposed = false;
+
+  protected get logger() {
+    if (!this._logger) {
+      throw new Error(`Logger is missing`);
+    }
+
+    return this._logger;
+  }
+
+  protected get agentRegistry() {
+    if (!this._agentRegistry) {
+      throw new Error(`Agent registry is missing`);
+    }
+
+    return this._agentRegistry;
+  }
+
+  protected get taskManager() {
+    if (!this._taskManager) {
+      throw new Error(`Task manager is missing`);
+    }
+
+    return this._taskManager;
+  }
+
+  protected get supervisor() {
+    if (!this._supervisor) {
+      throw new Error(`Supervisor agent is missing`);
+    }
+
+    return this._supervisor;
+  }
+
+  protected get abortScope() {
+    if (!this._abortScope) {
+      throw new Error(`Abort scope is missing`);
+    }
+
+    return this._abortScope;
+  }
 
   get isRunning() {
     return this._isRunning;
+  }
+
+  get disposed() {
+    return this._disposed;
   }
 
   constructor({
@@ -54,16 +100,16 @@ export class Runtime {
     timeoutMs,
     logger,
   }: RuntimeConfig) {
-    this.logger = logger.child({
+    this._logger = logger.child({
       name: this.constructor.name,
     });
 
-    this.agentRegistry = agentRegistry;
+    this._agentRegistry = agentRegistry;
     this.pollingIntervalMs = pollingIntervalMs;
     this.timeoutMs = timeoutMs;
-    this.taskManager = taskManager;
-    this.supervisor = supervisor;
-    this.abortScope = new AbortScope();
+    this._taskManager = taskManager;
+    this._supervisor = supervisor;
+    this._abortScope = new AbortScope();
 
     this.taskManager.addAdmin(RUNTIME_USER);
   }
@@ -258,5 +304,24 @@ export class Runtime {
         onTaskRunTrajectoryUpdate,
       );
     }
+  }
+
+  dispose() {
+    if (this.disposed) {
+      return;
+    }
+
+    this.abortScope.dispose();
+    this._abortScope = null;
+
+    this.taskManager.dispose();
+    this._taskManager = null;
+
+    this.agentRegistry.dispose();
+
+    this.supervisor.instance.destroy();
+    this._supervisor = null;
+
+    this._disposed = true;
   }
 }

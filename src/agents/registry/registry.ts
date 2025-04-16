@@ -106,39 +106,97 @@ export interface AgentRegistryConfig<TAgentInstance> {
 
 export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   /** Map of registered agent kind and their configurations */
-  // private agentConfigs: Map<AgentKindEnum, Map<AgentTypeValue, AgentConfig[]>>;
-  private agentConfigs = new AgentVersionMap<AgentConfig>({
-    autoCreateMap: true,
-  });
+  private _agentConfigs: AgentVersionMap<AgentConfig> | null;
   /** Map of all agent instances */
-  private agents = new Map<AgentIdValue, AgentRuntime<TAgentInstance>>();
-  private agentPools = new AgentVersionMap<Set<AgentConfigIdValue>>({
-    autoCreateMap: true,
-    getDefaultValue: () => [[0, new Set<string>()]],
-  });
-  private agentCreatedCounts = new AgentVersionMap<number>({
-    autoCreateMap: true,
-    getDefaultValue: () => [[0, 0]],
-  });
+  private _agents: Map<AgentIdValue, AgentRuntime<TAgentInstance>> | null;
+  private _agentPools: AgentVersionMap<Set<AgentConfigIdValue>> | null;
+  private _agentCreatedCounts: AgentVersionMap<number> | null;
   /** Callbacks for agent lifecycle events */
-  private lifecycleCallbacks: AgentLifecycleCallbacks<TAgentInstance>;
-  private onAgentConfigCreated: (
-    agentKind: AgentKindEnum,
-    agentType: AgentTypeValue,
-  ) => void;
-  private onAgentAvailable: (
-    agentKind: AgentKindEnum,
-    agentType: AgentTypeValue,
-    agentConfigVersion: AgentConfigVersionValue,
-    availableCount: number,
-  ) => void;
+  private _lifecycleCallbacks: AgentLifecycleCallbacks<TAgentInstance> | null;
+  private _onAgentConfigCreated:
+    | ((agentKind: AgentKindEnum, agentType: AgentTypeValue) => void)
+    | null;
+  private _onAgentAvailable:
+    | ((
+        agentKind: AgentKindEnum,
+        agentType: AgentTypeValue,
+        agentConfigVersion: AgentConfigVersionValue,
+        availableCount: number,
+      ) => void)
+    | null;
   /** Maps of tools factories for use by agents per agent kinds */
-  private toolsFactory = new Map<AgentKindEnum, BaseToolsFactory>();
+  private _toolsFactory: Map<AgentKindEnum, BaseToolsFactory> | null;
   private poolsCleanupJobIntervalId: NodeJS.Timeout | null = null;
   private poolsCleanupJobExecuting = false;
   private poolsToCleanup: string[] = [];
-  private stateLogger: AgentStateLogger;
+  private _stateLogger: AgentStateLogger | null;
   private _switches: AgentRegistrySwitches;
+
+  private get onAgentConfigCreated() {
+    if (!this._onAgentConfigCreated) {
+      throw new Error(`onAgentConfigCreated callback is missing`);
+    }
+
+    return this._onAgentConfigCreated;
+  }
+
+  private get onAgentAvailable() {
+    if (!this._onAgentAvailable) {
+      throw new Error(`onAgentAvailable callback is missing`);
+    }
+
+    return this._onAgentAvailable;
+  }
+
+  private get lifecycleCallbacks() {
+    if (!this._lifecycleCallbacks) {
+      throw new Error(`lifecycleCallbacks are missing`);
+    }
+
+    return this._lifecycleCallbacks;
+  }
+
+  private get stateLogger() {
+    if (!this._stateLogger) {
+      throw new Error(`State logger is missing`);
+    }
+    return this._stateLogger;
+  }
+
+  private get agents() {
+    if (!this._agents) {
+      throw new Error(`Agents map is missing`);
+    }
+    return this._agents;
+  }
+
+  private get agentCreatedCounts() {
+    if (!this._agentCreatedCounts) {
+      throw new Error(`AgentCreatedCounts map is missing`);
+    }
+    return this._agentCreatedCounts;
+  }
+
+  private get agentPools() {
+    if (!this._agentPools) {
+      throw new Error(`Agent pools map is missing`);
+    }
+    return this._agentPools;
+  }
+
+  private get agentConfigs() {
+    if (!this._agentConfigs) {
+      throw new Error(`Agent configs map is missing`);
+    }
+    return this._agentConfigs;
+  }
+
+  private get toolsFactory() {
+    if (!this._toolsFactory) {
+      throw new Error(`Tools factory map is missing`);
+    }
+    return this._toolsFactory;
+  }
 
   constructor({
     agentLifecycle,
@@ -149,10 +207,25 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
   }: AgentRegistryConfig<TAgentInstance>) {
     super(AGENT_REGISTRY_CONFIG_PATH, AGENT_REGISTRY_USER, logger);
     this.logger.info("Initializing AgentRegistry");
-    this.stateLogger = AgentStateLogger.getInstance();
-    this.lifecycleCallbacks = agentLifecycle;
-    this.onAgentConfigCreated = onAgentConfigCreated;
-    this.onAgentAvailable = onAgentAvailable;
+
+    this._agentConfigs = new AgentVersionMap<AgentConfig>({
+      autoCreateMap: true,
+    });
+    this._toolsFactory = new Map<AgentKindEnum, BaseToolsFactory>();
+    this._agents = new Map<AgentIdValue, AgentRuntime<TAgentInstance>>();
+    this._agentPools = new AgentVersionMap<Set<AgentConfigIdValue>>({
+      autoCreateMap: true,
+      getDefaultValue: () => [[0, new Set<string>()]],
+    });
+    this._agentCreatedCounts = new AgentVersionMap<number>({
+      autoCreateMap: true,
+      getDefaultValue: () => [[0, 0]],
+    });
+
+    this._stateLogger = AgentStateLogger.getInstance();
+    this._lifecycleCallbacks = agentLifecycle;
+    this._onAgentConfigCreated = onAgentConfigCreated;
+    this._onAgentAvailable = onAgentAvailable;
     this._switches = {
       mutableAgentConfigs: true,
       restoration: true,
@@ -1098,5 +1171,38 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
     agentConfigVersion: number,
   ) {
     this.agentPools.deleteVersion(agentKind, agentType, agentConfigVersion);
+  }
+
+  dispose() {
+    this.logger.debug("Disposing AgentRegistry");
+    if (this._disposed) {
+      return;
+    }
+
+    this.stopPoolsCleanupJob();
+
+    // FIXME Destroy agent instances
+    this.agents.clear();
+    this._agents = null;
+
+    this.agentPools.dispose();
+    this._agentPools = null;
+
+    this.agentCreatedCounts.dispose();
+    this._agentCreatedCounts = null;
+
+    this.agentConfigs.dispose();
+    this._agentConfigs = null;
+
+    this.toolsFactory.forEach((f) => f.dispose());
+    this.toolsFactory.clear();
+    this._toolsFactory = null;
+
+    this._onAgentConfigCreated = null;
+    this._onAgentAvailable = null;
+    this._lifecycleCallbacks = null;
+    this._stateLogger = null;
+
+    super.dispose();
   }
 }

@@ -125,15 +125,18 @@ export class AbortScope {
     this.childControllers.clear();
   }
 
-  abort(manualAbort = false): void {
+  abort(options?: { manualAbort?: boolean; suppressError?: boolean }): void {
     if (this.aborted) {
-      throw new Error(`Abort on already aborted scope attempt`);
+      if (!options?.suppressError) {
+        throw new Error(`Abort on already aborted scope attempt`);
+      }
+      return; // Already aborted, nothing more to do
     }
 
     this.aborted = true;
     this.clean(true);
 
-    if (!manualAbort) {
+    if (!options?.manualAbort) {
       this.onAbort?.();
     }
   }
@@ -244,7 +247,7 @@ export class AbortScope {
       this.parentSignalHandler = undefined;
     }
 
-    this.abort(); // Clean up all resources
+    this.abort({ suppressError: true }); // Clean up all resources
     this.onAbort = undefined;
   }
 

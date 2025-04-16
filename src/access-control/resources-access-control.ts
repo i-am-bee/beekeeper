@@ -1,6 +1,7 @@
 import { clone, difference } from "remeda";
 import { Permission } from "./dto.js";
 import { Logger } from "beeai-framework";
+import { Disposable } from "@/utils/disposable.js";
 
 export type UserId = string;
 export type ResourceId = string;
@@ -37,20 +38,43 @@ export class PermissionError extends Error {
   }
 }
 
-export class ResourcesAccessControl {
-  private readonly logger: Logger;
-  private registry: ResourcesPermissionRegistry = {
-    admins: new Set(),
-    resources: new Map([
-      [REGISTRY_RESOURCE, { ownerId: ADMIN_USER, userPermissions: new Map() }],
-    ]),
-  };
+export class ResourcesAccessControl implements Disposable {
+  private _logger: Logger | null;
+  private _registry: ResourcesPermissionRegistry | null;
+  private _disposed = false;
+
+  private get logger() {
+    if (!this._logger) {
+      throw new Error("Logger is missing");
+    }
+    return this._logger;
+  }
+
+  private get registry() {
+    if (!this._registry) {
+      throw new Error("Registry are missing");
+    }
+    return this._registry;
+  }
 
   constructor(entityName: string, admins: UserId[] = [], logger: Logger) {
-    this.logger = logger.child({
+    this._logger = logger.child({
       name: `${entityName}AccessControl`,
     });
+    this._registry = {
+      admins: new Set(),
+      resources: new Map([
+        [
+          REGISTRY_RESOURCE,
+          { ownerId: ADMIN_USER, userPermissions: new Map() },
+        ],
+      ]),
+    };
+
     admins.forEach((adminId) => this.registry.admins.add(adminId));
+  }
+  get disposed(): boolean {
+    return this._disposed;
   }
 
   addAdmin(adminId: string) {
@@ -252,5 +276,19 @@ export class ResourcesAccessControl {
       }
       throw error;
     }
+  }
+
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.registry.admins.clear();
+    this.registry.resources.forEach((r) => r.userPermissions.clear());
+    this.registry.resources.clear();
+    this._registry = null;
+
+    this._logger = null;
+    this._disposed = true;
   }
 }

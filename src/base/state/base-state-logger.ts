@@ -23,6 +23,7 @@ export class BaseStateLogger<TData extends z.ZodType> {
       ...logFileDefaultPath,
       `${logFileDefaultName}.log`,
     );
+
     this.rotateLogFileIfExists();
     this.logInit();
   }

@@ -243,24 +243,6 @@ export async function createRuntime({
 
   registry.releaseAgent(supervisorAgentId);
 
-  // Can you create tasks to write poem about: sun, earth, mars and assign them to the right agent type and run them?
-  // Can you create agent type that will write the best poems on different topics, then create tasks to create poem about: sun, night, water. Assign them to the right agent types run all tasks and give me the created poems when it will be all finished?
-  // Can you create agent type that will write the best poems on different topics, then create tasks to create poem about: sun, night, water. Assign them to the right agent types?
-
-  // Can you create agent type that will write the best poems on different topics with the pool size 2?
-  // Can you create tasks to create poem about: sun, night, water, hell, love, hate. Assign them to the right agent types?
-  // Can you runt these tasks?
-  // Can you list their results?
-
-  // Can you generate poem for each of these topics: love, day, night?
-  // Can you get list of articles about each of these topics: deepseek, interstellar engine, agi?
-
-  // Can you create different kinds of specialized agents that will do a research on different aspects of person profile from internet? You should be very specific and explanatory in their instructions. Don't create any tasks.
-  // Base on these agents can you prepare related tasks. And one extra agent and task that will summarize task outputs other tasks.
-  // Can you create a personal profile of Dario Gil?
-
-  // Prepare a marketing strategy to sell most selling mobile phones in 2024 in Europe on my eshop. Ensure the strategy is based on top of thorough research of the market.
-
   return new Runtime({
     agentRegistry: registry,
     taskManager,
@@ -269,4 +251,12 @@ export async function createRuntime({
     timeoutMs: 15 * 60_000, // 15 min
     logger,
   });
+}
+
+export function disposeRuntime(runtime: Runtime) {
+  AgentStateLogger.dispose();
+  TaskStateLogger.dispose();
+  WorkspaceManager.dispose();
+
+  runtime.dispose();
 }

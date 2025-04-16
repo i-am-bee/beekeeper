@@ -1,4 +1,5 @@
 import { AbortScope } from "@/utils/abort-scope.js";
+import { Disposable } from "@/utils/disposable.js";
 import { ensureDirectoryExistsSafe, validatePath } from "@/utils/file.js";
 import { Logger } from "beeai-framework";
 import EventEmitter from "events";
@@ -38,14 +39,66 @@ export interface CreateFileResourceInput extends CreateResourceInput {
 
 export const DEFAULT_PATH = ["workspaces"] as readonly string[];
 
-export class WorkspaceManager extends EventEmitter {
-  private logger: Logger;
-  private static instance: WorkspaceManager;
+export class WorkspaceManager extends EventEmitter implements Disposable {
+  private _logger: Logger | null;
+  private static instance?: WorkspaceManager;
   private _workspacesDirPath?: string;
   private _workspaceName?: string;
   private _workspacePath?: string;
-  private resources = new Map<DirPath, WorkspaceResource>();
-  private abortScope: AbortScope;
+  private _resources: Map<DirPath, WorkspaceResource> | null;
+  private _abortScope: AbortScope | null;
+  private _disposed = false;
+
+  get logger() {
+    if (!this._logger) {
+      throw Error(`Logger is missing`);
+    }
+
+    return this._logger;
+  }
+
+  get resources() {
+    if (!this._resources) {
+      throw Error(`Resources are missing`);
+    }
+
+    return this._resources;
+  }
+
+  get workspaceName() {
+    if (!this._workspaceName) {
+      throw Error(`Workspace wasn't set yet`);
+    }
+
+    return this._workspaceName;
+  }
+
+  get workspacesDirPath() {
+    if (!this._workspacesDirPath) {
+      throw Error(`Workspace dir path wasn't set yet`);
+    }
+
+    return this._workspacesDirPath;
+  }
+
+  get workspacePath() {
+    if (!this._workspacePath) {
+      throw Error(`Workspace path wasn't set yet`);
+    }
+
+    return this._workspacePath;
+  }
+
+  get abortScope() {
+    if (!this._abortScope) {
+      throw new Error(`Abort scope is missing`);
+    }
+    return this._abortScope;
+  }
+
+  get disposed() {
+    return this._disposed;
+  }
 
   static init(
     workspace: string,
@@ -74,28 +127,14 @@ export class WorkspaceManager extends EventEmitter {
     return this.instance;
   }
 
-  get workspaceName() {
-    if (!this._workspaceName) {
-      throw Error(`Workspace wasn't set yet`);
+  static dispose() {
+    if (!this.instance) {
+      throw new Error(
+        `Workspace manager doesn't exists there is nothing to dispose`,
+      );
     }
-
-    return this._workspaceName;
-  }
-
-  get workspacesDirPath() {
-    if (!this._workspacesDirPath) {
-      throw Error(`Workspace dir path wasn't set yet`);
-    }
-
-    return this._workspacesDirPath;
-  }
-
-  get workspacePath() {
-    if (!this._workspacePath) {
-      throw Error(`Workspace path wasn't set yet`);
-    }
-
-    return this._workspacePath;
+    this.instance.dispose();
+    this.instance = undefined;
   }
 
   setWorkspaceDirPath(dirPath: string) {
@@ -104,12 +143,6 @@ export class WorkspaceManager extends EventEmitter {
       throw new Error(`Workspace directory ${dirPath} doesn't exists`);
     }
     this._workspacesDirPath = dirPath;
-  }
-
-  private constructor(logger: Logger, signal?: AbortSignal) {
-    super();
-    this.logger = logger.child({ name: "WorkspaceManager" });
-    this.abortScope = new AbortScope({ parentSignal: signal });
   }
 
   public on<K extends keyof WorkspaceManagerEvents>(
@@ -124,6 +157,13 @@ export class WorkspaceManager extends EventEmitter {
     ...args: Parameters<WorkspaceManagerEvents[K]>
   ): boolean {
     return super.emit(event, ...args);
+  }
+
+  private constructor(logger: Logger, signal?: AbortSignal) {
+    super();
+    this._logger = logger.child({ name: "WorkspaceManager" });
+    this._abortScope = new AbortScope({ parentSignal: signal });
+    this._resources = new Map<DirPath, WorkspaceResource>();
   }
 
   setWorkspace(workspaceName: string) {
@@ -325,5 +365,21 @@ export class WorkspaceManager extends EventEmitter {
     const inputJoinedPath = path.join(this.workspacePath, ...input.path);
     const validPath = validatePath(this.workspacePath, inputJoinedPath);
     return { inputJoinedPath, validPath };
+  }
+
+  dispose() {
+    if (this.disposed) {
+      return;
+    }
+
+    this.removeAllListeners();
+
+    this.abortScope.dispose();
+    this._abortScope = null;
+
+    this.resources.clear();
+    this._resources = null;
+
+    this._disposed = true;
   }
 }

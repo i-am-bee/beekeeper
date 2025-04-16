@@ -1,3 +1,4 @@
+import { Disposable } from "@/utils/disposable.js";
 import {
   AgentConfigVersionValue,
   AgentKindEnum,
@@ -9,12 +10,34 @@ export interface AgentMapOptions<TValue> {
   getDefaultValue: (() => TValue) | null;
 }
 
-export class AgentMap<TValue> {
-  protected map = new Map<AgentKindEnum, Map<AgentTypeValue, TValue>>();
-  protected options: AgentMapOptions<TValue>;
+export class AgentMap<TValue> implements Disposable {
+  protected _map: Map<AgentKindEnum, Map<AgentTypeValue, TValue>> | null;
+  protected _options: AgentMapOptions<TValue> | null;
+  private _disposed = false;
+
+  protected get map() {
+    if (!this._map) {
+      throw new Error(`Map is missing`);
+    }
+
+    return this._map;
+  }
+
+  protected get options() {
+    if (!this._options) {
+      throw new Error(`Options are missing`);
+    }
+
+    return this._options;
+  }
+
+  get disposed(): boolean {
+    return this._disposed;
+  }
 
   constructor(options?: Partial<AgentMapOptions<TValue>>) {
-    this.options = {
+    this._map = new Map<AgentKindEnum, Map<AgentTypeValue, TValue>>();
+    this._options = {
       autoCreateMap: false,
       getDefaultValue: null,
       ...options,
@@ -78,6 +101,13 @@ export class AgentMap<TValue> {
       }
     }
     return typeMap;
+  }
+
+  dispose() {
+    this.map.clear();
+    this._map = null;
+    this._options = null;
+    this._disposed = true;
   }
 }
 

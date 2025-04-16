@@ -36,6 +36,15 @@ export class TaskStateLogger extends BaseStateLogger<
     return this.instance;
   }
 
+  static dispose() {
+    if (!this.instance) {
+      throw new Error(
+        `Task state logger doesn't exists there is nothing to dispose`,
+      );
+    }
+    this.instance = undefined;
+  }
+
   constructor(logPath?: string) {
     super(DEFAULT_PATH, DEFAULT_NAME, logPath);
   }

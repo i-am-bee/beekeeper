@@ -138,31 +138,129 @@ export interface TaskManagerConfig {
 
 export class TaskManager extends WorkspaceRestorable {
   /** Map of registered task type and their configurations */
-  private taskConfigs: Map<TaskKindEnum, Map<TaskTypeValue, TaskConfig[]>>;
-  private taskRuns = new Map<TaskRunIdValue, TaskRunRuntime>();
+  private _taskConfigs: Map<
+    TaskKindEnum,
+    Map<TaskTypeValue, TaskConfig[]>
+  > | null;
+  private _taskRuns: Map<TaskRunIdValue, TaskRunRuntime> | null;
   /** Map of task run pools by task config and task run IDs */
-  private taskPools: Map<
+  private _taskPools: Map<
     TaskKindEnum,
     Map<TaskTypeValue, [TaskConfigVersionValue, Set<TaskConfigIdValue>][]>
-  >;
-  private scheduledTasksToStart: {
-    taskRunId: TaskRunIdValue;
-    actingAgentId: AgentIdValue;
-  }[] = [];
+  > | null;
+  private _scheduledTasksToStart:
+    | {
+        taskRunId: TaskRunIdValue;
+        actingAgentId: AgentIdValue;
+      }[]
+    | null;
   private isTaskProcessingActive = false;
-  private awaitingTasksForAgents: {
-    taskRunId: TaskRunIdValue;
-    agentTypeId: string;
-  }[] = [];
-  private registeredAgentTypes = new Map<AgentKindEnum, AgentTypeValue[]>();
-  private ac: ResourcesAccessControl;
-  private stateLogger: TaskStateLogger;
-  private agentStateLogger: AgentStateLogger;
-  private onTaskStart: OnTaskStart;
-  private options: TaskMangerOptions;
+  private _awaitingTasksForAgents:
+    | {
+        taskRunId: TaskRunIdValue;
+        agentTypeId: string;
+      }[]
+    | null;
+  private _registeredAgentTypes: Map<AgentKindEnum, AgentTypeValue[]> | null;
+  private _ac: ResourcesAccessControl | null;
+  private _stateLogger: TaskStateLogger | null;
+  private _agentStateLogger: AgentStateLogger | null;
+  private _onTaskStart: OnTaskStart | null;
+  private _options: TaskMangerOptions | null;
   private _switches: TaskManagerSwitches;
-  private emitter = new EventEmitter();
-  private abortScope: AbortScope;
+  private _emitter: EventEmitter | null;
+  private _abortScope: AbortScope | null;
+
+  private get taskConfigs() {
+    if (!this._taskConfigs) {
+      throw new Error("Task configs are missing");
+    }
+    return this._taskConfigs;
+  }
+
+  private get taskRuns() {
+    if (!this._taskRuns) {
+      throw new Error("Task runs are missing");
+    }
+    return this._taskRuns;
+  }
+
+  private get taskPools() {
+    if (!this._taskPools) {
+      throw new Error("Task pools are missing");
+    }
+    return this._taskPools;
+  }
+
+  private get scheduledTasksToStart() {
+    if (!this._scheduledTasksToStart) {
+      throw new Error("Scheduled tasks to start are missing");
+    }
+    return this._scheduledTasksToStart;
+  }
+
+  private get awaitingTasksForAgents() {
+    if (!this._awaitingTasksForAgents) {
+      throw new Error("Awaiting tasks for agents are missing");
+    }
+    return this._awaitingTasksForAgents;
+  }
+
+  private get registeredAgentTypes() {
+    if (!this._registeredAgentTypes) {
+      throw new Error("Registered agent types are missing");
+    }
+    return this._registeredAgentTypes;
+  }
+
+  private get ac() {
+    if (!this._ac) {
+      throw new Error("Access control is missing");
+    }
+    return this._ac;
+  }
+
+  private get stateLogger() {
+    if (!this._stateLogger) {
+      throw new Error("Task state logger is missing");
+    }
+    return this._stateLogger;
+  }
+
+  private get agentStateLogger() {
+    if (!this._agentStateLogger) {
+      throw new Error("Agent state logger is missing");
+    }
+    return this._agentStateLogger;
+  }
+
+  private get onTaskStart() {
+    if (!this._onTaskStart) {
+      throw new Error("onTaskStart callback is missing");
+    }
+    return this._onTaskStart;
+  }
+
+  private get options() {
+    if (!this._options) {
+      throw new Error("Options are missing");
+    }
+    return this._options;
+  }
+
+  private get emitter() {
+    if (!this._emitter) {
+      throw new Error("Emitter is missing");
+    }
+    return this._emitter;
+  }
+
+  private get abortScope() {
+    if (!this._abortScope) {
+      throw new Error("Abort scope is missing");
+    }
+    return this._abortScope;
+  }
 
   constructor({
     onTaskStart,
@@ -173,11 +271,17 @@ export class TaskManager extends WorkspaceRestorable {
   }: TaskManagerConfig) {
     super(TASK_MANAGER_CONFIG_PATH, TASK_MANAGER_USER, logger);
     this.logger.info("Initializing TaskManager");
-    this.stateLogger = TaskStateLogger.getInstance();
-    this.agentStateLogger = AgentStateLogger.getInstance();
+    this._stateLogger = TaskStateLogger.getInstance();
+    this._agentStateLogger = AgentStateLogger.getInstance();
+    this._registeredAgentTypes = new Map();
+    this._awaitingTasksForAgents = [];
+    this._scheduledTasksToStart = [];
+    this._taskRuns = new Map();
+
+    this._emitter = new EventEmitter();
 
     const self = this;
-    this.abortScope = new AbortScope({
+    this._abortScope = new AbortScope({
       parentSignal: signal,
       onAbort() {
         self.isTaskProcessingActive = false;
@@ -185,9 +289,9 @@ export class TaskManager extends WorkspaceRestorable {
       },
     });
 
-    this.onTaskStart = onTaskStart;
+    this._onTaskStart = onTaskStart;
 
-    this.options = {
+    this._options = {
       errorHandler: (error: Error, taskRunId: TaskRunIdValue) => {
         this.logger.error({ taskRunId, error }, "Task error occurred");
       },
@@ -197,24 +301,24 @@ export class TaskManager extends WorkspaceRestorable {
       ...(options || {}),
     };
 
-    this.ac = new ResourcesAccessControl(
+    this._ac = new ResourcesAccessControl(
       this.constructor.name,
       [TASK_MANAGER_USER].concat(
         this.options.adminIds ? this.options.adminIds : [],
       ),
       logger,
     );
-    this.ac.createResource(
+    this._ac.createResource(
       TASK_MANAGER_RESOURCE,
       TASK_MANAGER_USER,
       TASK_MANAGER_USER,
     );
 
     // Initialize task pools for all task kinds
-    this.taskConfigs = new Map(
+    this._taskConfigs = new Map(
       TaskKindEnumSchema.options.map((kind) => [kind, new Map()]),
     );
-    this.taskPools = new Map(
+    this._taskPools = new Map(
       TaskKindEnumSchema.options.map((kind) => [kind, new Map()]),
     );
     this._switches = { restoration: true, ...clone(switches) };
@@ -363,7 +467,7 @@ export class TaskManager extends WorkspaceRestorable {
 
       // No need to call dispose() here as that would remove the parent signal listener
       // Just abort the current operations, but keep the abortScope alive
-      this.abortScope.abort(true);
+      this.abortScope.abort({ manualAbort: true });
     }
   }
 
@@ -2546,14 +2650,14 @@ export class TaskManager extends WorkspaceRestorable {
     return history;
   }
 
-  destroy() {
-    this.logger.debug("Destroying TaskManager");
+  dispose() {
+    this.logger.debug("Disposing TaskManager");
+    if (this.disposed) {
+      return;
+    }
 
     // Stop task processing first
     this.stopTaskProcessing();
-
-    // Dispose of the main abort scope
-    this.abortScope.dispose();
 
     // Clean up all task-specific abort scopes
     for (const taskRun of this.taskRuns.values()) {
@@ -2562,11 +2666,59 @@ export class TaskManager extends WorkspaceRestorable {
       }
     }
 
-    // Clear collections
-    this.taskRuns.clear();
-    this.scheduledTasksToStart = [];
-    this.awaitingTasksForAgents = [];
+    this.emitter.removeAllListeners();
+    this._emitter = null;
 
-    // Additional cleanup...
+    this.abortScope.dispose();
+    this._abortScope = null;
+
+    this.options.errorHandler = undefined;
+    this._options = null;
+
+    this._stateLogger = null;
+    this._agentStateLogger = null;
+
+    this.ac.dispose();
+    this._ac = null;
+
+    this.registeredAgentTypes.clear();
+    this._registeredAgentTypes = null;
+
+    this.awaitingTasksForAgents.splice(0);
+    this._awaitingTasksForAgents = null;
+
+    this.scheduledTasksToStart.splice(0);
+    this._scheduledTasksToStart = null;
+
+    this.taskPools.forEach((kindMap) => {
+      kindMap.forEach((typeArray) => {
+        typeArray.forEach((t) => {
+          t[1].clear();
+        });
+        typeArray.splice(0);
+      });
+      kindMap.clear();
+    });
+    this.taskPools.clear();
+    this._taskPools = null;
+
+    this.taskRuns.forEach((r) => {
+      r.abortScope.dispose();
+      if (r.intervalId) {
+        clearInterval(r.intervalId);
+      }
+      r.intervalId = null;
+    });
+    this.taskRuns.clear();
+    this._taskRuns = null;
+
+    this.taskConfigs.forEach((k) => {
+      k.forEach((c) => c.splice(0));
+      k.clear();
+    });
+    this.taskConfigs.clear();
+    this._taskConfigs = null;
+
+    super.dispose();
   }
 }
