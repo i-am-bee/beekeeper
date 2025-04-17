@@ -1,6 +1,6 @@
+import { ServiceLocator } from "@/utils/service-locator.js";
 import { Emitter } from "beeai-framework/emitter/emitter";
 import {
-  BaseToolOptions,
   JSONToolOutput,
   Tool,
   ToolEmitter,
@@ -19,9 +19,6 @@ import {
 import { AgentInstanceRef, AgentRegistry } from "./registry.js";
 
 export const TOOL_NAME = "agent_registry";
-export interface AgentRegistryToolInput extends BaseToolOptions {
-  registry: AgentRegistry<unknown>;
-}
 
 export type AgentRegistryToolResultData =
   | string[]
@@ -138,8 +135,7 @@ export const GetPoolStatsSchema = z
  * Provides methods for managing agent types, instances, and pools
  */
 export class AgentRegistryTool extends Tool<
-  JSONToolOutput<AgentRegistryToolResult>,
-  AgentRegistryToolInput
+  JSONToolOutput<AgentRegistryToolResult>
 > {
   name = TOOL_NAME;
   description =
@@ -149,8 +145,6 @@ export class AgentRegistryTool extends Tool<
     this.register();
   }
 
-  private registry: AgentRegistry<unknown>;
-
   public readonly emitter: ToolEmitter<
     ToolInput<this>,
     JSONToolOutput<AgentRegistryToolResult>
@@ -159,14 +153,14 @@ export class AgentRegistryTool extends Tool<
     creator: this,
   });
 
-  constructor(protected readonly input: AgentRegistryToolInput) {
-    super(input);
-    this.registry = input.registry;
+  private get agentRegistry() {
+    // Weak reference to the agent registry
+    return ServiceLocator.getInstance().get(AgentRegistry);
   }
 
   inputSchema() {
     const schemas = [
-      ...(this.registry.switches.mutableAgentConfigs
+      ...(this.agentRegistry.switches.mutableAgentConfigs
         ? [
             GetAvailableToolsSchema,
             CreateAgentConfigSchema,
@@ -189,38 +183,41 @@ export class AgentRegistryTool extends Tool<
     let data: AgentRegistryToolResultData;
     switch (input.method) {
       case "getAvailableTools":
-        data = this.registry
+        data = this.agentRegistry
           .getToolsFactory(input.agentKind || "operator")
           .getAvailableTools();
         break;
       case "createAgentConfig":
-        data = this.registry.createAgentConfig({
+        data = this.agentRegistry.createAgentConfig({
           ...input.config,
           agentKind: input.agentKind,
         });
         break;
       case "updateAgentConfig":
-        data = this.registry.updateAgentConfig({
+        data = this.agentRegistry.updateAgentConfig({
           ...input.config,
           agentKind: input.agentKind,
           agentType: input.agentType,
         });
         break;
       case "getAllAgentConfigs":
-        data = this.registry.getAllAgentConfigs();
+        data = this.agentRegistry.getAllAgentConfigs();
         break;
       case "getAgentConfig":
-        data = this.registry.getAgentConfig(input.agentKind, input.agentType);
+        data = this.agentRegistry.getAgentConfig(
+          input.agentKind,
+          input.agentType,
+        );
         break;
       case "getAgentConfigVersion":
-        data = this.registry.getAgentConfig(
+        data = this.agentRegistry.getAgentConfig(
           input.agentKind,
           input.agentType,
           input.version,
         );
         break;
       case "getActiveAgents":
-        data = this.registry.getActiveAgents(
+        data = this.agentRegistry.getActiveAgents(
           input.agentKind,
           input.agentType,
           input.agentConfigVersion,
@@ -228,11 +225,14 @@ export class AgentRegistryTool extends Tool<
         data = data.map((it) => ({ ...it, instance: undefined }));
         break;
       case "getAgent":
-        data = this.registry.getAgent(input.agentId);
+        data = this.agentRegistry.getAgent(input.agentId);
         data = { ...data, instance: undefined };
         break;
       case "getPoolStats":
-        data = this.registry.getPoolStats(input.agentKind, input.agentType);
+        data = this.agentRegistry.getPoolStats(
+          input.agentKind,
+          input.agentType,
+        );
         break;
       default:
         throw new Error(`Undefined method ${input.method}`);

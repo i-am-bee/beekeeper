@@ -21,12 +21,9 @@ import {
   TaskTypeValueSchema,
 } from "./manager/dto.js";
 import { TaskManager } from "./manager/manager.js";
+import { ServiceLocator } from "@/utils/service-locator.js";
 
-export const TOOL_NAME = "task_runner";
-
-export interface TaskManagerToolInput extends BaseToolOptions {
-  taskManager: TaskManager;
-}
+export const TOOL_NAME = "task_manager";
 
 export type TaskManagerToolResultData =
   | void
@@ -226,10 +223,9 @@ export const GetTaskRunHistorySchema = z
   .describe("Gets execution history for a task. Requires agent permissions.");
 
 export class TaskManagerTool extends Tool<
-  JSONToolOutput<TaskManagerToolResult>,
-  TaskManagerToolInput
+  JSONToolOutput<TaskManagerToolResult>
 > {
-  name = "task_runner";
+  name = "task_manager";
   description =
     "The TaskManager manages periodic task execution with ownership and permission controls. It provides functionality for scheduling, executing, and managing tasks with proper access control.";
 
@@ -237,19 +233,17 @@ export class TaskManagerTool extends Tool<
     this.register();
   }
 
-  private taskManager: TaskManager;
-
   public readonly emitter: ToolEmitter<
     ToolInput<this>,
     JSONToolOutput<TaskManagerToolResult>
   > = Emitter.root.child({
-    namespace: ["tool", "task_runner"],
+    namespace: ["tool", "task_manager"],
     creator: this,
   });
 
-  constructor(protected readonly input: TaskManagerToolInput) {
-    super(input);
-    this.taskManager = input.taskManager;
+  private get taskManager() {
+    // Weak reference to the task manager
+    return ServiceLocator.getInstance().get(TaskManager);
   }
 
   inputSchema() {
@@ -275,7 +269,7 @@ export class TaskManagerTool extends Tool<
 
   protected async _run(
     input: ToolInput<this>,
-    options: TaskManagerToolInput,
+    options: BaseToolOptions,
     run: RunContext<this>,
   ) {
     let data: TaskManagerToolResultData;

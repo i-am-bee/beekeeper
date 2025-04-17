@@ -17,6 +17,7 @@ import { BaseAgentFactory } from "../agents/base/agent-factory.js";
 import { operator, supervisor } from "../agents/index.js";
 import { Runtime } from "./runtime.js";
 import { Logger } from "beeai-framework";
+import { ServiceLocator } from "@/utils/service-locator.js";
 
 export interface Switches {
   taskManager?: TaskManagerSwitches;
@@ -109,6 +110,8 @@ export async function createRuntime({
     },
     logger,
   });
+  // Register service for usage in agent tool
+  ServiceLocator.getInstance().register(AgentRegistry, registry);
 
   const taskManager = new TaskManager({
     switches: switches?.taskManager,
@@ -175,6 +178,8 @@ export async function createRuntime({
     signal,
     logger,
   });
+  // Register service for usage in agent tool
+  ServiceLocator.getInstance().register(TaskManager, taskManager);
 
   await registry.registerToolsFactories([
     [
@@ -254,6 +259,7 @@ export async function createRuntime({
 }
 
 export function disposeRuntime(runtime: Runtime) {
+  ServiceLocator.getInstance().dispose();
   AgentStateLogger.dispose();
   TaskStateLogger.dispose();
   WorkspaceManager.dispose();

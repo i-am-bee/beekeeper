@@ -10,13 +10,13 @@ import {
   TOOL_NAME as taskManagerToolName,
 } from "@tasks/tool.js";
 import { WorkspaceManager } from "@workspaces/manager/manager.js";
+import { Logger } from "beeai-framework";
+import { AgentKindEnumSchema } from "./registry/dto.js";
 import { AgentRegistry } from "./registry/index.js";
 import {
   AgentRegistryTool,
   TOOL_NAME as agentRegistryToolName,
 } from "./registry/tool.js";
-import { AgentKindEnumSchema } from "./registry/dto.js";
-import { Logger } from "beeai-framework";
 
 export enum AgentTypes {
   BOSS = "boss",
@@ -221,10 +221,7 @@ export class ToolsFactory extends BaseToolsFactory {
   }
 
   async getFactoriesMethods(): Promise<ToolFactoryMethod[]> {
-    return [
-      () => new AgentRegistryTool({ registry: this.registry }),
-      () => new TaskManagerTool({ taskManager: this.taskManager }),
-    ];
+    return [() => new AgentRegistryTool(), () => new TaskManagerTool()];
   }
 }
 
