@@ -190,7 +190,13 @@ export class Messages extends BaseMonitor {
               const msg = this._value[this._currentMessageIndex];
 
               if (msg) {
-                clipboardy.writeSync(JSON.stringify({...msg, role: blessed.stripTags(msg.role) }, null, 2));
+                clipboardy.writeSync(
+                  JSON.stringify(
+                    { ...msg, role: blessed.stripTags(msg.role) },
+                    null,
+                    2,
+                  ),
+                );
               }
             },
           },
