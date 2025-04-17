@@ -264,7 +264,7 @@ export class ChatMonitor extends BaseMonitor {
   }
 
   private addMessage(role: string, content: string, type: MessageTypeEnum) {
-    this.addMessage(role, content, type);
+    this.messages.addMessage(role, content, type);
     this.chatFilter.addRole(role);
   }
 
