@@ -1,23 +1,17 @@
+import { Runtime } from "@/runtime/runtime.js";
 import blessed from "neo-blessed";
 import { BaseMonitor, ParentInput, ScreenInput } from "../base/monitor.js";
-import * as chatStyles from "./config.js";
-import * as st from "../config.js";
-import { Runtime } from "@/runtime/runtime.js";
-import { ChatRuntimeHandler, MessageTypeEnum } from "./runtime-handler.js";
-import { ChatFilter } from "./filter/filter.js";
+import { ControllableContainer } from "../controls/controls-manager.js";
 import { CloseDialog } from "../shared/close-dialog.js";
-import {
-  ControllableContainer,
-  ControllableElement,
-} from "../controls/controls-manager.js";
+import { ChatFilter } from "./filter/filter.js";
+import { ChatInput } from "./input/input.js";
 import { Messages } from "./messages/messages.js";
+import { ChatRuntimeHandler, MessageTypeEnum } from "./runtime-handler.js";
 
 export class ChatMonitor extends BaseMonitor {
   private chatBox: ControllableContainer;
-  private inputBox: ControllableElement;
   private messages: Messages;
-  private sendButton: ControllableElement;
-  private abortButton: ControllableElement;
+  private chatInput: ChatInput;
   private chatFilterBox: ControllableContainer;
   private chatFilter: ChatFilter;
   private closeDialog: CloseDialog;
@@ -27,8 +21,6 @@ export class ChatMonitor extends BaseMonitor {
   private runtimeHandler: ChatRuntimeHandler;
   private _isProcessing = false;
   private _isAborting = false;
-  private lastInputValue = ""; // Track the last value
-  private inputValueCheckInterval: NodeJS.Timeout | null = null;
 
   private get isProcessing() {
     return this._isProcessing;
@@ -90,74 +82,31 @@ export class ChatMonitor extends BaseMonitor {
       getChatFilters: () => this.chatFilter.values,
     });
 
-    // Input area
-    this.inputBox = this.controlsManager.add({
-      kind: "element",
-      name: "inputBox",
-      element: blessed.textarea({
-        parent: this.chatBox.element,
-        width: "100%-12", // Make room for abort button
-        height: 5,
-        left: 0,
-        top: "100%-5",
-        ...chatStyles.getInputBoxStyle(),
-        scrollbar: st.UIConfig.scrollbar,
-      }),
+    this.chatInput = new ChatInput({
       parent: this.chatBox,
-    });
-
-    // Send/abort button
-    this.sendButton = this.controlsManager.add({
-      kind: "element",
-      name: "sendButton",
-      element: blessed.button({
-        parent: this.chatBox.element,
-        width: 10,
-        height: 3,
-        left: "100%-11",
-        top: "100%-4",
-        ...chatStyles.getSendButtonStyle(true),
-        tags: true,
-        mouse: true,
-      }),
-      parent: this.chatBox,
-    });
-
-    this.abortButton = this.controlsManager.add({
-      kind: "element",
-      name: "sendButton",
-      element: blessed.button({
-        parent: this.chatBox.element,
-        width: 10,
-        height: 3,
-        left: "50%-5",
-        top: "100%-4",
-        ...chatStyles.getAbortButtonStyle(),
-        tags: true,
-        mouse: true,
-        hidden: true,
-      }),
-      parent: this.chatBox,
+      controlsManager: this.controlsManager,
+      onValueChange: () => this.setProcessingState(false),
     });
 
     // Initialize the close dialog
     this.closeDialog = new CloseDialog(this.controlsManager);
 
     // this.setupEventHandlers();
-    this.setProcessingState(false);
-    this.controlsManager.focus(this.inputBox.id);
+    this.setProcessingState(this._isProcessing);
+    this.setAbortingState(this._isAborting);
+    this.controlsManager.focus(this.chatInput.inputBox.id);
   }
 
   // private setupEventHandlers() {
   //   this.chatFilter.on("filter:change", () => {
-  //     this.updateMessagesDisplay();
+  //     this.messages.updateDisplay();
   //   });
 
-  //   this.inputBox.key("enter", async (ch, key) => {
+  //   this.chatInput.inputBox.key("enter", async (ch, key) => {
   //     // Check if Shift key is pressed
   //     if (key.shift) {
   //       // Insert a newline instead of sending
-  //       this.inputBox.setValue(this.inputBox.getValue() + "\n");
+  //       this.chatInput.inputBox.setValue(this.chatInput.inputBox.getValue() + "\n");
   //       this.screen.element.render();
   //       return;
   //     }
@@ -166,20 +115,20 @@ export class ChatMonitor extends BaseMonitor {
   //   });
 
   //   // Send button handler
-  //   this.sendButton.on("press", this.onSendMessage.bind(this));
+  //   this.chatInput.sendButton.on("press", this.onSendMessage.bind(this));
 
   //   // Abort button handler
-  //   this.abortButton.on("press", () => {
+  //   this.chatInput.abortButton.on("press", () => {
   //     this.abortOperation();
   //   });
 
   //   // Mouse scrolling for messages
-  //   this.messagesBox.on("mouse", (data) => {
+  //   this.messages.container.on("mouse", (data) => {
   //     if (data.action === "wheelup") {
-  //       this.messagesBox.scroll(-1);
+  //       this.messages.container.scroll(-1);
   //       this.screen.element.render();
   //     } else if (data.action === "wheeldown") {
-  //       this.messagesBox.scroll(1);
+  //       this.messages.container.scroll(1);
   //       this.screen.element.render();
   //     }
   //   });
@@ -222,12 +171,12 @@ export class ChatMonitor extends BaseMonitor {
 
   //   // Add page up/down for message scrolling
   //   this.screen.key(["pageup"], () => {
-  //     this.messagesBox.scroll(-3);
+  //     this.messages.container.scroll(-3);
   //     this.screen.element.render();
   //   });
 
   //   this.screen.key(["pagedown"], () => {
-  //     this.messagesBox.scroll(3);
+  //     this.messages.container.scroll(3);
   //     this.screen.element.render();
   //   });
 
@@ -249,7 +198,7 @@ export class ChatMonitor extends BaseMonitor {
 
   private onSendMessage() {
     const message = (
-      this.inputBox.element as blessed.Widgets.TextareaElement
+      this.chatInput.inputBox.element as blessed.Widgets.TextareaElement
     ).getValue();
     if (message.trim()) {
       const abortController = new AbortController();
@@ -258,7 +207,9 @@ export class ChatMonitor extends BaseMonitor {
         .finally(() => {
           this.setProcessingState(false);
         });
-      (this.inputBox.element as blessed.Widgets.TextareaElement).clearValue();
+      (
+        this.chatInput.inputBox.element as blessed.Widgets.TextareaElement
+      ).clearValue();
       this.setProcessingState(true);
     }
   }
@@ -277,41 +228,15 @@ export class ChatMonitor extends BaseMonitor {
   }
 
   private setProcessingState(isProcessing: boolean) {
-    if (this._isProcessing !== isProcessing) {
-      if (isProcessing) {
-        this.stopInputValueMonitoring();
-        this.inputBox.element.hide();
-        this.sendButton.element.hide();
-        this.abortButton.element.show();
-        this.abortButton.element.focus();
-      } else {
-        this.inputBox.element.show();
-        this.sendButton.element.show();
-        this.abortButton.element.hide();
-        if (!this.inputValueCheckInterval) {
-          this.startInputValueMonitoring();
-        }
-        this.inputBox.element.focus();
-      }
-    }
-
     this._isProcessing = isProcessing;
 
-    // Update send button
-    const disabled =
-      !isProcessing && this.inputBox.element.getContent().length === 0;
-    const buttonStyle = chatStyles.getSendButtonStyle(disabled);
-    this.sendButton.element.style = buttonStyle.style;
-    this.screen.element.render();
+    this.chatInput.setProcessing(isProcessing);
   }
 
   private setAbortingState(isAborting: boolean) {
     this._isAborting = isAborting;
-    const disabled = isAborting;
-    const buttonStyle = chatStyles.getAbortButtonStyle(disabled);
-    this.abortButton.element.style = buttonStyle.style;
-    this.abortButton.element.options.mouse = !disabled;
-    this.screen.element.render();
+
+    this.chatInput.setAborting(isAborting);
   }
 
   private abortOperation(onAbort?: () => void) {
@@ -324,47 +249,12 @@ export class ChatMonitor extends BaseMonitor {
   }
 
   reset(shouldRender = true): void {
-    this.messages.reset(shouldRender);
-    (this.inputBox.element as blessed.Widgets.TextareaElement).clearValue();
+    this.messages.reset(false);
     this.chatFilter.reset(false);
-    // Restart input value monitoring
-    this.stopInputValueMonitoring();
-    this.startInputValueMonitoring();
+    this.chatInput.reset(false);
 
     if (shouldRender) {
       this.screen.element.render();
-    }
-  }
-
-  // Method to start monitoring the input value for changes
-  private startInputValueMonitoring() {
-    // Clear any existing interval
-    if (this.inputValueCheckInterval) {
-      clearInterval(this.inputValueCheckInterval);
-    }
-
-    // Set initial value
-    this.lastInputValue = (
-      this.inputBox.element as blessed.Widgets.TextareaElement
-    ).getValue();
-
-    // Check for changes every 100ms
-    this.inputValueCheckInterval = setInterval(() => {
-      const currentValue = (
-        this.inputBox.element as blessed.Widgets.TextareaElement
-      ).getValue();
-      if (currentValue !== this.lastInputValue) {
-        this.lastInputValue = currentValue;
-        this.setProcessingState(false);
-      }
-    }, 100);
-  }
-
-  // Method to stop monitoring the input value
-  private stopInputValueMonitoring() {
-    if (this.inputValueCheckInterval) {
-      clearInterval(this.inputValueCheckInterval);
-      this.inputValueCheckInterval = null;
     }
   }
 
@@ -446,7 +336,7 @@ export class ChatMonitor extends BaseMonitor {
     );
 
     // Start monitoring input value changes
-    this.startInputValueMonitoring();
+    this.chatInput.startValueMonitoring();
     this.messages.updateDisplay(false);
 
     this.screen.element.render();

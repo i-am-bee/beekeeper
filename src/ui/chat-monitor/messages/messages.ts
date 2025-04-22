@@ -13,6 +13,10 @@ export interface MessageValue {
   type: MessageTypeEnum;
 }
 
+type MessagesOptions = (ParentInput | ScreenInput) & {
+  getChatFilters: () => ChatFilterValues;
+};
+
 export class Messages extends BaseMonitor {
   private _container: ControllableContainer;
   private _value: MessageValue[] = [];
@@ -29,10 +33,7 @@ export class Messages extends BaseMonitor {
     return this._value;
   }
 
-  constructor({
-    getChatFilters,
-    ...rest
-  }: (ParentInput | ScreenInput) & { getChatFilters: () => ChatFilterValues }) {
+  constructor({ getChatFilters, ...rest }: MessagesOptions) {
     super(rest);
 
     this.getChatFilters = getChatFilters;

@@ -56,7 +56,7 @@
     "start:dev:chat": "tsx --inspect --no-warnings src/main.js -c",
     "monitor": "cross-env NODE_ENV=production BEE_FRAMEWORK_LOG_LEVEL=error node --no-warnings dist/ui/main.js",
     "monitor:dev": "tsx --inspect --no-warnings src/ui/main.js",
-    "ui:test": "tsx --inspect --no-warnings examples/ui/chat-monitor/messages/messages.js",
+    "ui:test": "tsx --inspect --no-warnings examples/ui/chat-monitor/input/input.js",
     "ts:check": "tsc --noEmit --project tsconfig.json",
     "build": "rimraf dist && tsc -b && tsc-alias",
     "lint": "eslint",
