@@ -1,6 +1,7 @@
 import { BaseMonitor, ParentInput, ScreenInput } from "@/ui/base/monitor.js";
 import { ControllableElement } from "@/ui/controls/controls-manager.js";
 import blessed from "neo-blessed";
+import { Textarea } from "../../blessed/Textarea.js";
 import * as st from "../../config.js";
 import * as chatStyles from "../config.js";
 
@@ -41,7 +42,7 @@ export class ChatInput extends BaseMonitor {
     this._inputBox = this.controlsManager.add({
       kind: "element",
       name: "inputBox",
-      element: blessed.textarea({
+      element: Textarea({
         parent: this.parent.element,
         width: "100%-12", // Make room for abort button
         height: 5,
