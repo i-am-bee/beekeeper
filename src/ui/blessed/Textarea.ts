@@ -1,5 +1,5 @@
 import blessed from "neo-blessed";
-import unicode from "neo-blessed/lib/unicode";
+import unicode from "neo-blessed/lib/unicode.js";
 
 const nextTick = global.setImmediate || process.nextTick.bind(process);
 
