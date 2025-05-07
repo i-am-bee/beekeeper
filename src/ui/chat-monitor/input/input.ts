@@ -42,7 +42,7 @@ export class ChatInput extends BaseMonitor {
     this._inputBox = this.controlsManager.add({
       kind: "element",
       name: "inputBox",
-      element: Textarea({
+      element: new Textarea({
         parent: this.parent.element,
         width: "100%-12", // Make room for abort button
         height: 5,
