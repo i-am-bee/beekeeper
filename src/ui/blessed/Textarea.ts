@@ -7,20 +7,22 @@ type TextareaOptions = blessed.Widgets.TextareaOptions;
 type BlessedElement = blessed.Widgets.BlessedElement;
 type Coords = blessed.Widgets.Coords;
 type IKeyEventArg = blessed.Widgets.Events.IKeyEventArg;
+interface Clines {
+  real: string[];
+  fake: string[];
+  rtof: number[];
+  length: number;
+  [index: number]: string;
+}
 
 const InputElement = blessed.input as unknown as new (
   opts: TextareaOptions,
 ) => TextareaElement & {
   _value: string;
-  _clines: {
-    real: string[];
-    fake: string[];
-    rtof: number[];
-    length: number;
-    [index: number]: string;
-  };
+  _clines: Clines;
   _reading: boolean;
   _getCoords: () => BlessedElement["lpos"];
+  _wrapContent: (content: string, width: number) => Clines;
   _render: () => Coords;
   _callback?: (err: any, value?: string) => void;
   _done?: (err: any, value?: string | null) => void;
