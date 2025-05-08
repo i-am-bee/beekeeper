@@ -1,3 +1,4 @@
+import { noop } from "@/utils/noop.js";
 import blessed from "neo-blessed";
 
 const nextTick = global.setImmediate || process.nextTick.bind(process);
@@ -7,6 +8,8 @@ type TextareaOptions = blessed.Widgets.TextareaOptions;
 type BlessedElement = blessed.Widgets.BlessedElement;
 type Coords = blessed.Widgets.Coords;
 type IKeyEventArg = blessed.Widgets.Events.IKeyEventArg;
+type CallbackFn = (err: any, value?: string) => void;
+
 interface Clines {
   real: string[];
   fake: string[];
@@ -21,65 +24,76 @@ const InputElement = blessed.input as unknown as new (
   _value: string;
   _clines: Clines;
   _reading: boolean;
+
   _getCoords: () => BlessedElement["lpos"];
   _wrapContent: (content: string, width: number) => Clines;
   _render: () => Coords;
-  _callback?: (err: any, value?: string) => void;
-  _done?: (err: any, value?: string | null) => void;
+  _callback?: CallbackFn;
+
   screen: {
     _listenKeys: (element: TextareaElement) => void;
   };
+
   clearInput: () => void;
+  done?: CallbackFn;
 };
 
 export class Textarea extends InputElement {
-  private __listener?: (ch: any, key: IKeyEventArg) => void;
-  private __done?: (err: any, value?: string | null) => void;
   private offsetY: number;
   private offsetX: number;
 
   constructor(opts: TextareaOptions) {
     const options: TextareaOptions = {
       ...opts,
-      scrollable: opts.scrollable !== false,
+      scrollable: opts.scrollable ?? true,
     };
 
     super(options);
 
-    this.screen._listenKeys(this);
-
     this.options = options;
     this.value = options.value || "";
-
     this.offsetY = 0;
     this.offsetX = 0;
 
-    this.on("resize", this._updateCursor.bind(this));
-    this.on("move", this._updateCursor.bind(this));
+    this.setupEventHandlers(options);
+  }
 
-    if (options.inputOnFocus) {
+  private setupEventHandlers(options: TextareaOptions) {
+    const { inputOnFocus, keys, vi, mouse } = options;
+
+    this.screen._listenKeys(this);
+
+    this.on("resize", this.updateCursor.bind(this));
+    this.on("move", this.updateCursor.bind(this));
+
+    if (inputOnFocus) {
       this.on("focus", this.readInput.bind(this, undefined));
-    }
-
-    if (!options.inputOnFocus && options.keys) {
+    } else if (keys) {
       this.on("keypress", (ch: any, key: IKeyEventArg) => {
         if (this._reading) {
           return;
         }
 
-        if (key.name === "enter" || (options.vi && key.name === "i")) {
+        const { name } = key;
+        const isEnter = name === "enter";
+        const isViInsert = vi && name === "i";
+        const isEditorKey = name === "e";
+
+        if (isEnter || isViInsert) {
           return this.readInput();
         }
 
-        if (key.name === "e") {
+        if (isEditorKey) {
           return this.readEditor();
         }
       });
     }
 
-    if (options.mouse) {
-      this.on("click", (data) => {
-        if (this._reading || data.button !== "right") {
+    if (mouse) {
+      this.on("click", ({ button }) => {
+        const isRightClick = button === "right";
+
+        if (this._reading || isRightClick) {
           return;
         }
 
@@ -88,8 +102,60 @@ export class Textarea extends InputElement {
     }
   }
 
-  _updateCursor(get?: boolean) {
-    if (this.screen.focused !== this) {
+  private getCursor() {
+    return {
+      x: this.offsetX,
+      y: this.offsetY,
+    };
+  }
+
+  private setCursor(x: number, y: number) {
+    this.offsetX = x;
+    this.offsetY = y;
+  }
+
+  private moveCursor(x: number, y: number) {
+    const totalLines = this._clines.length;
+    const currentLineIndex = totalLines - 1 + this.offsetY;
+    const isYInRange = y <= 0 && y > -totalLines;
+
+    let shouldSyncX = false;
+
+    if (isYInRange) {
+      shouldSyncX = this.offsetY !== y;
+
+      this.offsetY = y;
+    }
+
+    const targetLineIndex = totalLines - 1 + this.offsetY;
+    const targetLine = this._clines[targetLineIndex];
+    const targetLineWidth = Number(this.strWidth(targetLine));
+
+    if (shouldSyncX) {
+      const currentLine = this._clines[currentLineIndex];
+      const currentLineWidth = Number(this.strWidth(currentLine));
+      const positionFromLineStart = Math.max(
+        currentLineWidth + this.offsetX,
+        0,
+      );
+
+      x = -Math.max(0, targetLineWidth - positionFromLineStart);
+    }
+
+    const isXInRange = x <= 0 && x >= -targetLineWidth;
+
+    if (isXInRange) {
+      this.offsetX = x;
+    }
+
+    this.updateCursor(true);
+    this.screen.render();
+  }
+
+  private updateCursor(get?: boolean) {
+    const isFocused = this.screen.focused === this;
+
+    if (!isFocused) {
       return;
     }
 
@@ -99,70 +165,47 @@ export class Textarea extends InputElement {
       return;
     }
 
-    const currentLine = this._clines.length - 1 + this.offsetY;
+    const { yi, yl, xi } = lpos;
     const program = this.screen.program;
-    let currentText = this._clines[currentLine];
-    let line;
+    const currentLineIndex = this._clines.length - 1 + this.offsetY;
+    const clineOffset = currentLineIndex - (this.childBase || 0);
+    const availableLines = yl - yi - Number(this.iheight) - 1;
+    const line = Math.max(0, Math.min(clineOffset, availableLines));
+    let currentLine = this._clines[currentLineIndex];
 
-    // Stop a situation where the textarea begins scrolling
-    // and the last cline appears to always be empty from the
-    // _typeScroll `+ '\n'` thing.
-    // Maybe not necessary anymore?
-    if (currentText === "" && this.value[this.value.length - 1] !== "\n") {
-      currentText = this._clines[currentLine - 1] || "";
+    if (currentLine === "" && this.value.at(-1) !== "\n") {
+      currentLine = this._clines[currentLineIndex - 1] ?? "";
     }
 
-    line = Math.min(
-      currentLine - (this.childBase || 0),
-      lpos.yl - lpos.yi - Number(this.iheight) - 1,
-    );
-
-    // When calling clearValue() on a full textarea with a border, the first
-    // argument in the above Math.min call ends up being -2. Make sure we stay
-    // positive.
-    line = Math.max(0, line);
-
-    const cy = lpos.yi + Number(this.itop) + line;
+    const cy = yi + Number(this.itop) + line;
     const cx =
       this.offsetX +
-      lpos.xi +
+      xi +
       Number(this.ileft) +
-      Number(this.strWidth(currentText));
+      Number(this.strWidth(currentLine));
+    const dy = cy - program.y;
+    const dx = cx - program.x;
 
-    // XXX Not sure, but this may still sometimes
-    // cause problems when leaving editor.
-    if (cy === program.y && cx === program.x) {
+    if (dy === 0 && dx === 0) {
       return;
     }
 
-    if (cy === program.y) {
-      if (cx > program.x) {
-        program.cuf(cx - program.x);
-      } else if (cx < program.x) {
-        program.cub(program.x - cx);
-      }
-    } else if (cx === program.x) {
-      if (cy > program.y) {
-        program.cud(cy - program.y);
-      } else if (cy < program.y) {
-        program.cuu(program.y - cy);
-      }
+    if (dy === 0) {
+      dx > 0 ? program.cuf(dx) : program.cub(-dx);
+    } else if (dx === 0) {
+      dy > 0 ? program.cud(dy) : program.cuu(-dy);
     } else {
       program.cup(cy, cx);
     }
   }
 
-  _typeScroll() {
-    // XXX Workaround
-    // const height = Number(this.height) - Number(this.iheight);
-    // if (this._clines.length - this.childBase > height) {
-    const currentLine = this._clines.length - 1 + this.offsetY;
-    this.setScroll(currentLine);
-    // }
+  private typeScroll() {
+    const currentLineIndex = this._clines.length - 1 + this.offsetY;
+
+    this.setScroll(currentLineIndex);
   }
 
-  _listener(ch: any, key: Partial<IKeyEventArg>) {
-    const done = this._done;
+  private listener(ch: any, key: Partial<IKeyEventArg>) {
     const value = this.value;
 
     if (key.name === "return") {
@@ -215,7 +258,7 @@ export class Textarea extends InputElement {
     // TODO: Optimize typing by writing directly
     // to the screen and screen buffer here.
     if (key.name === "escape") {
-      done?.(null, null);
+      this.done?.(null);
     } else if (key.name === "backspace") {
       if (this.value.length) {
         if (this.screen.fullUnicode) {
@@ -325,21 +368,21 @@ export class Textarea extends InputElement {
               const nextLineLength = Number(
                 this.strWidth(fakeLines[fakeLineIndex + 1] ?? ""),
               );
-              fakeLines.splice(fakeLineIndex, 1);
-              cursor.y++;
-              cursor.x = -nextLineLength;
+              if (fakeLineIndex + 1 < fakeLines.length) {
+                fakeLines.splice(fakeLineIndex, 1);
+                cursor.y++;
+                cursor.x = -nextLineLength;
+              }
             } else {
-              if (fakeLineIndex < fakeLines.length - 1) {
-                if (
-                  cursor.x === -Number(this.strWidth(realLines[currentLine]))
-                ) {
-                  fakeLines[fakeLineIndex] =
-                    fakeLines[fakeLineIndex].substring(1);
-                } else {
-                  fakeLines[fakeLineIndex] =
-                    fakeLines[fakeLineIndex].slice(0, fakeCursorPosition) +
-                    fakeLines[fakeLineIndex].slice(fakeCursorPosition + 1);
-                }
+              const lineLength = Number(
+                this.strWidth(fakeLines[fakeLineIndex]),
+              );
+
+              if (fakeCursorPosition < lineLength) {
+                fakeLines[fakeLineIndex] =
+                  fakeLines[fakeLineIndex].slice(0, fakeCursorPosition) +
+                  fakeLines[fakeLineIndex].slice(fakeCursorPosition + 1);
+
                 const predict = this._wrapContent(
                   fakeLines.join("\n"),
                   Number(this.width) - Number(this.iwidth),
@@ -421,8 +464,8 @@ export class Textarea extends InputElement {
       this.value = value;
       this._value = value;
       this.setContent(this.value);
-      this._typeScroll();
-      this._updateCursor();
+      this.typeScroll();
+      this.updateCursor();
     }
   }
 
@@ -431,196 +474,125 @@ export class Textarea extends InputElement {
   }
 
   submit() {
-    if (!this._listener) {
-      return;
-    }
-
-    return this._listener("\x1b", { name: "escape" });
+    return this.listener("\x1b", { name: "escape" });
   }
 
   cancel() {
-    if (!this._listener) {
-      return;
-    }
-
-    return this._listener("\x1b", { name: "escape" });
+    return this.listener("\x1b", { name: "escape" });
   }
 
   render() {
     this.setValue();
+
     return this._render();
   }
 
-  readInput(callback?: (err: any, value?: string) => void) {
-    const self = this;
-    const focused = this.screen.focused === this;
-
+  readInput(callback: CallbackFn = noop) {
     if (this._reading) {
       return;
     }
-    this._reading = true;
 
+    this._reading = true;
     this._callback = callback;
 
-    if (!focused) {
+    const isFocused = this.screen.focused === this;
+
+    if (!isFocused) {
       this.screen.saveFocus();
       this.focus();
     }
 
     this.screen.grabKeys = true;
 
-    this._updateCursor();
+    this.updateCursor();
     this.screen.program.showCursor();
-    //this.screen.program.sgr('normal');
 
-    this._done = function fn(err, value) {
-      if (!self._reading) {
+    const onKeyPress = this.listener.bind(this);
+
+    const done: CallbackFn = (err, value) => {
+      if (!this._reading || (done as any).done) {
         return;
       }
 
-      if ((fn as any).done) {
-        return;
-      }
-      (fn as any).done = true;
+      (done as any).done = true;
 
-      self._reading = false;
+      this._reading = false;
+      this._callback = undefined;
+      this.done = undefined;
 
-      delete self._callback;
-      delete self._done;
+      this.removeListener("keypress", onKeyPress);
 
-      if (self.__listener) {
-        self.removeListener("keypress", self.__listener);
-        delete self.__listener;
-      }
+      this.screen.program.hideCursor();
 
-      if (self.__done) {
-        self.removeListener("blur", self.__done);
-        delete self.__done;
+      this.screen.grabKeys = false;
+
+      if (!isFocused) {
+        this.screen.restoreFocus();
       }
 
-      self.screen.program.hideCursor();
-      self.screen.grabKeys = false;
-
-      if (!focused) {
-        self.screen.restoreFocus();
+      if (this.options.inputOnFocus) {
+        this.screen.rewindFocus();
       }
 
-      if (self.options.inputOnFocus) {
-        self.screen.rewindFocus();
-      }
-
-      // Ugly
       if (err === "stop") {
         return;
       }
 
       if (err) {
-        self.emit("error", err);
+        this.emit("error", err);
       } else if (value != null) {
-        self.emit("submit", value);
+        this.emit("submit", value);
       } else {
-        self.emit("cancel", value);
-      }
-      self.emit("action", value);
-
-      if (!callback) {
-        return;
+        this.emit("cancel", value);
       }
 
-      return err
-        ? callback(err)
-        : callback(null, value != null ? value : undefined);
+      this.emit("action", value);
+
+      return err ? callback(err) : callback(null, value);
     };
 
-    // Put this in a nextTick so the current
-    // key event doesn't trigger any keys input.
+    this.done = done;
+
     nextTick(() => {
-      self.__listener = self._listener.bind(self);
-      self.on("keypress", self.__listener);
+      this.on("keypress", onKeyPress);
     });
 
-    this.__done = this._done.bind(this, null, null);
-    this.on("blur", this.__done);
+    this.once("blur", this.done.bind(this, null));
   }
 
-  readEditor(callback?: (err: any, value?: string) => void) {
+  readEditor(callback: CallbackFn = noop) {
+    let mergedCallback = callback;
+
     if (this._reading) {
-      const _cb = this._callback;
-      const cb = callback;
+      const prevCallback = this._callback;
+      const newCallback = callback;
 
-      this._done?.("stop");
+      this.done?.("stop");
 
-      callback = (err, value) => {
-        if (_cb) {
-          _cb(err, value);
-        }
-
-        if (cb) {
-          cb(err, value);
-        }
+      mergedCallback = (err, value) => {
+        prevCallback?.(err, value);
+        newCallback(err, value);
       };
-    }
-
-    if (!callback) {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      callback = () => {};
     }
 
     return this.screen.readEditor({ value: this.value }, (err, value) => {
       if (err) {
+        this.screen.render();
+
         if (err.message === "Unsuccessful.") {
-          this.screen.render();
-          return this.readInput(callback);
+          return this.readInput(mergedCallback);
         }
 
-        this.screen.render();
-        this.readInput(callback);
+        this.readInput(mergedCallback);
 
-        return callback(err);
+        return mergedCallback(err);
       }
 
-      this.setValue(value as unknown as string);
+      this.setValue(String(value));
       this.screen.render();
 
-      return this.readInput(callback);
+      return this.readInput(mergedCallback);
     });
-  }
-
-  getCursor() {
-    return { x: this.offsetX, y: this.offsetY };
-  }
-
-  setCursor(x: number, y: number) {
-    this.offsetX = x;
-    this.offsetY = y;
-  }
-
-  moveCursor(x: number, y: number) {
-    const prevLine = this._clines.length - 1 + this.offsetY;
-    let sync = false;
-
-    if (y <= 0 && y > this._clines.length * -1) {
-      sync = this.offsetY !== y;
-      this.offsetY = y;
-    }
-    const currentLine = this._clines.length - 1 + this.offsetY;
-    const currentText = this._clines[currentLine];
-
-    if (sync) {
-      const prevText = this._clines[prevLine];
-      const positionFromBegin = Math.max(
-        Number(this.strWidth(prevText)) + this.offsetX,
-        0,
-      );
-      x =
-        Math.max(0, Number(this.strWidth(currentText)) - positionFromBegin) *
-        -1;
-    }
-    if (x <= 0 && x >= Number(this.strWidth(currentText)) * -1) {
-      this.offsetX = x;
-    }
-    this._updateCursor(true);
-    this.screen.render();
   }
 }
 
