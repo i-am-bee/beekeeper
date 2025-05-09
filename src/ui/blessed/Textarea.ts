@@ -149,7 +149,10 @@ export class Textarea extends InputElement {
         0,
       );
 
-      x = -Math.max(0, targetLineWidth - positionFromLineStart);
+      x =
+        targetLineWidth === 0
+          ? 0
+          : -Math.max(0, targetLineWidth - positionFromLineStart);
     }
 
     const isXInRange = x <= 0 && x >= -targetLineWidth;
@@ -181,11 +184,7 @@ export class Textarea extends InputElement {
     const clineOffset = currentLineIndex - (this.childBase || 0);
     const availableLines = yl - yi - Number(this.iheight) - 1;
     const line = Math.max(0, Math.min(clineOffset, availableLines));
-    let currentLine = this._clines[currentLineIndex];
-
-    if (currentLine === "" && this.value.at(-1) !== "\n") {
-      currentLine = this._clines[currentLineIndex - 1] ?? "";
-    }
+    const currentLine = this._clines[currentLineIndex];
 
     const cy = yi + Number(this.itop) + line;
     const cx =
@@ -216,7 +215,6 @@ export class Textarea extends InputElement {
   }
 
   private listener(ch: any, key: Partial<IKeyEventArg>) {
-    const prevValue = this.value;
     const cursor = this.getCursor();
 
     const isReturn = key.name === "return";
@@ -271,10 +269,6 @@ export class Textarea extends InputElement {
         mapper,
         ch,
       });
-    }
-
-    if (this.value !== prevValue) {
-      this.screen.render();
     }
   }
 
