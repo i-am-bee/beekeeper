@@ -9,7 +9,18 @@ type BlessedElement = blessed.Widgets.BlessedElement;
 type Coords = blessed.Widgets.Coords;
 type IKeyEventArg = blessed.Widgets.Events.IKeyEventArg;
 type CallbackFn = (err: any, value?: string) => void;
+interface Cursor {
+  x: number;
+  y: number;
+}
 
+interface CursorContext {
+  cursor: Cursor;
+  realLines: string[];
+  fakeLines: string[];
+  mapper: number[];
+  ch?: any;
+}
 interface Clines {
   real: string[];
   fake: string[];
@@ -74,10 +85,9 @@ export class Textarea extends InputElement {
           return;
         }
 
-        const { name } = key;
-        const isEnter = name === "enter";
-        const isViInsert = vi && name === "i";
-        const isEditorKey = name === "e";
+        const isEnter = key.name === "enter";
+        const isViInsert = vi && key.name === "i";
+        const isEditorKey = key.name === "e";
 
         if (isEnter || isViInsert) {
           return this.readInput();
@@ -206,249 +216,324 @@ export class Textarea extends InputElement {
   }
 
   private listener(ch: any, key: Partial<IKeyEventArg>) {
-    const value = this.value;
+    const prevValue = this.value;
+    const cursor = this.getCursor();
 
-    if (key.name === "return") {
+    const isReturn = key.name === "return";
+
+    if (isReturn) {
       return;
     }
 
-    if (key.name === "enter") {
-      ch = "\n";
-    }
+    const { real, fake, rtof: mapper } = this._clines;
+    const realLines = [...real];
+    const fakeLines = [...fake];
 
-    const cursor = this.getCursor();
+    switch (key.name) {
+      case "enter":
+        ch = "\n";
+        break;
 
-    // TODO: Handle directional keys.
-    if (
-      key.name === "left" ||
-      key.name === "right" ||
-      key.name === "up" ||
-      key.name === "down" ||
-      key.name === "end" ||
-      key.name === "home"
-    ) {
-      if (key.name === "left") {
-        cursor.x--;
-      } else if (key.name === "right") {
-        cursor.x++;
-      }
-      if (key.name === "up") {
-        cursor.y--;
-      } else if (key.name === "down") {
-        cursor.y++;
-      }
+      case "left":
+      case "right":
+      case "up":
+      case "down":
+      case "end":
+      case "home":
+        this.handleArrowKey({ cursor, key });
+        break;
 
-      if (key.name === "end") {
-        cursor.x = 0;
-      } else if (key.name === "home") {
-        const currentLine = this._clines.length - 1 + this.offsetY;
-        const currentLineLength = Number(
-          this.strWidth(this._clines[currentLine] ?? ""),
-        );
-        cursor.x = -currentLineLength;
-      }
+      case "escape":
+        this.done?.(null);
+        break;
 
-      this.moveCursor(cursor.x, cursor.y);
-    }
+      case "backspace":
+        this.handleBackspaceKey({ cursor, realLines, fakeLines, mapper });
+        break;
 
-    if (this.options.keys && key.ctrl && key.name === "e") {
-      return this.readEditor();
-    }
+      case "delete":
+        this.handleDeleteKey({ cursor, realLines, fakeLines, mapper });
+        break;
 
-    // TODO: Optimize typing by writing directly
-    // to the screen and screen buffer here.
-    if (key.name === "escape") {
-      this.done?.(null);
-    } else if (key.name === "backspace") {
-      if (this.value.length) {
-        if (this.screen.fullUnicode) {
-          //
-        } else {
-          if (cursor.x === 0 && cursor.y === 0) {
-            this.value = this.value.slice(0, -1);
-          } else {
-            const realLines = this._clines.real.slice();
-            const fakeLines = this._clines.fake.slice();
-            const mapper = this._clines.rtof;
-
-            const currentLine = realLines.length - 1 + cursor.y;
-
-            const fakeLineIndex = mapper[currentLine];
-
-            let fakeCursorPosition = 0;
-            for (let i = 0; i <= currentLine; i++) {
-              if (mapper[i] === fakeLineIndex) {
-                fakeCursorPosition += Number(this.strWidth(realLines[i]));
-              }
-            }
-            fakeCursorPosition += cursor.x;
-
-            const realCursorPosition =
-              Number(this.strWidth(realLines[currentLine])) + cursor.x;
-
-            if (fakeLines[fakeLineIndex] === "") {
-              fakeLines.splice(fakeLineIndex, 1);
-            } else if (
-              cursor.x === -Number(this.strWidth(realLines[currentLine]))
-            ) {
-              if (currentLine > 0) {
-                const lineLengthBefore = Number(
-                  this.strWidth(realLines[currentLine - 1] ?? ""),
-                );
-
-                if (mapper[currentLine] !== mapper[currentLine - 1]) {
-                  const currentLineString = fakeLines.splice(fakeLineIndex, 1);
-                  fakeLines[fakeLineIndex - 1] += currentLineString;
-                }
-
-                const predict = this._wrapContent(
-                  fakeLines.join("\n"),
-                  Number(this.width) - Number(this.iwidth),
-                );
-
-                cursor.x = -(
-                  Number(this.strWidth(predict[currentLine - 1] ?? "")) -
-                  lineLengthBefore
-                );
-                if (predict.real.length === realLines.length) {
-                  cursor.y--;
-                }
-              }
-            } else {
-              fakeLines[fakeLineIndex] =
-                fakeLines[fakeLineIndex].slice(0, fakeCursorPosition - 1) +
-                fakeLines[fakeLineIndex].slice(fakeCursorPosition);
-              const predict = this._wrapContent(
-                fakeLines.join("\n"),
-                Number(this.width) - Number(this.iwidth),
-              );
-              cursor.x = -(
-                Number(this.strWidth(predict.real[currentLine])) -
-                realCursorPosition +
-                1
-              );
-              if (predict.real.length !== realLines.length) {
-                cursor.y++;
-              }
-            }
-            this.value = fakeLines.join("\n");
-            this.setCursor(cursor.x, cursor.y);
-          }
+      default:
+        if (this.options.keys && key.ctrl && key.name === "e") {
+          return this.readEditor();
         }
-      }
-    } else if (key.name === "delete") {
-      if (this.value.length) {
-        if (this.screen.fullUnicode) {
-          //
-        } else {
-          // const currentLine = this._clines.length - 1 + cursor.y;
-          if (cursor.x === 0 && cursor.y === 0) {
-            //
-          } else {
-            const realLines = this._clines.real.slice();
-            const fakeLines = this._clines.fake.slice();
-            const mapper = this._clines.rtof;
 
-            const currentLine = realLines.length - 1 + cursor.y;
-
-            const fakeLineIndex = mapper[currentLine];
-
-            let fakeCursorPosition = 0;
-            for (let i = 0; i <= currentLine; i++) {
-              if (mapper[i] === fakeLineIndex) {
-                fakeCursorPosition += Number(this.strWidth(realLines[i]));
-              }
-            }
-            fakeCursorPosition += cursor.x;
-
-            const realCursorPosition =
-              Number(this.strWidth(realLines[currentLine])) + cursor.x;
-
-            if (fakeLines[fakeLineIndex] === "") {
-              const nextLineLength = Number(
-                this.strWidth(fakeLines[fakeLineIndex + 1] ?? ""),
-              );
-              if (fakeLineIndex + 1 < fakeLines.length) {
-                fakeLines.splice(fakeLineIndex, 1);
-                cursor.y++;
-                cursor.x = -nextLineLength;
-              }
-            } else {
-              const lineLength = Number(
-                this.strWidth(fakeLines[fakeLineIndex]),
-              );
-
-              if (fakeCursorPosition < lineLength) {
-                fakeLines[fakeLineIndex] =
-                  fakeLines[fakeLineIndex].slice(0, fakeCursorPosition) +
-                  fakeLines[fakeLineIndex].slice(fakeCursorPosition + 1);
-
-                const predict = this._wrapContent(
-                  fakeLines.join("\n"),
-                  Number(this.width) - Number(this.iwidth),
-                );
-                cursor.x = -(
-                  Number(this.strWidth(predict.real[currentLine])) -
-                  realCursorPosition
-                );
-                if (predict.real.length !== realLines.length) {
-                  cursor.y++;
-                }
-              }
-            }
-            this.value = fakeLines.join("\n");
-            this.setCursor(cursor.x, cursor.y);
-          }
-        }
-      }
-    } else if (ch) {
-      // eslint-disable-next-line no-control-regex
-      if (!/^[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]$/.test(ch)) {
-        if (cursor.x === 0 && cursor.y === 0) {
-          this.value += ch;
-        } else if (cursor.x >= this.value.length * -1) {
-          const realLines = this._clines.real.slice();
-          const fakeLines = this._clines.fake.slice();
-          const mapper = this._clines.rtof;
-
-          const currentLine = realLines.length - 1 + cursor.y;
-
-          const fakeLineIndex = mapper[currentLine];
-          let fakeCursorPosition = 0;
-          for (let i = 0; i <= currentLine; i++) {
-            if (mapper[i] === fakeLineIndex) {
-              fakeCursorPosition += Number(this.strWidth(realLines[i]));
-            }
-          }
-          fakeCursorPosition += cursor.x;
-
-          fakeLines[fakeLineIndex] =
-            fakeLines[fakeLineIndex].slice(0, fakeCursorPosition) +
-            ch +
-            fakeLines[fakeLineIndex].slice(fakeCursorPosition);
-
-          const predict = this._wrapContent(
-            fakeLines.join("\n"),
-            Number(this.width) - Number(this.iwidth),
-          );
-          if (ch === "\n") {
-            if (predict.real.length === realLines.length) {
-              cursor.y++;
-            }
-            cursor.x = -Number(
-              this.strWidth(predict[predict.length - 1 + cursor.y]),
-            );
-          }
-
-          this.value = fakeLines.join("\n");
-          this.setCursor(cursor.x, cursor.y);
-        }
-      }
+        break;
     }
 
-    if (this.value !== value) {
+    if (ch) {
+      this.handleCharacterInput({
+        cursor,
+        realLines,
+        fakeLines,
+        mapper,
+        ch,
+      });
+    }
+
+    if (this.value !== prevValue) {
       this.screen.render();
     }
+  }
+
+  private handleArrowKey({
+    cursor,
+    key,
+  }: {
+    cursor: Cursor;
+    key: Partial<IKeyEventArg>;
+  }) {
+    switch (key.name) {
+      case "left":
+        cursor.x--;
+        break;
+
+      case "right":
+        cursor.x++;
+        break;
+
+      case "up":
+        cursor.y--;
+        break;
+
+      case "down":
+        cursor.y++;
+        break;
+
+      case "end":
+        cursor.x = 0;
+        break;
+
+      case "home": {
+        const totalLines = this._clines.length;
+        const currentLineIndex = totalLines - 1 + this.offsetY;
+        const currentLine = this._clines[currentLineIndex];
+        const currentLineWidth = Number(this.strWidth(currentLine));
+
+        cursor.x = -currentLineWidth;
+        break;
+      }
+    }
+
+    this.moveCursor(cursor.x, cursor.y);
+  }
+
+  private handleBackspaceKey({
+    cursor,
+    realLines,
+    fakeLines,
+    mapper,
+  }: CursorContext) {
+    if (!this.value.length || this.screen.fullUnicode) {
+      return;
+    }
+
+    if (cursor.x === 0 && cursor.y === 0) {
+      this.value = this.value.slice(0, -1);
+
+      return;
+    }
+
+    const realLineIndex = realLines.length - 1 + cursor.y;
+    const fakeLineIndex = mapper[realLineIndex];
+    const fakeCursorPosition = this.getFakeCursorPosition({
+      cursor,
+      realLines,
+      mapper,
+      realLineIndex,
+      fakeLineIndex,
+    });
+    const realLine = realLines[realLineIndex];
+    const realLineWidth = Number(this.strWidth(realLine));
+    const realCursorPosition = realLineWidth + cursor.x;
+    const isEmptyFakeLine = fakeLines[fakeLineIndex] === "";
+
+    if (isEmptyFakeLine) {
+      fakeLines.splice(fakeLineIndex, 1);
+    } else if (cursor.x === -realLineWidth) {
+      if (realLineIndex > 0) {
+        const prevLineWidth = Number(
+          this.strWidth(realLines[realLineIndex - 1] ?? ""),
+        );
+
+        if (mapper[realLineIndex] !== mapper[realLineIndex - 1]) {
+          const currentLineString = fakeLines.splice(fakeLineIndex, 1);
+
+          fakeLines[fakeLineIndex - 1] += currentLineString;
+        }
+
+        const predict = this.predictWrappedLines(fakeLines);
+
+        cursor.x = -(
+          Number(this.strWidth(predict[realLineIndex - 1] ?? "")) -
+          prevLineWidth
+        );
+
+        if (predict.real.length === realLines.length) {
+          cursor.y--;
+        }
+      }
+    } else {
+      fakeLines[fakeLineIndex] =
+        fakeLines[fakeLineIndex].slice(0, fakeCursorPosition - 1) +
+        fakeLines[fakeLineIndex].slice(fakeCursorPosition);
+
+      const predict = this.predictWrappedLines(fakeLines);
+
+      cursor.x = -(
+        Number(this.strWidth(predict.real[realLineIndex])) -
+        realCursorPosition +
+        1
+      );
+
+      if (predict.real.length !== realLines.length) {
+        cursor.y++;
+      }
+    }
+
+    this.value = fakeLines.join("\n");
+    this.setCursor(cursor.x, cursor.y);
+  }
+
+  private handleDeleteKey({
+    cursor,
+    realLines,
+    fakeLines,
+    mapper,
+  }: CursorContext) {
+    if (
+      !this.value.length ||
+      this.screen.fullUnicode ||
+      (cursor.x === 0 && cursor.y === 0)
+    ) {
+      return;
+    }
+
+    const realLineIndex = realLines.length - 1 + cursor.y;
+    const fakeLineIndex = mapper[realLineIndex];
+    const fakeCursorPosition = this.getFakeCursorPosition({
+      cursor,
+      realLines,
+      mapper,
+      realLineIndex,
+      fakeLineIndex,
+    });
+    const realLine = realLines[realLineIndex];
+    const realLineWidth = Number(this.strWidth(realLine));
+    const realCursorPosition = realLineWidth + cursor.x;
+
+    if (fakeLines[fakeLineIndex] === "") {
+      const nextLineWidth = Number(
+        this.strWidth(fakeLines[fakeLineIndex + 1] ?? ""),
+      );
+
+      if (fakeLineIndex + 1 < fakeLines.length) {
+        fakeLines.splice(fakeLineIndex, 1);
+
+        cursor.y++;
+        cursor.x = -nextLineWidth;
+      }
+    } else {
+      const lineWidth = Number(this.strWidth(fakeLines[fakeLineIndex]));
+
+      if (fakeCursorPosition < lineWidth) {
+        fakeLines[fakeLineIndex] =
+          fakeLines[fakeLineIndex].slice(0, fakeCursorPosition) +
+          fakeLines[fakeLineIndex].slice(fakeCursorPosition + 1);
+
+        const predict = this.predictWrappedLines(fakeLines);
+
+        cursor.x = -(
+          Number(this.strWidth(predict.real[realLineIndex])) -
+          realCursorPosition
+        );
+
+        if (predict.real.length !== realLines.length) {
+          cursor.y++;
+        }
+      }
+    }
+
+    this.value = fakeLines.join("\n");
+    this.setCursor(cursor.x, cursor.y);
+  }
+
+  private handleCharacterInput({
+    cursor,
+    realLines,
+    fakeLines,
+    mapper,
+    ch,
+  }: CursorContext) {
+    // eslint-disable-next-line no-control-regex
+    if (/^[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]$/.test(ch)) {
+      return;
+    }
+
+    if (cursor.x === 0 && cursor.y === 0) {
+      this.value += ch;
+    } else if (cursor.x >= -this.value.length) {
+      const realLineIndex = realLines.length - 1 + cursor.y;
+      const fakeLineIndex = mapper[realLineIndex];
+      const fakeCursorPosition = this.getFakeCursorPosition({
+        cursor,
+        realLines,
+        mapper,
+        realLineIndex,
+        fakeLineIndex,
+      });
+
+      fakeLines[fakeLineIndex] =
+        fakeLines[fakeLineIndex].slice(0, fakeCursorPosition) +
+        ch +
+        fakeLines[fakeLineIndex].slice(fakeCursorPosition);
+
+      const predict = this.predictWrappedLines(fakeLines);
+
+      if (ch === "\n") {
+        if (predict.real.length === realLines.length) {
+          cursor.y++;
+        }
+
+        cursor.x = -Number(
+          this.strWidth(predict[predict.length - 1 + cursor.y]),
+        );
+      }
+
+      this.value = fakeLines.join("\n");
+      this.setCursor(cursor.x, cursor.y);
+    }
+  }
+
+  getFakeCursorPosition({
+    cursor,
+    realLines,
+    mapper,
+    realLineIndex,
+    fakeLineIndex,
+  }: {
+    cursor: Cursor;
+    realLines: string[];
+    mapper: number[];
+    realLineIndex: number;
+    fakeLineIndex: number;
+  }) {
+    return (
+      realLines.slice(0, realLineIndex + 1).reduce((acc, line, i) => {
+        const lineWidth = Number(this.strWidth(line));
+
+        return mapper[i] === fakeLineIndex ? acc + lineWidth : acc;
+      }, 0) + cursor.x
+    );
+  }
+
+  predictWrappedLines(fakeLines: string[]) {
+    return this._wrapContent(
+      fakeLines.join("\n"),
+      Number(this.width) - Number(this.iwidth),
+    );
   }
 
   getValue() {
