@@ -1,27 +1,35 @@
 import { EventEmitter } from "events";
 import blessed from "neo-blessed";
-import * as st from "../config.js";
-import { LogFormatter, LogFormatterOptions } from "./log-line-formatter.js";
 import { UIColors } from "../colors.js";
+import * as st from "../config.js";
+import {
+  ControllableContainer,
+  ControllableElement,
+  ControllableScreen,
+  ControlsManager,
+} from "../controls/controls-manager.js";
+import { LogFormatter, LogFormatterOptions } from "./log-line-formatter.js";
 
 export class StatusBar extends EventEmitter {
-  private statusBar: blessed.Widgets.BoxElement;
-  private expandButton: blessed.Widgets.ButtonElement;
+  private controlsManager: ControlsManager;
+  private screen: ControllableScreen;
+  private statusBar: ControllableContainer;
+  private expandButton: ControllableElement;
   private timeDisplay: blessed.Widgets.TextElement;
   private statusText: blessed.Widgets.TextElement;
-  private fullscreenLogBox: blessed.Widgets.BoxElement;
-  private closeButton: blessed.Widgets.ButtonElement;
+  private fullscreenLogBox: ControllableContainer;
+  private closeButton: ControllableElement;
   private logContentBox: blessed.Widgets.BoxElement;
   private logFooter: blessed.Widgets.BoxElement;
   private updateInterval: NodeJS.Timeout | null = null;
   private lastUpdateTimestamp: Date = new Date();
   private isLogBoxVisible = false;
-  private screen: blessed.Widgets.Screen;
   private logsContent = "";
   private logFormatter: LogFormatter;
 
   constructor(options: {
-    parent: blessed.Widgets.Node;
+    parent: ControllableContainer | ControllableScreen;
+    controlsManager: ControlsManager;
     width?: string | number;
     height?: string | number;
     left?: string | number;
@@ -32,24 +40,31 @@ export class StatusBar extends EventEmitter {
   }) {
     super();
 
-    this.screen = options.parent.screen as blessed.Widgets.Screen;
+    this.controlsManager = options.controlsManager;
+
+    this.screen = this.controlsManager.screen;
     this.logFormatter = new LogFormatter(options.logFormatterOptions);
 
     // Create status bar container
-    this.statusBar = blessed.box({
+    this.statusBar = this.controlsManager.add({
+      kind: "container",
+      name: "statusBar",
+      element: blessed.box({
+        parent: options.parent.element,
+        width: options.width || "100%-3",
+        height: options.height || 3,
+        left: options.left || 0,
+        top: options.top || "100%-3",
+        border: { type: "line" },
+        label: options.label || " Status ",
+        tags: true,
+      }),
       parent: options.parent,
-      width: options.width || "100%-3",
-      height: options.height || 3,
-      left: options.left || 0,
-      top: options.top || "100%-3",
-      border: { type: "line" },
-      label: options.label || " Status ",
-      tags: true,
     });
 
     // Create time display
     this.timeDisplay = blessed.text({
-      parent: this.statusBar,
+      parent: this.statusBar.element,
       width: 25,
       height: 1,
       left: 1,
@@ -60,7 +75,7 @@ export class StatusBar extends EventEmitter {
 
     // Create status text
     this.statusText = blessed.text({
-      parent: this.statusBar,
+      parent: this.statusBar.element,
       width: "70%",
       height: 1,
       left: 27,
@@ -70,46 +85,56 @@ export class StatusBar extends EventEmitter {
     });
 
     // Create expand button
-    this.expandButton = blessed.button({
-      parent: this.statusBar,
-      mouse: true,
-      keys: true,
-      shrink: true,
-      padding: {
-        left: 1,
+    this.expandButton = this.controlsManager.add({
+      kind: "element",
+      name: "expandButton",
+      element: blessed.button({
+        parent: this.statusBar.element,
+        mouse: true,
+        keys: true,
+        shrink: true,
+        padding: {
+          left: 1,
+          right: 1,
+        },
         right: 1,
-      },
-      right: 1,
-      top: 0,
-      name: "expandLogButton",
-      content: "Logs",
-      style: {
-        bg: "blue",
-        focus: {
-          bg: "cyan",
+        top: 0,
+        name: "expandLogButton",
+        content: "Logs",
+        style: {
+          bg: "blue",
+          focus: {
+            bg: "cyan",
+          },
+          hover: {
+            bg: "cyan",
+          },
         },
-        hover: {
-          bg: "cyan",
-        },
-      },
+      }),
+      parent: this.statusBar,
     });
 
     // Create fullscreen log box container (initially hidden)
-    this.fullscreenLogBox = blessed.box({
+    this.fullscreenLogBox = this.controlsManager.add({
+      kind: "container",
+      name: "messagesBox",
+      element: blessed.box({
+        parent: options.parent.element,
+        width: "100%-1",
+        height: "100%-1",
+        left: 0,
+        top: 0,
+        border: { type: "line" },
+        label: " Log View ",
+        tags: true,
+        hidden: true,
+      }),
       parent: options.parent,
-      width: "100%-1",
-      height: "100%-1",
-      left: 0,
-      top: 0,
-      border: { type: "line" },
-      label: " Log View ",
-      tags: true,
-      hidden: true,
     });
 
     // Create scrollable content area for logs
     this.logContentBox = blessed.box({
-      parent: this.fullscreenLogBox,
+      parent: this.fullscreenLogBox.element,
       width: "100%-2",
       height: "100%-4", // Leave space for the footer
       left: 0,
@@ -127,7 +152,7 @@ export class StatusBar extends EventEmitter {
 
     // Create fixed footer for the close button
     this.logFooter = blessed.box({
-      parent: this.fullscreenLogBox,
+      parent: this.fullscreenLogBox.element,
       width: "100%-4",
       // height: 3,
       left: 1,
@@ -136,43 +161,48 @@ export class StatusBar extends EventEmitter {
     });
 
     // Create close button inside the footer
-    this.closeButton = blessed.button({
-      parent: this.logFooter,
-      mouse: true,
-      keys: true,
-      shrink: true,
-      padding: {
-        left: 1,
-        right: 1,
-      },
-      left: "50%",
-      top: 0,
-      name: "closeLogButton",
-      content: "Close",
-      style: {
-        bg: UIColors.red.dark_red,
-        focus: {
-          bg: UIColors.red.electric_red,
+    this.closeButton = this.controlsManager.add({
+      kind: "element",
+      name: "closeButton",
+      element: blessed.button({
+        parent: this.logFooter,
+        mouse: true,
+        keys: true,
+        shrink: true,
+        padding: {
+          left: 1,
+          right: 1,
         },
-        hover: {
-          bg: UIColors.red.red,
+        left: "50%",
+        top: 0,
+        name: "closeLogButton",
+        content: "Close",
+        style: {
+          bg: UIColors.red.dark_red,
+          focus: {
+            bg: UIColors.red.electric_red,
+          },
+          hover: {
+            bg: UIColors.red.red,
+          },
         },
-      },
+      }),
+      parent: this.fullscreenLogBox,
     });
 
     this.setupEventHandlers();
     this.startUpdateInterval(options.updateIntervalMs || 1000);
-    this.screen.render();
+    this.screen.element.render();
   }
 
   private setupEventHandlers(): void {
     // Expand button shows the log box
-    this.expandButton.on("press", () => {
+    this.expandButton.element.on("press", () => {
       this.showLogBox();
     });
 
     // Close button hides the log box
-    this.closeButton.on("press", () => {
+    this.closeButton.element.on("press", () => {
       this.hideLogBox();
     });
 
@@ -180,32 +210,32 @@ export class StatusBar extends EventEmitter {
     this.logContentBox.on("mouse", (data) => {
       if (data.action === "wheelup") {
         this.logContentBox.scroll(-3);
-        this.screen.render();
+        this.screen.element.render();
       } else if (data.action === "wheeldown") {
         this.logContentBox.scroll(3);
-        this.screen.render();
+        this.screen.element.render();
       }
     });
 
     // Add keyboard navigation for log content
     this.logContentBox.key(["up"], () => {
       this.logContentBox.scroll(-1);
-      this.screen.render();
+      this.screen.element.render();
     });
 
     this.logContentBox.key(["down"], () => {
       this.logContentBox.scroll(1);
-      this.screen.render();
+      this.screen.element.render();
     });
 
     this.logContentBox.key(["pageup"], () => {
       this.logContentBox.scroll(-this.logContentBox.height || -10);
-      this.screen.render();
+      this.screen.element.render();
     });
 
     this.logContentBox.key(["pagedown"], () => {
       this.logContentBox.scroll(Number(this.logContentBox.height) || 10);
-      this.screen.render();
+      this.screen.element.render();
     });
   }
 
@@ -218,7 +248,7 @@ export class StatusBar extends EventEmitter {
     // Start new interval to update the time display
     this.updateInterval = setInterval(() => {
       this.updateTimeDisplay();
-      this.screen.render();
+      this.screen.element.render();
     }, intervalMs);
   }
 
@@ -241,9 +271,9 @@ export class StatusBar extends EventEmitter {
   }
 
   private showLogBox(): void {
-    this.fullscreenLogBox.show();
+    this.fullscreenLogBox.element.show();
     this.isLogBoxVisible = true;
-    this.fullscreenLogBox.setFront();
+    this.fullscreenLogBox.element.setFront();
     this.logContentBox.setContent(this.logsContent);
 
     // Ensure log content has focus for keyboard navigation
@@ -252,13 +282,13 @@ export class StatusBar extends EventEmitter {
     // Scroll to bottom when opening
     this.logContentBox.setScrollPerc(100);
 
-    this.screen.render();
+    this.screen.element.render();
   }
 
   private hideLogBox(): void {
-    this.fullscreenLogBox.hide();
+    this.fullscreenLogBox.element.hide();
     this.isLogBoxVisible = false;
-    this.screen.render();
+    this.screen.element.render();
   }
 
   /**
@@ -290,7 +320,7 @@ export class StatusBar extends EventEmitter {
     this.updateTimeDisplay();
 
     // Render screen
-    this.screen.render();
+    this.screen.element.render();
   }
 
   /**
@@ -299,7 +329,7 @@ export class StatusBar extends EventEmitter {
   public clearLog(): void {
     this.logsContent = "";
     this.logContentBox.setContent("");
-    this.screen.render();
+    this.screen.element.render();
   }
 
   /**
@@ -307,7 +337,7 @@ export class StatusBar extends EventEmitter {
    */
   public setStatus(status: string): void {
     this.statusText.setContent(status);
-    this.screen.render();
+    this.screen.element.render();
   }
 
   /**

@@ -38,6 +38,7 @@ import { UIColors } from "./colors.js";
 export interface StyleItem {
   fg?: string;
   bold?: boolean;
+  underline?: boolean;
   icon?: string;
 }
 export type StyleItemVersioned = Record<string, StyleItem>;
@@ -108,6 +109,10 @@ export const UIConfig = {
     version: { fg: UIColors.gray.cool_gray, bold: false },
   } satisfies StyleCategory,
 
+  colors: {
+    focused: UIColors.blue.cyan,
+  },
+
   status: {
     CREATED: { fg: UIColors.yellow.yellow, icon: "◆" }, // Diamond
     EXECUTING: { fg: UIColors.green.green, icon: "▶" }, // Play triangle
@@ -159,6 +164,11 @@ export const UIConfig = {
   borders: {
     type: "line",
     fg: UIColors.white.white,
+    focus: {
+      border: {
+        fg: UIColors.blue.cyan,
+      },
+    },
   },
 
   list: {
@@ -209,6 +219,9 @@ export const applyStyle = (
   if (style.bold) {
     styled = `{bold}${styled}{/bold}`;
   }
+  if (style.underline) {
+    styled = `{underline}${styled}{/underline}`;
+  }
   return styled;
 };
 
@@ -247,13 +260,21 @@ export function applyAgentKindIdStyle(agentKindId: AgentKindId) {
   return applyStyle(agentKindId.agentKind, clone(style));
 }
 
-export function applyAgentIdStyle(agentId: AgentId | AgentTypeId) {
-  const style = UIConfig.labels.agentId[agentId.agentKind as AgentKindEnum];
-  const isAgentId = (agentId as AgentId).agentNum != null;
-  return applyStyle(
-    `${style.icon} ${agentId.agentType}${isAgentId ? `[${(agentId as AgentId).agentNum}]` : ""}`,
-    { ...style },
-  );
+export function applyAgentIdStyle(
+  input: AgentId | AgentTypeId,
+  includeVersion = true,
+) {
+  const style = UIConfig.labels.agentId[input.agentKind as AgentKindEnum];
+  if ((input as AgentId).agentNum != null) {
+    const agentId = input as AgentId;
+    return applyStyle(
+      `${style.icon} ${agentId.agentType}[${agentId.agentNum}]${includeVersion ? ` ${versionNum(agentId.agentConfigVersion)}` : ""}`,
+      { ...style },
+    );
+  } else {
+    const agentId = input as AgentTypeId;
+    return applyStyle(`${style.icon} ${agentId.agentType}`, { ...style });
+  }
 }
 
 export function applyToolsStyle(tools: AvailableTool[]) {
@@ -286,8 +307,11 @@ export function label(value: string) {
   return applyStyle(value, UIConfig.labels.default);
 }
 
-export function system(value: string) {
-  return applyStyle(value, UIConfig.labels.system);
+export function system(value: string, highlighted?: boolean) {
+  return applyStyle(value, {
+    ...UIConfig.labels.system,
+    underline: highlighted,
+  });
 }
 
 export function agentConfigId(value: string) {
@@ -311,8 +335,8 @@ export function agentKindId(value: AgentKindId) {
 export function agentTypeId(value: AgentTypeId) {
   return applyAgentIdStyle(value);
 }
-export function agentId(value: AgentId | AgentTypeId) {
-  return applyAgentIdStyle(value);
+export function agentId(value: AgentId | AgentTypeId, includeVersion = true) {
+  return applyAgentIdStyle(value, includeVersion);
 }
 export function agentKind(value: AgentKindValue) {
   return applyStyle(value, UIConfig.labels.agentKind);
@@ -341,20 +365,29 @@ export function timestamp(timestamp: string | Date) {
 export function eventType(event: string) {
   return applyStyle(event, UIConfig.labels.eventType);
 }
-export function error(error: string) {
-  return applyStyle(error, UIConfig.labels.error);
+export function error(error: string, highlighted?: boolean) {
+  return applyStyle(error, {
+    ...UIConfig.labels.error,
+    underline: highlighted,
+  });
 }
 
 export function input(
   input: string,
   version?: typeof DEFAULT_VERSION | typeof AMBIENT_VERSION,
+  highlighted?: boolean,
 ) {
   const style = UIConfig.labels.input[version ?? DEFAULT_VERSION];
-  return applyStyle(input, style);
+  return applyStyle(input, { ...style, underline: highlighted });
 }
 
-export function output(output: string) {
-  return applyStyle(output, UIConfig.labels.output);
+export function output(
+  output: string,
+  version?: typeof DEFAULT_VERSION | typeof AMBIENT_VERSION,
+  highlighted?: boolean,
+) {
+  const style = UIConfig.labels.output[version ?? DEFAULT_VERSION];
+  return applyStyle(output, { ...style, underline: highlighted });
 }
 
 export function agentPoolStats(poolStats: AgentConfigPoolStats) {
@@ -370,7 +403,7 @@ export function agentPool(agentPool: {
 }
 
 export function agent(agent: AgentInfo) {
-  return `${agentId(stringToAgent(agent.agentId))} ${versionNum(agent.agentConfigVersion)} ${bool(agent.inUse, agent.inUse ? DEFAULT_VERSION : BUSY_IDLE)}`;
+  return `${agentId(stringToAgent(agent.agentId), false)} ${versionNum(agent.agentConfigVersion)} ${bool(agent.inUse, agent.inUse ? DEFAULT_VERSION : BUSY_IDLE)}`;
 }
 
 export function applyTaskKindIdStyle(taskKindId: TaskKindId) {

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2023",
     "module": "NodeNext",
     "rootDir": "src",
     "sourceRoot": "src",
@@ -53,5 +53,8 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "examples"
   ]
 }
