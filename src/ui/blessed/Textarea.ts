@@ -50,6 +50,7 @@ const InputElement = blessed.input as unknown as new (
 };
 
 export class Textarea extends InputElement {
+  private _renderScheduled = false;
   private offsetY: number;
   private offsetX: number;
 
@@ -215,6 +216,7 @@ export class Textarea extends InputElement {
   }
 
   private listener(ch: any, key: Partial<IKeyEventArg>) {
+    const prevValue = this.value;
     const cursor = this.getCursor();
 
     const isReturn = key.name === "return";
@@ -270,6 +272,24 @@ export class Textarea extends InputElement {
         ch,
       });
     }
+
+    if (this.value !== prevValue) {
+      this.scheduleRender();
+    }
+  }
+
+  private scheduleRender() {
+    if (this._renderScheduled) {
+      return;
+    }
+
+    this._renderScheduled = true;
+
+    nextTick(() => {
+      this._renderScheduled = false;
+
+      this.screen.render();
+    });
   }
 
   private handleArrowKey({
@@ -279,13 +299,68 @@ export class Textarea extends InputElement {
     cursor: Cursor;
     key: Partial<IKeyEventArg>;
   }) {
+    const totalLines = this._clines.length;
+    const currentLineIndex = totalLines - 1 + this.offsetY;
+    const currentLine = this._clines[currentLineIndex];
+    const currentLineWidth = Number(this.strWidth(currentLine));
+
+    const getWordBoundary = (direction: "left" | "right") => {
+      const cursorIndex = currentLineWidth + cursor.x;
+      const wordBoundaries = [...currentLine.matchAll(/\b\w+\b/g)].map(
+        ({ index, 0: word }) => ({
+          start: index,
+          end: index + word.length,
+        }),
+      );
+
+      switch (direction) {
+        case "left": {
+          return -(
+            currentLineWidth -
+            (wordBoundaries.findLast(({ start }) => cursorIndex > start)
+              ?.start ?? 0)
+          );
+        }
+
+        case "right": {
+          const inWord = wordBoundaries.find(
+            ({ start, end }) => cursorIndex >= start && cursorIndex < end - 1,
+          );
+
+          if (inWord) {
+            return -(currentLineWidth - inWord.end + 1);
+          }
+
+          return -(
+            currentLineWidth -
+            (wordBoundaries.find(
+              ({ start, end }) =>
+                cursorIndex <= start && cursorIndex !== end - 1,
+            )?.start ?? currentLineWidth)
+          );
+        }
+
+        default:
+          return cursor.x;
+      }
+    };
+
     switch (key.name) {
       case "left":
-        cursor.x--;
+        if (key.shift) {
+          cursor.x = getWordBoundary("left");
+        } else {
+          cursor.x--;
+        }
         break;
 
       case "right":
-        cursor.x++;
+        if (key.shift) {
+          cursor.x = getWordBoundary("right");
+        } else {
+          cursor.x++;
+        }
+
         break;
 
       case "up":
@@ -301,11 +376,6 @@ export class Textarea extends InputElement {
         break;
 
       case "home": {
-        const totalLines = this._clines.length;
-        const currentLineIndex = totalLines - 1 + this.offsetY;
-        const currentLine = this._clines[currentLineIndex];
-        const currentLineWidth = Number(this.strWidth(currentLine));
-
         cursor.x = -currentLineWidth;
         break;
       }
