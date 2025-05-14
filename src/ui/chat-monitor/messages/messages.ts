@@ -5,10 +5,7 @@ import * as chatStyles from "../config.js";
 import { ChatFilterValues } from "../filter/filter.js";
 import { MessageTypeEnum } from "../runtime-handler.js";
 import clipboardy from "clipboardy";
-import {
-  NavigationDescription,
-  NavigationDescription,
-} from "@/ui/controls/navigation.js";
+import { NavigationDescription } from "@/ui/controls/navigation.js";
 
 export interface MessageValue {
   role: string;
