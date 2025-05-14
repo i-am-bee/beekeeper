@@ -1,0 +1,148 @@
+import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
+import * as laml from "@/laml/index.js";
+import { clone } from "remeda";
+import {
+  AgentConfigInitializerInput,
+  AgentConfigInitializerOutput,
+} from "./dto.js";
+import { protocol } from "./protocol.js";
+import { AgentConfigInitializerTool } from "./tool.js";
+import { prompt } from "./prompt.js";
+import { Logger } from "beeai-framework";
+
+/**
+ * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
+ */
+export class AgentConfigInitializer extends LLMCall<
+  typeof protocol,
+  AgentConfigInitializerInput,
+  AgentConfigInitializerOutput
+> {
+  protected tool: AgentConfigInitializerTool;
+
+  constructor(logger: Logger) {
+    super(logger);
+    this.tool = new AgentConfigInitializerTool();
+  }
+
+  async processResult(
+    result: laml.ProtocolResult<typeof protocol>,
+    context: { input: AgentConfigInitializerInput },
+  ): Promise<AgentConfigInitializerOutput> {
+    try {
+      let toolCallResult;
+      switch (result.RESPONSE_TYPE) {
+        case "CREATE_AGENT_CONFIG": {
+          const response = result.RESPONSE_CREATE_AGENT_CONFIG;
+          if (!response) {
+            throw new Error(`RESPONSE_CREATE_AGENT_CONFIG is missing`);
+          }
+
+          toolCallResult = await this.tool.run({
+            method: "createAgentConfig",
+            agentKind: "operator",
+            config: {
+              agentType: response.agent_type,
+              description: response.description,
+              instructions: response.instructions,
+              tools: response.tools,
+            },
+          });
+          return {
+            type: "SUCCESS",
+            agentConfig: {
+              agentType: toolCallResult.result.data.agentType,
+              description: toolCallResult.result.data.description,
+              instructions: toolCallResult.result.data.instructions,
+              tools: clone(toolCallResult.result.data.tools),
+              agentConfigId: toolCallResult.result.data.agentConfigId,
+              agentConfigVersion: toolCallResult.result.data.agentConfigVersion,
+            },
+          };
+        }
+        case "UPDATE_AGENT_CONFIG": {
+          const response = result.RESPONSE_UPDATE_AGENT_CONFIG;
+          if (!response) {
+            throw new Error(`RESPONSE_UPDATE_AGENT_CONFIG is missing`);
+          }
+
+          toolCallResult = await this.tool.run({
+            method: "updateAgentConfig",
+            agentKind: "operator",
+            agentType: response.agent_type,
+            config: {
+              description: response.description,
+              instructions: response.instructions,
+              tools: response.tools,
+            },
+          });
+          return {
+            type: "SUCCESS",
+            agentConfig: {
+              agentType: toolCallResult.result.data.agentType,
+              description: toolCallResult.result.data.description,
+              instructions: toolCallResult.result.data.instructions,
+              tools: clone(toolCallResult.result.data.tools),
+              agentConfigId: toolCallResult.result.data.agentConfigId,
+              agentConfigVersion: toolCallResult.result.data.agentConfigVersion,
+            },
+          };
+        }
+        case "SELECT_AGENT_CONFIG": {
+          const response = result.RESPONSE_SELECT_AGENT_CONFIG;
+          if (!response) {
+            throw new Error(`RESPONSE_SELECT_AGENT_CONFIG is missing`);
+          }
+
+          const selected = context.input.existingAgentConfigs.find(
+            (c) => c.agentType === response.agent_type,
+          );
+
+          if (!selected) {
+            return {
+              type: "ERROR",
+              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${context.input.existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
+            };
+          }
+
+          return {
+            type: "SUCCESS",
+            agentConfig: clone(selected),
+          };
+        }
+
+        case "AGENT_CONFIG_UNAVAILABLE": {
+          const response = result.RESPONSE_AGENT_CONFIG_UNAVAILABLE;
+          if (!response) {
+            throw new Error(`RESPONSE_AGENT_CONFIG_UNAVAILABLE is missing`);
+          }
+
+          return {
+            type: "ERROR",
+            explanation: response.explanation,
+          };
+        }
+      }
+    } catch (err) {
+      let explanation;
+      if (err instanceof Error) {
+        explanation = `Unexpected error \`${err.name}\` when processing agent config initializer result. The error message: ${err.message}`;
+      } else {
+        explanation = `Unexpected error \`${String(err)}\` when processing agent config initializer result.`;
+      }
+
+      return {
+        type: "ERROR",
+        explanation,
+      };
+    }
+  }
+
+  get protocol() {
+    return protocol;
+  }
+
+  protected systemPrompt(input: AgentConfigInitializerInput) {
+    return prompt(input);
+  }
+}

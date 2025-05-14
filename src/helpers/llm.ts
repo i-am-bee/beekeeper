@@ -36,7 +36,9 @@ export const LLMFactories: Record<
   [Providers.OPENAI]: (type: AgentKindEnum) =>
     new OpenAIChatModel(getEnv(env("OPENAI_MODEL", type)) || "gpt-4o"),
   [Providers.OLLAMA]: (type: AgentKindEnum) =>
-    new OllamaChatModel(getEnv(env("OLLAMA_MODEL", type)) || "llama3.1:8b"),
+    new OllamaChatModel(getEnv(env("OLLAMA_MODEL", type)) || "llama3.1:8b", {
+      numCtx: 131072,
+    }),
   [Providers.WATSONX]: (type: AgentKindEnum) =>
     new WatsonxChatModel(
       getEnv(env("WATSONX_CHAT_MODEL", type)) || "llama3.1:8b",
@@ -75,5 +77,12 @@ export function getChatLLM(
   if (!factory) {
     throw new Error(`Provider "${provider}" not found.`);
   }
-  return factory(type);
+
+  const model = factory(type);
+  model.config({
+    parameters: {
+      temperature: 0,
+    },
+  });
+  return model;
 }
