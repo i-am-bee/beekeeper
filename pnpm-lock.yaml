@@ -25,7 +25,7 @@ importers:
         version: 0.3.5
       bee-observe-connector:
         specifier: ^0.0.6
-        version: 0.0.6(bee-agent-framework@0.0.61(4a0077e6d897fc6c4cfb256454731d9c))
+        version: 0.0.6(bee-agent-framework@0.0.61(aff707d23aec9f479b6f6b971b3eb885))
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
@@ -94,8 +94,8 @@ importers:
         specifier: ^18.15.3
         version: 18.19.76
       beeai-framework:
-        specifier: 0.1.10
-        version: 0.1.10(28d790e447bc65e9719a322ab2700495)
+        specifier: 0.1.14
+        version: 0.1.14(1e731d470ef7bba547a2dc577bb7fb9c)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -159,6 +159,12 @@ packages:
       zod:
         optional: true
 
+  '@ai-sdk/provider-utils@2.2.8':
+    resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.23.8
+
   '@ai-sdk/provider@1.0.12':
     resolution: {integrity: sha512-88Uu1zJIE1UUOVJWfE2ybJXgiH8JJ97QY9fbmplErEbfa/k/1kF+tWMVAAJolF2aOGmazQGyQLhv4I9CCuVACw==}
     engines: {node: '>=18'}
@@ -167,26 +173,25 @@ packages:
     resolution: {integrity: sha512-jie6ZJT2ZR0uVOVCDc9R2xCX5I/Dum/wEK28lx21PJx6ZnFAN9EzD2WsPhcDWfCgGx3OAZZ0GyM3CEobXpa9LA==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/react@1.1.24':
-    resolution: {integrity: sha512-20rVK34QCaEl/4u87/Y+JXt7eCzF60UwoJOjHJhlCdmFrbk6AfRsijv0ludA9ELArE+ulxkSf21L3FokkZ2Gmg==}
+  '@ai-sdk/provider@1.1.3':
+    resolution: {integrity: sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/react@1.2.12':
+    resolution: {integrity: sha512-jK1IZZ22evPZoQW3vlkZ7wvjYGYF+tRBKXtrcolduIkQ/m/sOAVcVeVDUDvh1T91xCnWCdUGCPZg2avZ90mv3g==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ^19 || ^19.0.0-rc
-      zod: ^3.0.0
+      zod: ^3.23.8
     peerDependenciesMeta:
-      react:
-        optional: true
       zod:
         optional: true
 
-  '@ai-sdk/ui-utils@1.1.20':
-    resolution: {integrity: sha512-k+qQh1YA8/kH12d8KQFWjr0UxyS9nLibzbLr2OY6fzpfZg8xIAKlZeH952JIp2XwAp72tesgbsAmA15cDldtyw==}
+  '@ai-sdk/ui-utils@1.2.11':
+    resolution: {integrity: sha512-3zcwCc8ezzFlwp3ZD15wAPjf2Au4s3vAbKsXQVyhxODHcmu0iyPO2Eua6D/vicq/AUm/BAo60r97O6HU+EI0+w==}
     engines: {node: '>=18'}
     peerDependencies:
-      zod: ^3.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
+      zod: ^3.23.8
 
   '@ai-zen/node-fetch-event-source@2.1.4':
     resolution: {integrity: sha512-OHFwPJecr+qwlyX5CGmTvKAKPZAdZaxvx/XDqS1lx4I2ZAk9riU0XnEaRGOOAEFrdcLZ98O5yWqubwjaQc0umg==}
@@ -1658,16 +1663,14 @@ packages:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
 
-  ai@4.1.63:
-    resolution: {integrity: sha512-XXAU/jbtNZOHkTh9ZO4+ttXFXRjcs/62jJHbpO2M8UiH2FVIDia4fy4D5l8jGKlYVzKeE7rx/qB2GtrMjcc07w==}
+  ai@4.3.15:
+    resolution: {integrity: sha512-TYKRzbWg6mx/pmTadlAEIhuQtzfHUV0BbLY72+zkovXwq/9xhcH24IlQmkyBpElK6/4ArS0dHdOOtR1jOPVwtg==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ^19 || ^19.0.0-rc
-      zod: ^3.0.0
+      zod: ^3.23.8
     peerDependenciesMeta:
       react:
-        optional: true
-      zod:
         optional: true
 
   ajv-formats@3.0.1:
@@ -1813,23 +1816,23 @@ packages:
     peerDependencies:
       bee-agent-framework: '>=0.0.27 <0.1.0'
 
-  beeai-framework@0.1.10:
-    resolution: {integrity: sha512-uzMglzRLrxJAXpfY/0q+daMAN/AF8DCzrxQbmpc3Kka9b/nFEWgbZifOvTlEE2tFbcBd+gO7oxugJmsMn6l18g==}
+  beeai-framework@0.1.14:
+    resolution: {integrity: sha512-Gko3IN+R/OR+fQ99io/LL66gdsA/eI49PiOmiqPcZKF3/v2sEUSg7fzn3vjLrky7331T2QbwTNRRkCCW4bvpsA==}
     peerDependencies:
-      '@ai-sdk/amazon-bedrock': ^1.1.5
-      '@ai-sdk/anthropic': ^1.1.6
-      '@ai-sdk/azure': ^1.1.2
-      '@ai-sdk/google-vertex': ^2.1.6
-      '@ai-sdk/groq': ^1.1.6
-      '@ai-sdk/openai': ^1.2.5
-      '@aws-sdk/client-bedrock-runtime': ^3.706.0
+      '@ai-sdk/amazon-bedrock': ^2.2.8
+      '@ai-sdk/anthropic': ^1.2.10
+      '@ai-sdk/azure': ^1.3.14
+      '@ai-sdk/google-vertex': ^2.2.15
+      '@ai-sdk/groq': ^1.2.8
+      '@ai-sdk/openai': ^1.3.21
+      '@aws-sdk/client-bedrock-runtime': ^3.772.0
       '@elastic/elasticsearch': ^8.0.0
       '@googleapis/customsearch': ^3.2.0
-      '@i-am-bee/acp-sdk': ^0.0.5
       '@ibm-cloud/watsonx-ai': '*'
       '@langchain/community': '>=0.2.28'
       '@langchain/core': '>=0.2.27'
       '@modelcontextprotocol/sdk': ^1.0.4
+      '@qdrant/js-client-rest': ^1.14.0
       '@zilliz/milvus2-sdk-node': ^2.4.9
       ibm-cloud-sdk-core: '*'
       ollama-ai-provider: ^1.2.0
@@ -1852,8 +1855,6 @@ packages:
         optional: true
       '@googleapis/customsearch':
         optional: true
-      '@i-am-bee/acp-sdk':
-        optional: true
       '@ibm-cloud/watsonx-ai':
         optional: true
       '@langchain/community':
@@ -1861,6 +1862,8 @@ packages:
       '@langchain/core':
         optional: true
       '@modelcontextprotocol/sdk':
+        optional: true
+      '@qdrant/js-client-rest':
         optional: true
       '@zilliz/milvus2-sdk-node':
         optional: true
@@ -4071,6 +4074,13 @@ snapshots:
     optionalDependencies:
       zod: 3.24.2
 
+  '@ai-sdk/provider-utils@2.2.8(zod@3.24.2)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      nanoid: 3.3.8
+      secure-json-parse: 2.7.0
+      zod: 3.24.2
+
   '@ai-sdk/provider@1.0.12':
     dependencies:
       json-schema: 0.4.0
@@ -4079,23 +4089,26 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@1.1.24(react@19.0.0)(zod@3.24.2)':
+  '@ai-sdk/provider@1.1.3':
     dependencies:
-      '@ai-sdk/provider-utils': 2.1.14(zod@3.24.2)
-      '@ai-sdk/ui-utils': 1.1.20(zod@3.24.2)
+      json-schema: 0.4.0
+
+  '@ai-sdk/react@1.2.12(react@19.0.0)(zod@3.24.2)':
+    dependencies:
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.24.2)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.24.2)
+      react: 19.0.0
       swr: 2.3.2(react@19.0.0)
       throttleit: 2.1.0
     optionalDependencies:
-      react: 19.0.0
       zod: 3.24.2
 
-  '@ai-sdk/ui-utils@1.1.20(zod@3.24.2)':
+  '@ai-sdk/ui-utils@1.2.11(zod@3.24.2)':
     dependencies:
-      '@ai-sdk/provider': 1.0.12
-      '@ai-sdk/provider-utils': 2.1.14(zod@3.24.2)
-      zod-to-json-schema: 3.24.3(zod@3.24.2)
-    optionalDependencies:
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.24.2)
       zod: 3.24.2
+      zod-to-json-schema: 3.24.3(zod@3.24.2)
 
   '@ai-zen/node-fetch-event-source@2.1.4':
     dependencies:
@@ -4708,7 +4721,7 @@ snapshots:
 
   '@jsdevtools/ono@7.1.3': {}
 
-  '@langchain/community@0.3.39(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/client-bedrock-runtime@3.755.0)(@aws-sdk/credential-provider-node@3.750.0)(@browserbasehq/sdk@2.5.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.51.1)(deepmerge@4.3.1)(dotenv@16.4.7)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(zod@3.24.2))(@ibm-cloud/watsonx-ai@1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))))(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(@smithy/util-utf8@2.3.0)(axios@1.8.4(debug@4.4.0))(duck-duck-scrape@2.2.7)(fast-xml-parser@5.0.8)(google-auth-library@9.15.1)(ibm-cloud-sdk-core@5.3.2)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(playwright@1.51.1)(ws@8.18.1)':
+  '@langchain/community@0.3.39(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/client-bedrock-runtime@3.755.0)(@aws-sdk/credential-provider-node@3.750.0)(@browserbasehq/sdk@2.5.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.51.1)(deepmerge@4.3.1)(dotenv@16.4.7)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(zod@3.24.2))(@ibm-cloud/watsonx-ai@1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))))(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(@smithy/util-utf8@2.3.0)(axios@1.8.4)(duck-duck-scrape@2.2.7)(fast-xml-parser@5.0.8)(google-auth-library@9.15.1)(ibm-cloud-sdk-core@5.3.2)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(playwright@1.51.1)(ws@8.18.1)':
     dependencies:
       '@browserbasehq/stagehand': 1.14.0(@playwright/test@1.51.1)(deepmerge@4.3.1)(dotenv@16.4.7)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(zod@3.24.2)
       '@ibm-cloud/watsonx-ai': 1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))
@@ -4719,7 +4732,7 @@ snapshots:
       flat: 5.0.2
       ibm-cloud-sdk-core: 5.3.2
       js-yaml: 4.1.0
-      langchain: 0.3.20(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(axios@1.8.4(debug@4.4.0))(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(ws@8.18.1)
+      langchain: 0.3.20(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(axios@1.8.4)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(ws@8.18.1)
       langsmith: 0.3.15(openai@4.85.4(ws@8.18.1)(zod@3.24.2))
       openai: 4.85.4(ws@8.18.1)(zod@3.24.2)
       uuid: 10.0.0
@@ -5662,18 +5675,17 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  ai@4.1.63(react@19.0.0)(zod@3.24.2):
+  ai@4.3.15(react@19.0.0)(zod@3.24.2):
     dependencies:
-      '@ai-sdk/provider': 1.0.12
-      '@ai-sdk/provider-utils': 2.1.14(zod@3.24.2)
-      '@ai-sdk/react': 1.1.24(react@19.0.0)(zod@3.24.2)
-      '@ai-sdk/ui-utils': 1.1.20(zod@3.24.2)
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.24.2)
+      '@ai-sdk/react': 1.2.12(react@19.0.0)(zod@3.24.2)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.24.2)
       '@opentelemetry/api': 1.9.0
-      eventsource-parser: 3.0.0
       jsondiffpatch: 0.6.0
+      zod: 3.24.2
     optionalDependencies:
       react: 19.0.0
-      zod: 3.24.2
 
   ajv-formats@3.0.1(ajv@8.17.1):
     optionalDependencies:
@@ -5745,7 +5757,7 @@ snapshots:
 
   base64-js@1.5.1: {}
 
-  bee-agent-framework@0.0.61(4a0077e6d897fc6c4cfb256454731d9c):
+  bee-agent-framework@0.0.61(aff707d23aec9f479b6f6b971b3eb885):
     dependencies:
       '@ai-zen/node-fetch-event-source': 2.1.4
       '@opentelemetry/api': 1.9.0
@@ -5779,7 +5791,7 @@ snapshots:
       '@google-cloud/vertexai': 1.9.3
       '@grpc/grpc-js': 1.12.6
       '@grpc/proto-loader': 0.7.13
-      '@langchain/community': 0.3.39(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/client-bedrock-runtime@3.755.0)(@aws-sdk/credential-provider-node@3.750.0)(@browserbasehq/sdk@2.5.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.51.1)(deepmerge@4.3.1)(dotenv@16.4.7)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(zod@3.24.2))(@ibm-cloud/watsonx-ai@1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))))(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(@smithy/util-utf8@2.3.0)(axios@1.8.4(debug@4.4.0))(duck-duck-scrape@2.2.7)(fast-xml-parser@5.0.8)(google-auth-library@9.15.1)(ibm-cloud-sdk-core@5.3.2)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(playwright@1.51.1)(ws@8.18.1)
+      '@langchain/community': 0.3.39(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/client-bedrock-runtime@3.755.0)(@aws-sdk/credential-provider-node@3.750.0)(@browserbasehq/sdk@2.5.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.51.1)(deepmerge@4.3.1)(dotenv@16.4.7)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(zod@3.24.2))(@ibm-cloud/watsonx-ai@1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))))(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(@smithy/util-utf8@2.3.0)(axios@1.8.4)(duck-duck-scrape@2.2.7)(fast-xml-parser@5.0.8)(google-auth-library@9.15.1)(ibm-cloud-sdk-core@5.3.2)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(playwright@1.51.1)(ws@8.18.1)
       '@langchain/core': 0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))
       '@modelcontextprotocol/sdk': 1.6.0
       google-auth-library: 9.15.1
@@ -5792,18 +5804,18 @@ snapshots:
       - debug
       - encoding
 
-  bee-observe-connector@0.0.6(bee-agent-framework@0.0.61(4a0077e6d897fc6c4cfb256454731d9c)):
+  bee-observe-connector@0.0.6(bee-agent-framework@0.0.61(aff707d23aec9f479b6f6b971b3eb885)):
     dependencies:
-      bee-agent-framework: 0.0.61(4a0077e6d897fc6c4cfb256454731d9c)
+      bee-agent-framework: 0.0.61(aff707d23aec9f479b6f6b971b3eb885)
       openapi-fetch: 0.11.3
       remeda: 2.21.0
 
-  beeai-framework@0.1.10(28d790e447bc65e9719a322ab2700495):
+  beeai-framework@0.1.14(1e731d470ef7bba547a2dc577bb7fb9c):
     dependencies:
       '@ai-zen/node-fetch-event-source': 2.1.4
       '@aws-sdk/client-bedrock-runtime': 3.755.0
       '@streamparser/json': 0.0.22
-      ai: 4.1.63(react@19.0.0)(zod@3.24.2)
+      ai: 4.3.15(react@19.0.0)(zod@3.24.2)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       duck-duck-scrape: 2.2.7
@@ -5829,9 +5841,8 @@ snapshots:
       zod-to-json-schema: 3.24.3(zod@3.24.2)
     optionalDependencies:
       '@ai-sdk/openai': 1.1.14(zod@3.24.2)
-      '@i-am-bee/acp-sdk': 0.0.4
       '@ibm-cloud/watsonx-ai': 1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))
-      '@langchain/community': 0.3.39(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/client-bedrock-runtime@3.755.0)(@aws-sdk/credential-provider-node@3.750.0)(@browserbasehq/sdk@2.5.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.51.1)(deepmerge@4.3.1)(dotenv@16.4.7)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(zod@3.24.2))(@ibm-cloud/watsonx-ai@1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))))(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(@smithy/util-utf8@2.3.0)(axios@1.8.4(debug@4.4.0))(duck-duck-scrape@2.2.7)(fast-xml-parser@5.0.8)(google-auth-library@9.15.1)(ibm-cloud-sdk-core@5.3.2)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(playwright@1.51.1)(ws@8.18.1)
+      '@langchain/community': 0.3.39(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/client-bedrock-runtime@3.755.0)(@aws-sdk/credential-provider-node@3.750.0)(@browserbasehq/sdk@2.5.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.51.1)(deepmerge@4.3.1)(dotenv@16.4.7)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(zod@3.24.2))(@ibm-cloud/watsonx-ai@1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))))(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(@smithy/util-utf8@2.3.0)(axios@1.8.4)(duck-duck-scrape@2.2.7)(fast-xml-parser@5.0.8)(google-auth-library@9.15.1)(ibm-cloud-sdk-core@5.3.2)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(playwright@1.51.1)(ws@8.18.1)
       '@langchain/core': 0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))
       '@modelcontextprotocol/sdk': 1.6.0
       ibm-cloud-sdk-core: 5.3.2
@@ -6667,7 +6678,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.8.4(debug@4.4.0))
+      retry-axios: 2.6.0(axios@1.8.4)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -6857,7 +6868,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langchain@0.3.20(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(axios@1.8.4(debug@4.4.0))(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(ws@8.18.1):
+  langchain@0.3.20(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(axios@1.8.4)(openai@4.85.4(ws@8.18.1)(zod@3.24.2))(ws@8.18.1):
     dependencies:
       '@langchain/core': 0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2))
       '@langchain/openai': 0.5.2(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))(ws@8.18.1)
@@ -7469,7 +7480,7 @@ snapshots:
       onetime: 7.0.0
       signal-exit: 4.1.0
 
-  retry-axios@2.6.0(axios@1.8.4(debug@4.4.0)):
+  retry-axios@2.6.0(axios@1.8.4):
     dependencies:
       axios: 1.8.4(debug@4.4.0)
     optional: true
