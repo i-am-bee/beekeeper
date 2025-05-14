@@ -4,6 +4,8 @@ import blessed from "neo-blessed";
 import { Textarea } from "../../blessed/Textarea.js";
 import * as st from "../../config.js";
 import * as chatStyles from "../config.js";
+import { NavigationDescription } from "@/ui/controls/navigation.js";
+import { noop } from "@/utils/noop.js";
 
 type ChatInputOptions = (ParentInput | ScreenInput) & {
   onValueChange: () => void;
@@ -47,7 +49,7 @@ export class ChatInput extends BaseMonitor {
         width: "100%-12", // Make room for abort button
         height: 5,
         left: 0,
-        top: "100%-5",
+        top: "100%-6",
         ...chatStyles.getInputBoxStyle(),
         scrollbar: st.UIConfig.scrollbar,
       }),
@@ -63,7 +65,7 @@ export class ChatInput extends BaseMonitor {
         width: 10,
         height: 3,
         left: "100%-11",
-        top: "100%-4",
+        top: "100%-5",
         ...chatStyles.getSendButtonStyle(true),
         tags: true,
         mouse: true,
@@ -79,13 +81,79 @@ export class ChatInput extends BaseMonitor {
         width: 10,
         height: 3,
         left: "50%-5",
-        top: "100%-4",
+        top: "100%-5",
         ...chatStyles.getAbortButtonStyle(),
         tags: true,
         mouse: true,
         hidden: true,
       }),
       parent: this.parent,
+    });
+
+    this.setupControls();
+  }
+
+  private setupControls() {
+    this.controlsManager.updateKeyActions(this._inputBox.id, {
+      kind: "exclusive",
+      actions: [
+        {
+          key: "left",
+          action: {
+            description: NavigationDescription.MOVE_LEFT_RIGHT,
+            listener: noop,
+          },
+        },
+        {
+          key: "right",
+          action: {
+            description: NavigationDescription.MOVE_LEFT_RIGHT,
+            listener: noop,
+          },
+        },
+        {
+          key: "up",
+          action: {
+            description: NavigationDescription.MOVE_UP_DOWN,
+            listener: noop,
+          },
+        },
+        {
+          key: "down",
+          action: {
+            description: NavigationDescription.MOVE_UP_DOWN,
+            listener: noop,
+          },
+        },
+        {
+          key: "S-left",
+          action: {
+            description: NavigationDescription.MOVE_PREV_NEXT_WORD,
+            listener: noop,
+          },
+        },
+        {
+          key: "S-right",
+          action: {
+            description: NavigationDescription.MOVE_PREV_NEXT_WORD,
+            listener: noop,
+          },
+        },
+        {
+          key: "home",
+          action: {
+            description: NavigationDescription.MOVE_START_END_LINE,
+            listener: noop,
+          },
+        },
+        {
+          key: "end",
+          action: {
+            description: NavigationDescription.MOVE_START_END_LINE,
+            listener: noop,
+          },
+        },
+      ],
     });
   }
 

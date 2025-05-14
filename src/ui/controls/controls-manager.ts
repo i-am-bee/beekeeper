@@ -3,6 +3,7 @@ import { NavigationDirection, NavigationTransitions } from "./navigation.js";
 import { createKeyBindings, KeyActions, KeyBindings } from "./key-bindings.js";
 import { updateDeepPartialObject } from "@/utils/objects.js";
 import { clone, isNonNullish } from "remeda";
+import EventEmitter from "events";
 
 export interface BaseControllable<TElement, TParent> {
   id: string;
@@ -55,11 +56,38 @@ export type AddContainerInput = Pick<
   "kind" | "name" | "element" | "parent" | "onFocus" | "onBlur"
 >;
 
+export interface ControlsManagerEvents {
+  "focus:change": (focused?: Controllable) => void;
+}
+
 export class ControlsManager {
   private _screen: ControllableScreen;
   private elements = new Map<string, Controllable>();
   private _focused?: Controllable;
   private _keyBindings?: KeyBindings;
+  private emitter = new EventEmitter();
+
+  // Events emitting
+  public on<K extends keyof ControlsManagerEvents>(
+    event: K,
+    listener: ControlsManagerEvents[K],
+  ): typeof this.emitter {
+    return this.emitter.on(event, listener);
+  }
+
+  public off<K extends keyof ControlsManagerEvents>(
+    event: K,
+    listener: ControlsManagerEvents[K],
+  ): typeof this.emitter {
+    return this.emitter.off(event, listener);
+  }
+
+  public emit<K extends keyof ControlsManagerEvents>(
+    event: K,
+    ...args: Parameters<ControlsManagerEvents[K]>
+  ): boolean {
+    return this.emitter.emit(event, ...args);
+  }
 
   public get screen() {
     return this._screen;
@@ -70,6 +98,10 @@ export class ControlsManager {
       throw new Error(`Focused can't be empty`);
     }
     return this._focused;
+  }
+
+  public get keyBindings() {
+    return this._keyBindings;
   }
 
   constructor(
@@ -181,6 +213,8 @@ export class ControlsManager {
       (this._focused.element as blessed.Widgets.BlessedElement).focus();
     }
 
+    this.onFocusChange();
+
     if (shouldRender) {
       this.screen.element.render();
     }
@@ -251,5 +285,9 @@ export class ControlsManager {
     } while (el);
 
     return result.reverse();
+  }
+
+  private onFocusChange() {
+    this.emit("focus:change", this._focused);
   }
 }

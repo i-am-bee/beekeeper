@@ -5,6 +5,10 @@ import * as chatStyles from "../config.js";
 import { ChatFilterValues } from "../filter/filter.js";
 import { MessageTypeEnum } from "../runtime-handler.js";
 import clipboardy from "clipboardy";
+import {
+  NavigationDescription,
+  NavigationDescription,
+} from "@/ui/controls/navigation.js";
 
 export interface MessageValue {
   role: string;
@@ -45,7 +49,7 @@ export class Messages extends BaseMonitor {
       element: blessed.box({
         parent: this.parent.element,
         width: "100%",
-        height: "100%-12", // Adjusted for filter boxes at top and input at bottom
+        height: "100%-13", // Adjusted for filter boxes at top and input and help at bottom
         left: 0,
         top: 7, // Space for type filter box
         tags: true,
@@ -73,11 +77,10 @@ export class Messages extends BaseMonitor {
       kind: "override",
       actions: [
         {
-          key: "down",
+          key: "escape",
           action: {
-            description: "Scroll down one line",
+            description: NavigationDescription.OUT,
             listener: () => {
-              // The scroll is done automatically, we just need to reset the highlighted message
               this.resetCurrentMessageIndex();
             },
           },
@@ -85,7 +88,7 @@ export class Messages extends BaseMonitor {
         {
           key: "up",
           action: {
-            description: "Scroll up one line",
+            description: NavigationDescription.MOVE_UP_DOWN,
             listener: () => {
               // The scroll is done automatically, we just need to reset the highlighted message
               this.resetCurrentMessageIndex();
@@ -93,22 +96,19 @@ export class Messages extends BaseMonitor {
           },
         },
         {
-          key: "pagedown",
+          key: "down",
           action: {
-            description: "Scroll down one page",
+            description: NavigationDescription.MOVE_UP_DOWN,
             listener: () => {
+              // The scroll is done automatically, we just need to reset the highlighted message
               this.resetCurrentMessageIndex();
-
-              const height = this.getBoxHeight();
-
-              this._container.element.scroll(height);
             },
           },
         },
         {
           key: "pageup",
           action: {
-            description: "Scroll up one page",
+            description: NavigationDescription.MOVE_UP_DOWN_PAGE,
             listener: () => {
               this.resetCurrentMessageIndex();
 
@@ -119,9 +119,22 @@ export class Messages extends BaseMonitor {
           },
         },
         {
+          key: "pagedown",
+          action: {
+            description: NavigationDescription.MOVE_UP_DOWN_PAGE,
+            listener: () => {
+              this.resetCurrentMessageIndex();
+
+              const height = this.getBoxHeight();
+
+              this._container.element.scroll(height);
+            },
+          },
+        },
+        {
           key: "home",
           action: {
-            description: "Scroll to the top",
+            description: NavigationDescription.MOVE_START_END,
             listener: () => {
               this.resetCurrentMessageIndex();
 
@@ -134,7 +147,7 @@ export class Messages extends BaseMonitor {
         {
           key: "end",
           action: {
-            description: "Scroll to the bottom",
+            description: NavigationDescription.MOVE_START_END,
             listener: () => {
               this.resetCurrentMessageIndex();
 
@@ -147,7 +160,7 @@ export class Messages extends BaseMonitor {
         {
           key: "tab",
           action: {
-            description: "Scroll to the next message",
+            description: NavigationDescription.HIGHLIGHT_NEXT_PREV,
             listener: () => {
               if (!this.checkCurrentMessageExists()) {
                 const newIndex = this._currentMessageIndex + 1;
@@ -165,7 +178,7 @@ export class Messages extends BaseMonitor {
         {
           key: "S-tab",
           action: {
-            description: "Scroll to the previous message",
+            description: NavigationDescription.HIGHLIGHT_NEXT_PREV,
             listener: () => {
               if (!this.checkCurrentMessageExists()) {
                 const newIndex = this._currentMessageIndex - 1;
@@ -186,7 +199,7 @@ export class Messages extends BaseMonitor {
         {
           key: "S-c",
           action: {
-            description: "Copy current message",
+            description: NavigationDescription.COPY_MESSAGE,
             listener: () => {
               const msg = this._value[this._currentMessageIndex];
 
@@ -199,15 +212,6 @@ export class Messages extends BaseMonitor {
                   ),
                 );
               }
-            },
-          },
-        },
-        {
-          key: "escape",
-          action: {
-            description: "Exit from the message",
-            listener: () => {
-              this.resetCurrentMessageIndex();
             },
           },
         },

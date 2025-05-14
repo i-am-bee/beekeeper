@@ -7,7 +7,10 @@ import {
   ControlsManager,
 } from "../../../src/ui/controls/controls-manager.js";
 import { CloseDialog } from "../../../src/ui/shared/close-dialog.js";
-import { NavigationDirection } from "../../../src/ui/controls/navigation.js";
+import {
+  NavigationDescription,
+  NavigationDirection,
+} from "../../../src/ui/controls/navigation.js";
 
 class Monitor extends BaseMonitor {
   private container: ControllableContainer;
@@ -161,54 +164,18 @@ class Monitor extends BaseMonitor {
       kind: "exclusive",
       actions: [
         {
-          key: "left",
+          key: "C-c",
           action: {
-            description: "Move to the left element",
+            description: NavigationDescription.EXIT_APP,
             listener: () => {
-              this.controlsManager.navigate(NavigationDirection.LEFT);
-            },
-          },
-        },
-        {
-          key: "right",
-          action: {
-            description: "Move to the right element",
-            listener: () => {
-              this.controlsManager.navigate(NavigationDirection.RIGHT);
-            },
-          },
-        },
-        {
-          key: "up",
-          action: {
-            description: "Move to the up element",
-            listener: () => {
-              this.controlsManager.navigate(NavigationDirection.UP);
-            },
-          },
-        },
-        {
-          key: "down",
-          action: {
-            description: "Move to the down element",
-            listener: () => {
-              this.controlsManager.navigate(NavigationDirection.DOWN);
-            },
-          },
-        },
-        {
-          key: "tab",
-          action: {
-            description: "Move to the next element",
-            listener: () => {
-              this.controlsManager.navigate(NavigationDirection.NEXT);
+              this.closeDialog.show(this.controlsManager.focused.id);
             },
           },
         },
         {
           key: "enter",
           action: {
-            description: "Enter into the element",
+            description: NavigationDescription.IN_OUT,
             listener: () => {
               this.controlsManager.navigate(NavigationDirection.IN);
             },
@@ -217,34 +184,70 @@ class Monitor extends BaseMonitor {
         {
           key: "escape",
           action: {
-            description: "Exit from the element",
+            description: NavigationDescription.IN_OUT,
             listener: () => {
               this.controlsManager.navigate(NavigationDirection.OUT);
             },
           },
         },
         {
+          key: "left",
+          action: {
+            description: NavigationDescription.LEFT_RIGHT,
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.LEFT);
+            },
+          },
+        },
+        {
+          key: "right",
+          action: {
+            description: NavigationDescription.LEFT_RIGHT,
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.RIGHT);
+            },
+          },
+        },
+        {
+          key: "up",
+          action: {
+            description: NavigationDescription.UP_DOWN,
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.UP);
+            },
+          },
+        },
+        {
+          key: "down",
+          action: {
+            description: NavigationDescription.UP_DOWN,
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.DOWN);
+            },
+          },
+        },
+        {
+          key: "tab",
+          action: {
+            description: NavigationDescription.NEXT_PREV,
+            listener: () => {
+              this.controlsManager.navigate(NavigationDirection.NEXT);
+            },
+          },
+        },
+        {
           key: "S-tab",
           action: {
-            description: "Move to the previous element",
+            description: NavigationDescription.NEXT_PREV,
             listener: () => {
               this.controlsManager.navigate(NavigationDirection.PREVIOUS);
             },
           },
         },
         {
-          key: "C-c",
-          action: {
-            description: "Quit",
-            listener: () => {
-              this.closeDialog.show(this.controlsManager.focused.id);
-            },
-          },
-        },
-        {
           key: "c",
           action: {
-            description: "Select container",
+            description: NavigationDescription.SELECT_CONTAINER,
             listener: () => {
               this.controlsManager.focus(this.container.id);
             },
@@ -253,7 +256,7 @@ class Monitor extends BaseMonitor {
         {
           key: "a",
           action: {
-            description: "Select left column",
+            description: NavigationDescription.SELECT_COLUMN,
             listener: () => {
               this.controlsManager.focus(this.leftColumn.id);
             },
@@ -262,7 +265,7 @@ class Monitor extends BaseMonitor {
         {
           key: "s",
           action: {
-            description: "Select right column",
+            description: NavigationDescription.SELECT_COLUMN,
             listener: () => {
               this.controlsManager.focus(this.rightColumn.id);
             },
@@ -271,7 +274,7 @@ class Monitor extends BaseMonitor {
         {
           key: "i",
           action: {
-            description: "Select input",
+            description: NavigationDescription.SELECT_INPUT,
             listener: () => {
               this.controlsManager.focus(this.textInput.id);
             },
@@ -288,7 +291,7 @@ class Monitor extends BaseMonitor {
           {
             key: "escape",
             action: {
-              description: "Up to parent focus",
+              description: NavigationDescription.ESCAPE_INPUT_MODE,
               listener: textInputControlMode,
             },
           },
@@ -305,7 +308,7 @@ class Monitor extends BaseMonitor {
           {
             key: "enter",
             action: {
-              description: "Enter input mode",
+              description: NavigationDescription.ENTER_INPUT_MODE,
               listener: textInputEditMode,
             },
           },

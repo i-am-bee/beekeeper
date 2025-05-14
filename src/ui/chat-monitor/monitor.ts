@@ -7,6 +7,7 @@ import { ChatFilter } from "./filter/filter.js";
 import { ChatInput } from "./input/input.js";
 import { Messages } from "./messages/messages.js";
 import { ChatRuntimeHandler, MessageTypeEnum } from "./runtime-handler.js";
+import { HelpBar } from "../shared/help-bar.js";
 
 export class ChatMonitor extends BaseMonitor {
   private chatBox: ControllableContainer;
@@ -14,6 +15,7 @@ export class ChatMonitor extends BaseMonitor {
   private chatInput: ChatInput;
   private chatFilterBox: ControllableContainer;
   private chatFilter: ChatFilter;
+  private helpBar: HelpBar;
   private closeDialog: CloseDialog;
   private abortCheckInterval: NodeJS.Timeout | null = null;
   private onAbort?: () => void;
@@ -86,6 +88,11 @@ export class ChatMonitor extends BaseMonitor {
       parent: this.chatBox,
       controlsManager: this.controlsManager,
       onValueChange: () => this.setProcessingState(false),
+    });
+
+    this.helpBar = new HelpBar({
+      parent: this.chatBox,
+      controlsManager: this.controlsManager,
     });
 
     // Initialize the close dialog

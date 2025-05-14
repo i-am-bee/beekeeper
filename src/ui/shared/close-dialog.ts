@@ -5,7 +5,10 @@ import {
   ControllableScreen,
   ControlsManager,
 } from "../controls/controls-manager.js";
-import { NavigationDirection } from "../controls/navigation.js";
+import {
+  NavigationDescription,
+  NavigationDirection,
+} from "../controls/navigation.js";
 import { UIColors } from "../colors.js";
 
 export class CloseDialog {
@@ -157,7 +160,7 @@ export class CloseDialog {
         {
           key: ["C-c", "escape"],
           action: {
-            description: "Cancel",
+            description: NavigationDescription.CANCEL,
             listener: () => {
               this.onCancel();
             },
@@ -166,7 +169,7 @@ export class CloseDialog {
         {
           key: "left",
           action: {
-            description: "Move to the element on the left",
+            description: NavigationDescription.LEFT_RIGHT,
             listener: () => {
               this.controlsManager.navigate(NavigationDirection.LEFT);
             },
@@ -175,7 +178,7 @@ export class CloseDialog {
         {
           key: "right",
           action: {
-            description: "Move to the element on the right",
+            description: NavigationDescription.LEFT_RIGHT,
             listener: () => {
               this.controlsManager.navigate(NavigationDirection.RIGHT);
             },
@@ -184,7 +187,7 @@ export class CloseDialog {
         {
           key: "tab",
           action: {
-            description: "Move to the next element",
+            description: NavigationDescription.NEXT_PREV,
             listener: () => {
               this.controlsManager.navigate(NavigationDirection.NEXT);
             },
@@ -193,7 +196,7 @@ export class CloseDialog {
         {
           key: "S-tab",
           action: {
-            description: "Move to the previous element",
+            description: NavigationDescription.NEXT_PREV,
             listener: () => {
               this.controlsManager.navigate(NavigationDirection.PREVIOUS);
             },
@@ -208,7 +211,7 @@ export class CloseDialog {
         {
           key: "enter",
           action: {
-            description: "Cancel",
+            description: NavigationDescription.CANCEL,
             listener: () => {
               this.onCancel();
             },
@@ -223,7 +226,7 @@ export class CloseDialog {
         {
           key: "enter",
           action: {
-            description: "Exit app",
+            description: NavigationDescription.EXIT_APP,
             listener: () => {
               this.onConfirm();
             },
