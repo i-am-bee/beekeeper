@@ -23,7 +23,7 @@ import { sortByObjectDateStringProperty } from "@/utils/time.js";
 import blessed from "neo-blessed";
 import { join } from "path";
 import { clone, isNonNull } from "remeda";
-import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
+import { MonitorWithStatus } from "../base/monitor-with-status.js";
 import { ParentInput, ScreenInput } from "../base/monitor.js";
 import * as st from "../config.js";
 import { Logger } from "beeai-framework";
@@ -46,7 +46,7 @@ const TAB_LABELS = {
   [TaskRunDetailTab.HISTORY]: "History",
 };
 
-export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
+export class TaskMonitor extends MonitorWithStatus<TaskStateBuilder> {
   private taskPoolList: blessed.Widgets.ListElement;
   private taskPoolListItemsData: {
     taskTypeId: TaskTypeId | TaskKindId;

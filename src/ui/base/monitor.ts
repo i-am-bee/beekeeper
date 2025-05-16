@@ -17,7 +17,7 @@ export interface ScreenInput {
   title: string;
 }
 
-export abstract class BaseMonitor {
+export abstract class ContainerComponent {
   protected logger: Logger;
   protected controlsManager: ControlsManager;
   protected screen: ControllableScreen;

@@ -22,7 +22,7 @@ import { TaskRunHistoryEntry } from "@/tasks/manager/dto.js";
 import blessed from "neo-blessed";
 import { join } from "path";
 import { clone } from "remeda";
-import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
+import { MonitorWithStatus } from "../base/monitor-with-status.js";
 import { ParentInput, ScreenInput } from "../base/monitor.js";
 import * as st from "../config.js";
 import { Logger } from "beeai-framework";
@@ -45,7 +45,7 @@ const TAB_LABELS = {
   [AgentDetailTab.HISTORY]: "History",
 };
 
-export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
+export class AgentMonitor extends MonitorWithStatus<AgentStateBuilder> {
   private agentPoolList: blessed.Widgets.ListElement;
   private agentPoolListItemsData: {
     agentTypeId: AgentTypeId | AgentKindId;

@@ -1,6 +1,6 @@
 import { Runtime } from "@/runtime/runtime.js";
 import blessed from "neo-blessed";
-import { BaseMonitor, ParentInput, ScreenInput } from "../base/monitor.js";
+import { ContainerComponent, ParentInput, ScreenInput } from "../base/monitor.js";
 import { ControllableContainer } from "../controls/controls-manager.js";
 import { CloseDialog } from "../shared/close-dialog.js";
 import { ChatFilter } from "./filter/filter.js";
@@ -15,7 +15,7 @@ import {
 import { Logger } from "beeai-framework";
 import { keyActionListenerFactory } from "../controls/key-bindings.js";
 
-export class ChatMonitor extends BaseMonitor {
+export class ChatMonitor extends ContainerComponent {
   private chatBox: ControllableContainer;
   private messages: Messages;
   private chatInput: ChatInput;

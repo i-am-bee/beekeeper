@@ -152,7 +152,6 @@ export class ControlsManager {
     });
 
     this.elements.set(this._screen.id, this._screen);
-    this.focus(this._screen.id);
   }
 
   add(input: AddContainerInput): ControllableContainer;
@@ -163,6 +162,7 @@ export class ControlsManager {
     const parent = this.getContainer(input.parent.id);
     let element;
     const id = this.getId(input.name, parent.id);
+    input.element.name = id;
     switch (input.kind) {
       case "element":
         element = {
@@ -222,6 +222,11 @@ export class ControlsManager {
   focus(id: string, shouldRender = true) {
     this.logger.debug(`focus(${id})`);
 
+    if (id === this._screen.id) {
+      this.logger.warn(`Screen can't be focused, skip!`)
+      return;
+    }
+
     const path = this.getPath(id, this._focused?.id);
     this.logger.debug(
       path.map((s) => ({ direction: s.direction, el: s.el.id })),
@@ -231,18 +236,12 @@ export class ControlsManager {
       this.unsetKeyBindings(this._focused, this._keyBindings);
     }
 
-    const pathFromRoot = this.getPath(id);
-    const keyBindings = createKeyBindings(
-      pathFromRoot.map((it) => it.el.keyActions).filter(isNonNullish),
-    );
     this._focused = this.getElement(id);
-    this._keyBindings = keyBindings;
-    if (this._keyBindings) {
-      this.setKeyBindings(this._focused, this._keyBindings);
-    }
+    this.setKeyBindings(this._focused);
 
-    if (this._focused && this._focused.element !== this.screen.element) {
-      (this._focused.element as blessed.Widgets.BlessedElement).focus();
+    if (this._focused.element !== this.screen.element) {
+      const element = this._focused.element as blessed.Widgets.BlessedElement;
+      element.focus();
     }
 
     this.onFocusChange();
@@ -269,11 +268,17 @@ export class ControlsManager {
     }
   }
 
-  private setKeyBindings(target: Controllable, keyBindings: KeyBindings) {
+  private setKeyBindings(target: Controllable) {
+    const pathFromRoot = this.getPath(target.id);
+    const keyBindings = createKeyBindings(
+      pathFromRoot.map((it) => it.el.keyActions).filter(isNonNullish),
+    );
+
     this.logger.debug(
       Array.from(keyBindings.keys.entries()),
       `setKeyBindings(${target.id})`,
     );
+
     for (const entry of keyBindings.keys.entries()) {
       const [key, action] = entry;
       const listenerKey = `${target.id}[${key}]`;
@@ -281,7 +286,7 @@ export class ControlsManager {
         throw new Error(`Listener for \`${listenerKey}\` exists already`);
       }
       const listener = action.listener(ControlsManager.lastKeypressEventId);
-      this.keyActionListeners.set(`${target.id}[${key}]`, listener);
+      this.keyActionListeners.set(listenerKey, listener);
       target.element.key(key, listener);
     }
     this._keyBindings = keyBindings;

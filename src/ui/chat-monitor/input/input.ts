@@ -1,4 +1,4 @@
-import { BaseMonitor, ParentInput, ScreenInput } from "@/ui/base/monitor.js";
+import { ContainerComponent, ParentInput, ScreenInput } from "@/ui/base/monitor.js";
 import { ControllableElement } from "@/ui/controls/controls-manager.js";
 import blessed from "neo-blessed";
 import { Textarea } from "../../blessed/Textarea.js";
@@ -13,7 +13,7 @@ type ChatInputOptions = (ParentInput | ScreenInput) & {
   onValueChange: () => void;
 };
 
-export class ChatInput extends BaseMonitor {
+export class ChatInput extends ContainerComponent {
   private _inputBox: ControllableElement;
   private _sendButton: ControllableElement;
   private _abortButton: ControllableElement;

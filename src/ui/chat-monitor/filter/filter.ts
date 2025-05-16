@@ -1,5 +1,9 @@
 import EventEmitter from "events";
-import { BaseMonitor, ParentInput, ScreenInput } from "../../base/monitor.js";
+import {
+  ContainerComponent,
+  ParentInput,
+  ScreenInput,
+} from "../../base/monitor.js";
 import { clone } from "remeda";
 import {
   MessageTypeFilter,
@@ -7,6 +11,7 @@ import {
 } from "./message-type-filter.js";
 import { RoleFilter, RoleFilterValues } from "./role-filter.js";
 import { Logger } from "beeai-framework";
+import { MessageTypeEnum } from "../runtime-handler.js";
 
 export type ChatFilterValues = MessageTypeFilterValues & RoleFilterValues;
 
@@ -16,7 +21,7 @@ interface ChatFilterEvents {
 
 export const EXPANSE_HEIGHT = 18;
 
-export class ChatFilter extends BaseMonitor {
+export class ChatFilter extends ContainerComponent {
   private messageTypeFilter: MessageTypeFilter;
   private roleFilter: RoleFilter;
   private emitter = new EventEmitter();
@@ -77,6 +82,7 @@ export class ChatFilter extends BaseMonitor {
   private setupEventHandlers() {
     this.messageTypeFilter.on("filter:change", this.onFilterChange.bind(this));
     this.roleFilter.on("filter:change", this.onFilterChange.bind(this));
+    this.roleFilter.on("filter:blur", this.onFilterBlur.bind(this));
 
     this.messageTypeFilter.on("filter:expand", this.showRoleFilter.bind(this));
     this.messageTypeFilter.on(
@@ -89,13 +95,24 @@ export class ChatFilter extends BaseMonitor {
     this.controlsManager.updateNavigation(
       this.messageTypeFilter.expandButton.id,
       {
-        in: this.roleFilter.container.id,
+        down: this.roleFilter.selectAllRolesCheckbox.id,
+        downEffect: () => {
+          this.messageTypeFilter.expand();
+        },
+        in: this.roleFilter.selectAllRolesCheckbox.id,
+        inEffect: () => {
+          this.messageTypeFilter.expand();
+        },
+        right: this.roleFilter.selectAllRolesCheckbox.id,
+        rightEffect: () => {
+          this.messageTypeFilter.expand();
+        },
+        next: this.roleFilter.selectAllRolesCheckbox.id,
+        nextEffect: () => {
+          this.messageTypeFilter.expand();
+        },
       },
     );
-
-    this.controlsManager.updateNavigation(this.roleFilter.container.id, {
-      out: this.messageTypeFilter.expandButton.id,
-    });
 
     // Navigation
     if (shouldRender) {
@@ -103,27 +120,29 @@ export class ChatFilter extends BaseMonitor {
     }
   }
 
-  // focus(type: "types" | "roles") {
-  //   switch (type) {
-  //     case "types":
-  //       this.controlsManager.focus(this._container.id);
-  //       break;
-  //     case "roles":
-  //       if (!this.isRoleFilterExpanded) {
-  //         this.toggleRoleFilter();
-  //       }
-  //       this.controlsManager.focus(this.selectAllRolesCheckbox.id);
-  //       break;
-  //   }
-  // }
-
   addRole(role: string) {
     this.roleFilter.addRole(role);
+  }
+
+  focusMessageFilters() {
+    this.controlsManager.focus(
+      this.messageTypeFilter.getCheckbox(MessageTypeEnum.PROGRESS).id,
+    );
+  }
+
+  focusRoleFilters() {
+    this.messageTypeFilter.expand();
+    this.controlsManager.focus(this.roleFilter.selectAllRolesCheckbox.id);
   }
 
   private onFilterChange() {
     this._value = this.createChatFilterValue();
     this.emit("filter:change", this._value);
+  }
+
+  private onFilterBlur() {
+    this.messageTypeFilter.collapse();
+    this.controlsManager.focus(this.messageTypeFilter.expandButton.id);
   }
 
   private createChatFilterValue() {
@@ -134,23 +153,11 @@ export class ChatFilter extends BaseMonitor {
   }
 
   private showRoleFilter() {
-    this.controlsManager.updateNavigation(
-      this.messageTypeFilter.expandButton.id,
-      {
-        in: undefined,
-      },
-    );
     this.roleFilter.container.element.show();
     this.screen.element.render();
   }
 
   private hideRoleFilter() {
-    this.controlsManager.updateNavigation(
-      this.messageTypeFilter.expandButton.id,
-      {
-        in: this.roleFilter.container.id,
-      },
-    );
     this.roleFilter.container.element.hide();
     this.screen.element.render();
   }

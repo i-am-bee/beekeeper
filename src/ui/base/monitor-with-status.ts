@@ -1,6 +1,6 @@
 import { BaseStateBuilder } from "@/base/state/base-state-builder.js";
 import { StatusBar } from "../shared/status-bar.js";
-import { BaseMonitor, ParentInput, ScreenInput } from "./monitor.js";
+import { ContainerComponent, ParentInput, ScreenInput } from "./monitor.js";
 import blessed from "neo-blessed";
 import { ControllableContainer } from "../controls/controls-manager.js";
 import { Logger } from "beeai-framework";
@@ -11,9 +11,9 @@ export interface StatusBarOptions {
   updateIntervalMs?: number;
 }
 
-export abstract class BaseMonitorWithStatus<
+export abstract class MonitorWithStatus<
   TStateBuilder extends BaseStateBuilder<any, any>,
-> extends BaseMonitor {
+> extends ContainerComponent {
   protected contentBox: ControllableContainer;
   protected statusBar: StatusBar;
   protected _stateBuilder?: TStateBuilder;

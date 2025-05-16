@@ -1,12 +1,12 @@
 import blessed from "neo-blessed";
 import { TaskMonitor } from "./task-monitor/monitor.js";
 import { AgentMonitor } from "./agent-monitor/monitor.js";
-import { BaseMonitor } from "./base/monitor.js";
+import { ContainerComponent } from "./base/monitor.js";
 import { CloseDialog } from "./shared/close-dialog.js";
 import { ControllableContainer } from "./controls/controls-manager.js";
 import { Logger } from "beeai-framework";
 
-export class Monitor extends BaseMonitor {
+export class Monitor extends ContainerComponent {
   private agentMonitorContainer: ControllableContainer;
   private agentMonitor: AgentMonitor;
   private taskMonitor: TaskMonitor;

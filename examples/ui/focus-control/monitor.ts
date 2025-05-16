@@ -1,5 +1,5 @@
 import blessed from "neo-blessed";
-import { BaseMonitor } from "../../../src/ui/base/monitor.js";
+import { ContainerComponent } from "../../../src/ui/base/monitor.js";
 import { UIColors } from "../../../src/ui/colors.js";
 import {
   ControllableContainer,
@@ -15,7 +15,7 @@ import { Logger } from "beeai-framework";
 import { getLogger } from "../helpers/log.js";
 import { keyActionListenerFactory } from "../../../src/ui/controls/key-bindings.js";
 
-class Monitor extends BaseMonitor {
+class Monitor extends ContainerComponent {
   private container: ControllableContainer;
   private leftColumn: ControllableContainer;
   private textInput: ControllableElement;

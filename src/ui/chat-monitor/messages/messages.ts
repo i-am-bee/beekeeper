@@ -1,4 +1,4 @@
-import { BaseMonitor, ParentInput, ScreenInput } from "@/ui/base/monitor.js";
+import { ContainerComponent, ParentInput, ScreenInput } from "@/ui/base/monitor.js";
 import { ControllableContainer } from "@/ui/controls/controls-manager.js";
 import blessed from "neo-blessed";
 import * as chatStyles from "../config.js";
@@ -20,7 +20,7 @@ type MessagesOptions = (ParentInput | ScreenInput) & {
   getChatFilters: () => ChatFilterValues;
 };
 
-export class Messages extends BaseMonitor {
+export class Messages extends ContainerComponent {
   private _container: ControllableContainer;
   private _value: MessageValue[] = [];
   private _messageStartIndexes: number[] = [];

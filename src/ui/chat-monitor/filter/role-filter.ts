@@ -1,5 +1,9 @@
 import blessed from "neo-blessed";
-import { BaseMonitor, ParentInput, ScreenInput } from "../../base/monitor.js";
+import {
+  ContainerComponent,
+  ParentInput,
+  ScreenInput,
+} from "../../base/monitor.js";
 import {
   ControllableContainer,
   ControllableElement,
@@ -16,9 +20,10 @@ export interface RoleFilterValues {
 
 export interface RoleFilterEvents {
   "filter:change": (filter: RoleFilterValues) => void;
+  "filter:blur": () => void;
 }
 
-export class RoleFilter extends BaseMonitor {
+export class RoleFilter extends ContainerComponent {
   static readonly DEFAULT_HEIGHT = 7;
   static readonly MAX_ROWS = 4;
   static readonly COL_WIDTH = 40;
@@ -166,13 +171,11 @@ export class RoleFilter extends BaseMonitor {
 
   private setupControls(shouldRender = true) {
     // Navigation
-    this.controlsManager.updateNavigation(this.container.id, {
-      out: this.parent.id,
-      in: this._selectAllRolesCheckbox.id,
-    });
-
     this.controlsManager.updateNavigation(this._selectAllRolesCheckbox.id, {
-      out: this.container.id,
+      out: undefined,
+      outEffect: () => this.onBlur(),
+      previousEffect: () => this.onBlur(),
+      upEffect: () => this.onBlur(),
     });
 
     if (shouldRender) {
@@ -221,24 +224,29 @@ export class RoleFilter extends BaseMonitor {
     const lastRole = this.knownRoles.at(-1);
     const lastCheckbox = lastRole ? this.roleCheckboxes[lastRole] : undefined;
     this.roleCheckboxes[role] = currentCheckbox;
+    const shared = {
+      outEffect: () => this.onBlur(),
+    };
 
     if (lastCheckbox) {
       this.controlsManager.updateNavigation(lastCheckbox.id, {
+        ...shared,
         next: currentCheckbox.id,
       });
 
       this.controlsManager.updateNavigation(currentCheckbox.id, {
+        ...shared,
         previous: lastCheckbox.id,
-        out: this.container.id,
       });
     } else {
       this.controlsManager.updateNavigation(this._selectAllRolesCheckbox.id, {
+        ...shared,
         next: currentCheckbox.id,
       });
 
       this.controlsManager.updateNavigation(currentCheckbox.id, {
+        ...shared,
         previous: this._selectAllRolesCheckbox.id,
-        out: this.container.id,
       });
     }
 
@@ -248,10 +256,12 @@ export class RoleFilter extends BaseMonitor {
         : undefined;
     if (leftCheckbox) {
       this.controlsManager.updateNavigation(leftCheckbox.id, {
+        ...shared,
         right: currentCheckbox.id,
       });
 
       this.controlsManager.updateNavigation(currentCheckbox.id, {
+        ...shared,
         left: leftCheckbox.id,
       });
     }
@@ -265,21 +275,25 @@ export class RoleFilter extends BaseMonitor {
 
     if (upCheckbox) {
       this.controlsManager.updateNavigation(upCheckbox.id, {
+        ...shared,
         down: currentCheckbox.id,
       });
 
       this.controlsManager.updateNavigation(currentCheckbox.id, {
+        ...shared,
         up: upCheckbox.id,
       });
     }
 
     if (row === 0) {
       this.controlsManager.updateNavigation(currentCheckbox.id, {
+        ...shared,
         up: this._selectAllRolesCheckbox.id,
       });
 
       if (col === 0) {
         this.controlsManager.updateNavigation(this._selectAllRolesCheckbox.id, {
+          ...shared,
           down: currentCheckbox.id,
         });
       }
@@ -341,6 +355,10 @@ export class RoleFilter extends BaseMonitor {
     return {
       roles,
     } satisfies RoleFilterValues;
+  }
+
+  private onBlur() {
+    this.emit("filter:blur");
   }
 
   reset(shouldRender = true) {

@@ -1,6 +1,10 @@
 import blessed from "neo-blessed";
 import EventEmitter from "events";
-import { BaseMonitor, ParentInput, ScreenInput } from "../../base/monitor.js";
+import {
+  ContainerComponent,
+  ParentInput,
+  ScreenInput,
+} from "../../base/monitor.js";
 import {
   ControllableContainer,
   ControllableElement,
@@ -21,10 +25,10 @@ export interface MessageTypeFilterEvents {
   "filter:collapse": () => void;
 }
 
-export class MessageTypeFilter extends BaseMonitor {
+export class MessageTypeFilter extends ContainerComponent {
   private _container: ControllableContainer;
   private _expandButton: ControllableElement;
-  private typeCheckboxes: Record<string, ControllableElement> = {};
+  private _typeCheckboxes: Record<string, ControllableElement> = {};
   private _isExpanded = false;
   private emitter = new EventEmitter();
   private _value: MessageTypeFilterValues = { messageTypes: [] };
@@ -75,6 +79,10 @@ export class MessageTypeFilter extends BaseMonitor {
 
   get value() {
     return this._value;
+  }
+
+  getCheckbox(type: MessageTypeEnum) {
+    return this._typeCheckboxes[type];
   }
 
   constructor(arg: ParentInput | ScreenInput, logger: Logger) {
@@ -172,50 +180,55 @@ export class MessageTypeFilter extends BaseMonitor {
       in: this._container.id,
     });
     this.controlsManager.updateNavigation(this._container.id, {
-      in: this.typeCheckboxes[MessageTypeEnum.PROGRESS].id,
+      in: this._typeCheckboxes[MessageTypeEnum.PROGRESS].id,
       out: this.parent.id,
     });
     this.controlsManager.updateNavigation(
-      this.typeCheckboxes[MessageTypeEnum.PROGRESS].id,
+      this._typeCheckboxes[MessageTypeEnum.PROGRESS].id,
       {
-        right: this.typeCheckboxes[MessageTypeEnum.SYSTEM].id,
-        next: this.typeCheckboxes[MessageTypeEnum.SYSTEM].id,
+        right: this._typeCheckboxes[MessageTypeEnum.SYSTEM].id,
+        next: this._typeCheckboxes[MessageTypeEnum.SYSTEM].id,
+        down: this._expandButton.id,
         out: this._container.id,
       },
     );
     this.controlsManager.updateNavigation(
-      this.typeCheckboxes[MessageTypeEnum.SYSTEM].id,
+      this._typeCheckboxes[MessageTypeEnum.SYSTEM].id,
       {
-        right: this.typeCheckboxes[MessageTypeEnum.ABORT].id,
-        next: this.typeCheckboxes[MessageTypeEnum.ABORT].id,
-        left: this.typeCheckboxes[MessageTypeEnum.PROGRESS].id,
-        previous: this.typeCheckboxes[MessageTypeEnum.PROGRESS].id,
+        right: this._typeCheckboxes[MessageTypeEnum.ABORT].id,
+        next: this._typeCheckboxes[MessageTypeEnum.ABORT].id,
+        left: this._typeCheckboxes[MessageTypeEnum.PROGRESS].id,
+        previous: this._typeCheckboxes[MessageTypeEnum.PROGRESS].id,
+        down: this._expandButton.id,
         out: this._container.id,
       },
     );
     this.controlsManager.updateNavigation(
-      this.typeCheckboxes[MessageTypeEnum.ABORT].id,
+      this._typeCheckboxes[MessageTypeEnum.ABORT].id,
       {
-        right: this.typeCheckboxes[MessageTypeEnum.ERROR].id,
-        next: this.typeCheckboxes[MessageTypeEnum.ERROR].id,
-        left: this.typeCheckboxes[MessageTypeEnum.SYSTEM].id,
-        previous: this.typeCheckboxes[MessageTypeEnum.SYSTEM].id,
+        right: this._typeCheckboxes[MessageTypeEnum.ERROR].id,
+        next: this._typeCheckboxes[MessageTypeEnum.ERROR].id,
+        left: this._typeCheckboxes[MessageTypeEnum.SYSTEM].id,
+        previous: this._typeCheckboxes[MessageTypeEnum.SYSTEM].id,
+        down: this._expandButton.id,
         out: this._container.id,
       },
     );
     this.controlsManager.updateNavigation(
-      this.typeCheckboxes[MessageTypeEnum.ERROR].id,
+      this._typeCheckboxes[MessageTypeEnum.ERROR].id,
       {
         right: this._expandButton.id,
         next: this._expandButton.id,
-        left: this.typeCheckboxes[MessageTypeEnum.ABORT].id,
-        previous: this.typeCheckboxes[MessageTypeEnum.ABORT].id,
+        left: this._typeCheckboxes[MessageTypeEnum.ABORT].id,
+        previous: this._typeCheckboxes[MessageTypeEnum.ABORT].id,
+        down: this._expandButton.id,
         out: this._container.id,
       },
     );
     this.controlsManager.updateNavigation(this._expandButton.id, {
-      left: this.typeCheckboxes[MessageTypeEnum.ERROR].id,
-      previous: this.typeCheckboxes[MessageTypeEnum.ERROR].id,
+      left: this._typeCheckboxes[MessageTypeEnum.ERROR].id,
+      previous: this._typeCheckboxes[MessageTypeEnum.ERROR].id,
+      up: this._typeCheckboxes[MessageTypeEnum.ERROR].id,
       out: this._container.id,
       inEffect: () => {
         if (this._isExpanded) {
@@ -223,7 +236,6 @@ export class MessageTypeFilter extends BaseMonitor {
         } else {
           this.onExpand();
         }
-        this.updateExpandButtonLabel();
       },
     });
 
@@ -235,7 +247,7 @@ export class MessageTypeFilter extends BaseMonitor {
   private createTypeCheckboxes() {
     // Create checkboxes for optional filters
     // Progress messages
-    this.typeCheckboxes[MessageTypeEnum.PROGRESS] = this.controlsManager.add({
+    this._typeCheckboxes[MessageTypeEnum.PROGRESS] = this.controlsManager.add({
       kind: "element",
       name: `typeCheckbox[${MessageTypeEnum.PROGRESS}]`,
       element: blessed.checkbox({
@@ -257,7 +269,7 @@ export class MessageTypeFilter extends BaseMonitor {
     });
 
     // System messages
-    this.typeCheckboxes[MessageTypeEnum.SYSTEM] = this.controlsManager.add({
+    this._typeCheckboxes[MessageTypeEnum.SYSTEM] = this.controlsManager.add({
       kind: "element",
       name: `typeCheckbox[${MessageTypeEnum.SYSTEM}]`,
       element: blessed.checkbox({
@@ -279,7 +291,7 @@ export class MessageTypeFilter extends BaseMonitor {
     });
 
     // Abort messages
-    this.typeCheckboxes[MessageTypeEnum.ABORT] = this.controlsManager.add({
+    this._typeCheckboxes[MessageTypeEnum.ABORT] = this.controlsManager.add({
       kind: "element",
       name: `typeCheckbox[${MessageTypeEnum.ABORT}]`,
       element: blessed.checkbox({
@@ -301,7 +313,7 @@ export class MessageTypeFilter extends BaseMonitor {
     });
 
     // Error messages
-    this.typeCheckboxes[MessageTypeEnum.ERROR] = this.controlsManager.add({
+    this._typeCheckboxes[MessageTypeEnum.ERROR] = this.controlsManager.add({
       kind: "element",
       name: `typeCheckbox[${MessageTypeEnum.ERROR}]`,
       element: blessed.checkbox({
@@ -335,7 +347,7 @@ export class MessageTypeFilter extends BaseMonitor {
     });
 
     // Set up checkbox event handlers
-    Object.entries(this.typeCheckboxes).forEach(([type, checkbox]) => {
+    Object.entries(this._typeCheckboxes).forEach(([type, checkbox]) => {
       checkbox.element.on("check", () => {
         this.messageTypeFilters[type as MessageTypeEnum] = true;
         this.onFilterChange();
@@ -354,7 +366,7 @@ export class MessageTypeFilter extends BaseMonitor {
   }
 
   private createChatFilterValue() {
-    const messageTypes = Object.keys(this.typeCheckboxes)
+    const messageTypes = Object.keys(this._typeCheckboxes)
       .map((type) =>
         this.messageTypeFilters[type as MessageTypeEnum]
           ? (type as MessageTypeEnum)
@@ -367,9 +379,14 @@ export class MessageTypeFilter extends BaseMonitor {
     } satisfies MessageTypeFilterValues;
   }
 
+  expand() {
+    this.onExpand();
+  }
+
   private onExpand() {
     this._isExpanded = true;
     this.emit("filter:expand");
+    this.updateExpandButtonLabel();
   }
 
   collapse() {
@@ -379,6 +396,7 @@ export class MessageTypeFilter extends BaseMonitor {
   private onCollapse() {
     this._isExpanded = false;
     this.emit("filter:collapse");
+    this.updateExpandButtonLabel();
   }
 
   reset(shouldRender = true) {
