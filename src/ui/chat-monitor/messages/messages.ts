@@ -6,6 +6,8 @@ import { ChatFilterValues } from "../filter/filter.js";
 import { MessageTypeEnum } from "../runtime-handler.js";
 import clipboardy from "clipboardy";
 import { NavigationDescription } from "@/ui/controls/navigation.js";
+import { Logger } from "beeai-framework";
+import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
 
 export interface MessageValue {
   role: string;
@@ -34,8 +36,8 @@ export class Messages extends BaseMonitor {
     return this._value;
   }
 
-  constructor({ getChatFilters, ...rest }: MessagesOptions) {
-    super(rest);
+  constructor({ getChatFilters, ...rest }: MessagesOptions, logger: Logger) {
+    super(rest, logger);
 
     this.getChatFilters = getChatFilters;
 
@@ -52,7 +54,7 @@ export class Messages extends BaseMonitor {
         tags: true,
         scrollable: true,
         alwaysScroll: true,
-        mouse: true,
+        mouse: false,
         keys: true,
         vi: true,
         ...chatStyles.getMessagesBoxStyle(),
@@ -77,88 +79,88 @@ export class Messages extends BaseMonitor {
           key: "escape",
           action: {
             description: NavigationDescription.OUT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.resetCurrentMessageIndex();
-            },
+            }),
           },
         },
         {
           key: "up",
           action: {
             description: NavigationDescription.MOVE_UP_DOWN,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               // The scroll is done automatically, we just need to reset the highlighted message
               this.resetCurrentMessageIndex();
-            },
+            }),
           },
         },
         {
           key: "down",
           action: {
             description: NavigationDescription.MOVE_UP_DOWN,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               // The scroll is done automatically, we just need to reset the highlighted message
               this.resetCurrentMessageIndex();
-            },
+            }),
           },
         },
         {
           key: "pageup",
           action: {
             description: NavigationDescription.MOVE_UP_DOWN_PAGE,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.resetCurrentMessageIndex();
 
               const height = this.getBoxHeight();
 
               this._container.element.scroll(-height);
-            },
+            }),
           },
         },
         {
           key: "pagedown",
           action: {
             description: NavigationDescription.MOVE_UP_DOWN_PAGE,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.resetCurrentMessageIndex();
 
               const height = this.getBoxHeight();
 
               this._container.element.scroll(height);
-            },
+            }),
           },
         },
         {
           key: "home",
           action: {
             description: NavigationDescription.MOVE_START_END,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.resetCurrentMessageIndex();
 
               const scroll = 0;
 
               this._container.element.scrollTo(scroll);
-            },
+            }),
           },
         },
         {
           key: "end",
           action: {
             description: NavigationDescription.MOVE_START_END,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.resetCurrentMessageIndex();
 
               const scroll = this._container.element.getScrollHeight();
 
               this._container.element.scrollTo(scroll);
-            },
+            }),
           },
         },
         {
           key: "tab",
           action: {
             description: NavigationDescription.HIGHLIGHT_NEXT_PREV,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               if (!this.checkCurrentMessageExists()) {
                 const newIndex = this._currentMessageIndex + 1;
                 const scroll = this._messageStartIndexes.at(newIndex);
@@ -169,14 +171,14 @@ export class Messages extends BaseMonitor {
                   this._container.element.scrollTo(scroll);
                 }
               }
-            },
+            }),
           },
         },
         {
           key: "S-tab",
           action: {
             description: NavigationDescription.HIGHLIGHT_NEXT_PREV,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               if (!this.checkCurrentMessageExists()) {
                 const newIndex = this._currentMessageIndex - 1;
                 const scroll =
@@ -190,14 +192,14 @@ export class Messages extends BaseMonitor {
                   this._container.element.scrollTo(scroll);
                 }
               }
-            },
+            }),
           },
         },
         {
           key: "S-c",
           action: {
             description: NavigationDescription.COPY_MESSAGE,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               const msg = this._value[this._currentMessageIndex];
 
               if (msg) {
@@ -209,7 +211,7 @@ export class Messages extends BaseMonitor {
                   ),
                 );
               }
-            },
+            }),
           },
         },
       ],

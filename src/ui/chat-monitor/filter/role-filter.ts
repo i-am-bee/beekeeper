@@ -8,6 +8,7 @@ import { UIColors } from "../../colors.js";
 import { UIConfig } from "../../config.js";
 import EventEmitter from "events";
 import { isNonNull } from "remeda";
+import { Logger } from "beeai-framework";
 
 export interface RoleFilterValues {
   roles: string[];
@@ -66,8 +67,8 @@ export class RoleFilter extends BaseMonitor {
     return this._value;
   }
 
-  constructor(arg: ParentInput | ScreenInput) {
-    super(arg);
+  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+    super(arg, logger);
 
     // Role filter box area
     this._container = this.controlsManager.add({

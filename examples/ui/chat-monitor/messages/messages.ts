@@ -17,7 +17,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "C-c",
       action: {
         description: NavigationDescription.EXIT_APP,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           process.exit(0);
         },
       },
@@ -26,7 +26,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "enter",
       action: {
         description: NavigationDescription.IN_OUT,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.IN);
         },
       },
@@ -35,7 +35,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "escape",
       action: {
         description: NavigationDescription.IN_OUT,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.OUT);
         },
       },
@@ -44,7 +44,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "left",
       action: {
         description: NavigationDescription.LEFT_RIGHT,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.LEFT);
         },
       },
@@ -53,7 +53,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "right",
       action: {
         description: NavigationDescription.LEFT_RIGHT,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.RIGHT);
         },
       },
@@ -62,7 +62,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "up",
       action: {
         description: NavigationDescription.UP_DOWN,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.UP);
         },
       },
@@ -71,7 +71,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "down",
       action: {
         description: NavigationDescription.UP_DOWN,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.DOWN);
         },
       },
@@ -80,7 +80,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "tab",
       action: {
         description: NavigationDescription.NEXT_PREV,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.NEXT);
         },
       },
@@ -89,7 +89,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
       key: "S-tab",
       action: {
         description: NavigationDescription.NEXT_PREV,
-        listener: () => {
+        listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.PREVIOUS);
         },
       },

@@ -9,6 +9,7 @@ import { MessageTypeEnum } from "../runtime-handler.js";
 import { UIColors } from "../../colors.js";
 import { UIConfig } from "../../config.js";
 import { isNonNull } from "remeda";
+import { Logger } from "beeai-framework";
 
 export interface MessageTypeFilterValues {
   messageTypes: MessageTypeEnum[];
@@ -76,8 +77,8 @@ export class MessageTypeFilter extends BaseMonitor {
     return this._value;
   }
 
-  constructor(arg: ParentInput | ScreenInput) {
-    super(arg);
+  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+    super(arg, logger);
 
     // Type filter box area
     this._container = this.controlsManager.add({

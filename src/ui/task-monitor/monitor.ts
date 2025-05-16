@@ -26,6 +26,7 @@ import { clone, isNonNull } from "remeda";
 import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
 import { ParentInput, ScreenInput } from "../base/monitor.js";
 import * as st from "../config.js";
+import { Logger } from "beeai-framework";
 
 const TASK_CONFIG_DETAIL_DEFAULT_TEXT =
   "Select task pool to view task config detail";
@@ -76,8 +77,8 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
   private trajectoryTabButton: blessed.Widgets.ButtonElement;
   private historyTabButton: blessed.Widgets.ButtonElement;
 
-  constructor(arg: ParentInput | ScreenInput) {
-    super(arg, new TaskStateBuilder());
+  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+    super(arg, logger, new TaskStateBuilder());
     this.stateBuilder.on("state:updated", (update) => {
       switch (update.type) {
         case StateUpdateType.TASK_CONFIG:

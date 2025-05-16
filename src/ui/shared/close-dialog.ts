@@ -1,15 +1,16 @@
 import blessed from "neo-blessed";
+import { UIColors } from "../colors.js";
 import {
   ControllableContainer,
   ControllableElement,
   ControllableScreen,
   ControlsManager,
 } from "../controls/controls-manager.js";
+import { keyActionListenerFactory } from "../controls/key-bindings.js";
 import {
   NavigationDescription,
   NavigationDirection,
 } from "../controls/navigation.js";
-import { UIColors } from "../colors.js";
 
 export class CloseDialog {
   private dialog: ControllableContainer;
@@ -29,7 +30,9 @@ export class CloseDialog {
     this.screen = this.controlsManager.screen;
     this.onConfirm = () => process.exit(0); // Default action
     this.onCancel = () => {
-      this.hide();
+      if (this.isVisible) {
+        this.hide();
+      }
     }; // Default action
 
     // Create dialog box
@@ -161,45 +164,45 @@ export class CloseDialog {
           key: ["C-c", "escape"],
           action: {
             description: NavigationDescription.CANCEL,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.onCancel();
-            },
+            }),
           },
         },
         {
           key: "left",
           action: {
             description: NavigationDescription.LEFT_RIGHT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.LEFT);
-            },
+            }),
           },
         },
         {
           key: "right",
           action: {
             description: NavigationDescription.LEFT_RIGHT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.RIGHT);
-            },
+            }),
           },
         },
         {
           key: "tab",
           action: {
             description: NavigationDescription.NEXT_PREV,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.NEXT);
-            },
+            }),
           },
         },
         {
           key: "S-tab",
           action: {
             description: NavigationDescription.NEXT_PREV,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.PREVIOUS);
-            },
+            }),
           },
         },
       ],
@@ -212,9 +215,9 @@ export class CloseDialog {
           key: "enter",
           action: {
             description: NavigationDescription.CANCEL,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.onCancel();
-            },
+            }),
           },
         },
       ],
@@ -227,9 +230,9 @@ export class CloseDialog {
           key: "enter",
           action: {
             description: NavigationDescription.EXIT_APP,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.onConfirm();
-            },
+            }),
           },
         },
       ],
@@ -274,9 +277,9 @@ export class CloseDialog {
 
     // Show dialog and focus on cancel button by default (safer option)
     this.dialog.element.show();
-    this.isVisible = true;
     this.controlsManager.focus(this.cancelBtn.id);
     this.screen.element.render();
+    this.isVisible = true;
   }
 
   /**
@@ -284,13 +287,13 @@ export class CloseDialog {
    */
   public hide(): void {
     this.dialog.element.hide();
-    this.isVisible = false;
 
     if (!this.initiatorElementId) {
       throw new Error(`Initiator element id is missing`);
     }
-    this.controlsManager.focus(this.initiatorElementId);
     this.screen.element.render();
+    this.isVisible = false;
+    this.controlsManager.focus(this.initiatorElementId);
   }
 
   /**

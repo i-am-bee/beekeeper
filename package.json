@@ -56,7 +56,7 @@
     "start:dev:chat": "tsx --inspect --no-warnings src/main.js -c",
     "monitor": "cross-env NODE_ENV=production BEE_FRAMEWORK_LOG_LEVEL=error node --no-warnings dist/ui/main.js",
     "monitor:dev": "tsx --inspect --no-warnings src/ui/main.js",
-    "ui:test": "tsx --inspect --no-warnings examples/ui/shared/help-bar.js",
+    "ui:test": "tsx --inspect --no-warnings examples/ui/chat-monitor/chat-monitor.js",
     "ts:check": "tsc --noEmit --project tsconfig.json",
     "build": "rimraf dist && tsc -b && tsc-alias",
     "lint": "eslint",
@@ -86,6 +86,7 @@
     "remeda": "^2.20.1",
     "strip-ansi": "^7.1.0",
     "ts-command-line-args": "^2.5.1",
+    "uuid": "^11.1.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.5",
     "zod": "^3.23.8"

@@ -8,6 +8,12 @@ import { ChatInput } from "./input/input.js";
 import { Messages } from "./messages/messages.js";
 import { ChatRuntimeHandler, MessageTypeEnum } from "./runtime-handler.js";
 import { HelpBar } from "../shared/help-bar.js";
+import {
+  NavigationDescription,
+  NavigationDirection,
+} from "../controls/navigation.js";
+import { Logger } from "beeai-framework";
+import { keyActionListenerFactory } from "../controls/key-bindings.js";
 
 export class ChatMonitor extends BaseMonitor {
   private chatBox: ControllableContainer;
@@ -32,8 +38,12 @@ export class ChatMonitor extends BaseMonitor {
     return this._isAborting;
   }
 
-  constructor(arg: ParentInput | ScreenInput, runtime: Runtime) {
-    super(arg);
+  constructor(
+    arg: ParentInput | ScreenInput,
+    runtime: Runtime,
+    logger: Logger,
+  ) {
+    super(arg, logger);
     this.runtimeHandler = new ChatRuntimeHandler(runtime, {
       onMessage: (role, content, type) => this.addMessage(role, content, type),
       onStatus: (status) =>
@@ -73,35 +83,152 @@ export class ChatMonitor extends BaseMonitor {
     });
 
     // Create filter boxes
-    this.chatFilter = new ChatFilter({
-      parent: this.chatFilterBox,
-      controlsManager: this.controlsManager,
-    });
+    this.chatFilter = new ChatFilter(
+      {
+        kind: "parent",
+        parent: this.chatFilterBox,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+    );
 
-    this.messages = new Messages({
-      parent: this.chatBox,
-      controlsManager: this.controlsManager,
-      getChatFilters: () => this.chatFilter.values,
-    });
+    this.messages = new Messages(
+      {
+        kind: "parent",
+        parent: this.chatBox,
+        controlsManager: this.controlsManager,
+        getChatFilters: () => this.chatFilter.values,
+      },
+      logger,
+    );
 
-    this.chatInput = new ChatInput({
-      parent: this.chatBox,
-      controlsManager: this.controlsManager,
-      onValueChange: () => this.setProcessingState(false),
-    });
+    this.chatInput = new ChatInput(
+      {
+        kind: "parent",
+        parent: this.chatBox,
+        controlsManager: this.controlsManager,
+        onValueChange: () => this.setProcessingState(false),
+      },
+      logger,
+    );
 
-    this.helpBar = new HelpBar({
-      parent: this.chatBox,
-      controlsManager: this.controlsManager,
-    });
-
-    // Initialize the close dialog
-    this.closeDialog = new CloseDialog(this.controlsManager);
+    this.helpBar = new HelpBar(
+      {
+        kind: "parent",
+        parent: this.chatBox,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+    );
 
     // this.setupEventHandlers();
     this.setProcessingState(this._isProcessing);
     this.setAbortingState(this._isAborting);
-    this.controlsManager.focus(this.chatInput.inputBox.id);
+
+    // Initialize the close dialog
+    this.closeDialog = new CloseDialog(this.controlsManager);
+    this.setupControls();
+  }
+
+  private setupControls(shouldRender = true) {
+    // Navigation
+    this.controlsManager.updateNavigation(this.controlsManager.screen.id, {
+      in: this.chatBox.id,
+    });
+
+    // Global shortcuts
+    this.controlsManager.updateKeyActions(this.controlsManager.screen.id, {
+      kind: "exclusive",
+      actions: [
+        {
+          key: "C-c",
+          action: {
+            description: NavigationDescription.EXIT_APP,
+            listener: keyActionListenerFactory(() => {
+              this.closeDialog.show(this.controlsManager.focused.id);
+            }),
+          },
+        },
+        {
+          key: "enter",
+          action: {
+            description: NavigationDescription.IN_OUT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.IN);
+            }),
+          },
+        },
+        {
+          key: "escape",
+          action: {
+            description: NavigationDescription.IN_OUT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.OUT);
+            }),
+          },
+        },
+        {
+          key: "left",
+          action: {
+            description: NavigationDescription.LEFT_RIGHT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.LEFT);
+            }),
+          },
+        },
+        {
+          key: "right",
+          action: {
+            description: NavigationDescription.LEFT_RIGHT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.RIGHT);
+            }),
+          },
+        },
+        {
+          key: "up",
+          action: {
+            description: NavigationDescription.UP_DOWN,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.UP);
+            }),
+          },
+        },
+        {
+          key: "down",
+          action: {
+            description: NavigationDescription.UP_DOWN,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.DOWN);
+            }),
+          },
+        },
+        {
+          key: "tab",
+          action: {
+            description: NavigationDescription.NEXT_PREV,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.NEXT);
+            }),
+          },
+        },
+        {
+          key: "S-tab",
+          action: {
+            description: NavigationDescription.NEXT_PREV,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.PREVIOUS);
+            }),
+          },
+        },
+      ],
+    });
+
+    this.controlsManager.focus(this.chatBox.id, false);
+
+    if (shouldRender) {
+      this.screen.element.render();
+    }
   }
 
   // private setupEventHandlers() {

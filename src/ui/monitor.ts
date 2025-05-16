@@ -4,6 +4,7 @@ import { AgentMonitor } from "./agent-monitor/monitor.js";
 import { BaseMonitor } from "./base/monitor.js";
 import { CloseDialog } from "./shared/close-dialog.js";
 import { ControllableContainer } from "./controls/controls-manager.js";
+import { Logger } from "beeai-framework";
 
 export class Monitor extends BaseMonitor {
   private agentMonitorContainer: ControllableContainer;
@@ -12,8 +13,8 @@ export class Monitor extends BaseMonitor {
   private taskMonitorContainer: ControllableContainer;
   private closeDialog: CloseDialog;
 
-  constructor(title = "Bee Supervisor Monitor") {
-    super({ title });
+  constructor(title: string, logger: Logger) {
+    super({ kind: "screen", title }, logger);
 
     this.agentMonitorContainer = this.controlsManager.add({
       kind: "container",
@@ -33,10 +34,14 @@ export class Monitor extends BaseMonitor {
       parent: this.screen,
     });
 
-    this.agentMonitor = new AgentMonitor({
-      parent: this.agentMonitorContainer,
-      controlsManager: this.controlsManager,
-    });
+    this.agentMonitor = new AgentMonitor(
+      {
+        kind: "parent",
+        parent: this.agentMonitorContainer,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+    );
 
     this.taskMonitorContainer = this.controlsManager.add({
       kind: "container",
@@ -56,10 +61,14 @@ export class Monitor extends BaseMonitor {
       parent: this.screen,
     });
 
-    this.taskMonitor = new TaskMonitor({
-      parent: this.taskMonitorContainer,
-      controlsManager: this.controlsManager,
-    });
+    this.taskMonitor = new TaskMonitor(
+      {
+        kind: "parent",
+        parent: this.taskMonitorContainer,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+    );
 
     this.closeDialog = new CloseDialog(this.controlsManager);
 

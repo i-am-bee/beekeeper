@@ -6,6 +6,8 @@ import * as st from "../../config.js";
 import * as chatStyles from "../config.js";
 import { NavigationDescription } from "@/ui/controls/navigation.js";
 import { noop } from "@/utils/noop.js";
+import { Logger } from "beeai-framework";
+import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
 
 type ChatInputOptions = (ParentInput | ScreenInput) & {
   onValueChange: () => void;
@@ -35,8 +37,8 @@ export class ChatInput extends BaseMonitor {
     return this._abortButton;
   }
 
-  constructor({ onValueChange, ...rest }: ChatInputOptions) {
-    super(rest);
+  constructor({ onValueChange, ...rest }: ChatInputOptions, logger: Logger) {
+    super(rest, logger);
 
     this._onValueChange = onValueChange;
 
@@ -50,6 +52,7 @@ export class ChatInput extends BaseMonitor {
         height: 5,
         left: 0,
         top: "100%-6",
+        vi: false,
         ...chatStyles.getInputBoxStyle(),
         scrollbar: st.UIConfig.scrollbar,
       }),
@@ -101,56 +104,56 @@ export class ChatInput extends BaseMonitor {
           key: "left",
           action: {
             description: NavigationDescription.MOVE_LEFT_RIGHT,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
         {
           key: "right",
           action: {
             description: NavigationDescription.MOVE_LEFT_RIGHT,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
         {
           key: "up",
           action: {
             description: NavigationDescription.MOVE_UP_DOWN,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
         {
           key: "down",
           action: {
             description: NavigationDescription.MOVE_UP_DOWN,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
         {
           key: "S-left",
           action: {
             description: NavigationDescription.MOVE_PREV_NEXT_WORD,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
         {
           key: "S-right",
           action: {
             description: NavigationDescription.MOVE_PREV_NEXT_WORD,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
         {
           key: "home",
           action: {
             description: NavigationDescription.MOVE_START_END_LINE,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
         {
           key: "end",
           action: {
             description: NavigationDescription.MOVE_START_END_LINE,
-            listener: noop,
+            listener: keyActionListenerFactory(noop),
           },
         },
       ],

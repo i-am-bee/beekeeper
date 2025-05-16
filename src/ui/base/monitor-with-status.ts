@@ -3,6 +3,7 @@ import { StatusBar } from "../shared/status-bar.js";
 import { BaseMonitor, ParentInput, ScreenInput } from "./monitor.js";
 import blessed from "neo-blessed";
 import { ControllableContainer } from "../controls/controls-manager.js";
+import { Logger } from "beeai-framework";
 
 // New interfaces for StatusBar options
 export interface StatusBarOptions {
@@ -26,11 +27,12 @@ export abstract class BaseMonitorWithStatus<
 
   constructor(
     arg: ParentInput | ScreenInput,
+    logger: Logger,
     stateBuilder?: TStateBuilder,
     statusBarOptions?: StatusBarOptions,
   ) {
     // Initialize the parent BaseMonitor
-    super(arg);
+    super(arg, logger);
 
     // Content box
     this.contentBox = this.controlsManager.add({

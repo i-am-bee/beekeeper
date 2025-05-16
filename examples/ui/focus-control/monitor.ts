@@ -11,6 +11,9 @@ import {
   NavigationDescription,
   NavigationDirection,
 } from "../../../src/ui/controls/navigation.js";
+import { Logger } from "beeai-framework";
+import { getLogger } from "../helpers/log.js";
+import { keyActionListenerFactory } from "../../../src/ui/controls/key-bindings.js";
 
 class Monitor extends BaseMonitor {
   private container: ControllableContainer;
@@ -19,10 +22,10 @@ class Monitor extends BaseMonitor {
   private rightColumn: ControllableContainer;
   private closeDialog: CloseDialog;
 
-  constructor() {
-    super({ title: "Monitor" });
+  constructor(logger: Logger) {
+    super({ kind: "screen", title: "Monitor" }, logger);
 
-    this.controlsManager = new ControlsManager(this.screen);
+    this.controlsManager = new ControlsManager(this.screen, logger);
 
     this.container = this.controlsManager.add({
       kind: "container",
@@ -167,117 +170,117 @@ class Monitor extends BaseMonitor {
           key: "C-c",
           action: {
             description: NavigationDescription.EXIT_APP,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.closeDialog.show(this.controlsManager.focused.id);
-            },
+            }),
           },
         },
         {
           key: "enter",
           action: {
             description: NavigationDescription.IN_OUT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.IN);
-            },
+            }),
           },
         },
         {
           key: "escape",
           action: {
             description: NavigationDescription.IN_OUT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.OUT);
-            },
+            }),
           },
         },
         {
           key: "left",
           action: {
             description: NavigationDescription.LEFT_RIGHT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.LEFT);
-            },
+            }),
           },
         },
         {
           key: "right",
           action: {
             description: NavigationDescription.LEFT_RIGHT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.RIGHT);
-            },
+            }),
           },
         },
         {
           key: "up",
           action: {
             description: NavigationDescription.UP_DOWN,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.UP);
-            },
+            }),
           },
         },
         {
           key: "down",
           action: {
             description: NavigationDescription.UP_DOWN,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.DOWN);
-            },
+            }),
           },
         },
         {
           key: "tab",
           action: {
             description: NavigationDescription.NEXT_PREV,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.NEXT);
-            },
+            }),
           },
         },
         {
           key: "S-tab",
           action: {
             description: NavigationDescription.NEXT_PREV,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.navigate(NavigationDirection.PREVIOUS);
-            },
+            }),
           },
         },
         {
           key: "c",
           action: {
             description: NavigationDescription.SELECT_CONTAINER,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.focus(this.container.id);
-            },
+            }),
           },
         },
         {
           key: "a",
           action: {
             description: NavigationDescription.SELECT_COLUMN,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.focus(this.leftColumn.id);
-            },
+            }),
           },
         },
         {
           key: "s",
           action: {
             description: NavigationDescription.SELECT_COLUMN,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.focus(this.rightColumn.id);
-            },
+            }),
           },
         },
         {
           key: "i",
           action: {
             description: NavigationDescription.SELECT_INPUT,
-            listener: () => {
+            listener: keyActionListenerFactory(() => {
               this.controlsManager.focus(this.textInput.id);
-            },
+            }),
           },
         },
       ],
@@ -292,7 +295,7 @@ class Monitor extends BaseMonitor {
             key: "escape",
             action: {
               description: NavigationDescription.ESCAPE_INPUT_MODE,
-              listener: textInputControlMode,
+              listener: keyActionListenerFactory(textInputControlMode),
             },
           },
         ],
@@ -309,7 +312,7 @@ class Monitor extends BaseMonitor {
             key: "enter",
             action: {
               description: NavigationDescription.ENTER_INPUT_MODE,
-              listener: textInputEditMode,
+              listener: keyActionListenerFactory(textInputEditMode),
             },
           },
         ],
@@ -325,4 +328,4 @@ class Monitor extends BaseMonitor {
   }
 }
 
-new Monitor();
+new Monitor(getLogger(true));

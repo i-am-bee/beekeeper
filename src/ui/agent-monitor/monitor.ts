@@ -25,6 +25,7 @@ import { clone } from "remeda";
 import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
 import { ParentInput, ScreenInput } from "../base/monitor.js";
 import * as st from "../config.js";
+import { Logger } from "beeai-framework";
 
 const AGENT_LIST_DEFAULT_TEXT = "Select pool to view agents";
 const AGENT_VERSION_DEFAULT_TEXT = "Select pool to view versions";
@@ -74,8 +75,8 @@ export class AgentMonitor extends BaseMonitorWithStatus<AgentStateBuilder> {
   private assignmentsTabButton: blessed.Widgets.ButtonElement;
   private historyTabButton: blessed.Widgets.ButtonElement;
 
-  constructor(arg: ParentInput | ScreenInput) {
-    super(arg, new AgentStateBuilder());
+  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+    super(arg, logger, new AgentStateBuilder());
     this.stateBuilder.on("state:updated", (update) => {
       switch (update.type) {
         case StateUpdateType.TOOLS:

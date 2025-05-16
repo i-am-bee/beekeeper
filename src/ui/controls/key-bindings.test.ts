@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createKeyBindings } from "./key-bindings.js";
+import { createKeyBindings, keyActionListenerFactory } from "./key-bindings.js";
 
 describe("Key Bindings", () => {
   describe("Basics", () => {
@@ -19,9 +19,9 @@ describe("Key Bindings", () => {
               key: "s",
               action: {
                 description: "Original action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
           ],
@@ -33,7 +33,7 @@ describe("Key Bindings", () => {
           "s",
           expect.objectContaining({
             description: "Original action",
-            callback: expect.any(Function),
+            listener: expect.any(Function),
           }),
         ],
       ]);
@@ -48,18 +48,18 @@ describe("Key Bindings", () => {
               key: "s",
               action: {
                 description: "Original action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
             {
               key: "a",
               action: {
                 description: "Other original action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
           ],
@@ -71,18 +71,18 @@ describe("Key Bindings", () => {
               key: "s",
               action: {
                 description: "Overridden action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
             {
               key: "d",
               action: {
                 description: "New action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
           ],
@@ -93,21 +93,21 @@ describe("Key Bindings", () => {
           "s",
           expect.objectContaining({
             description: "Overridden action",
-            callback: expect.any(Function),
+            listener: expect.any(Function),
           }),
         ],
         [
           "a",
           expect.objectContaining({
             description: "Other original action",
-            callback: expect.any(Function),
+            listener: expect.any(Function),
           }),
         ],
         [
           "d",
           expect.objectContaining({
             description: "New action",
-            callback: expect.any(Function),
+            listener: expect.any(Function),
           }),
         ],
       ]);
@@ -124,9 +124,9 @@ describe("Key Bindings", () => {
               key: "s",
               action: {
                 description: "Original action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
           ],
@@ -138,7 +138,7 @@ describe("Key Bindings", () => {
           "s",
           expect.objectContaining({
             description: "Original action",
-            callback: expect.any(Function),
+            listener: expect.any(Function),
           }),
         ],
       ]);
@@ -153,18 +153,18 @@ describe("Key Bindings", () => {
               key: "s",
               action: {
                 description: "Original action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
             {
               key: "a",
               action: {
                 description: "Other original action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
           ],
@@ -176,18 +176,18 @@ describe("Key Bindings", () => {
               key: "s",
               action: {
                 description: "Overridden action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
             {
               key: "d",
               action: {
                 description: "New action",
-                listener: () => {
+                listener: keyActionListenerFactory(() => {
                   return;
-                },
+                }),
               },
             },
           ],
@@ -198,14 +198,14 @@ describe("Key Bindings", () => {
           "s",
           expect.objectContaining({
             description: "Overridden action",
-            callback: expect.any(Function),
+            listener: expect.any(Function),
           }),
         ],
         [
           "d",
           expect.objectContaining({
             description: "New action",
-            callback: expect.any(Function),
+            listener: expect.any(Function),
           }),
         ],
       ]);

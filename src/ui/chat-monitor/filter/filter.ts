@@ -6,6 +6,7 @@ import {
   MessageTypeFilterValues,
 } from "./message-type-filter.js";
 import { RoleFilter, RoleFilterValues } from "./role-filter.js";
+import { Logger } from "beeai-framework";
 
 export type ChatFilterValues = MessageTypeFilterValues & RoleFilterValues;
 
@@ -53,14 +54,18 @@ export class ChatFilter extends BaseMonitor {
     };
   }
 
-  constructor(arg: ParentInput | ScreenInput) {
-    super(arg);
+  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+    super(arg, logger);
 
-    this.messageTypeFilter = new MessageTypeFilter(arg);
-    this.roleFilter = new RoleFilter({
-      controlsManager: this.controlsManager,
-      parent: this.parent,
-    });
+    this.messageTypeFilter = new MessageTypeFilter(arg, logger);
+    this.roleFilter = new RoleFilter(
+      {
+        kind: "parent",
+        controlsManager: this.controlsManager,
+        parent: this.parent,
+      },
+      logger,
+    );
     this.roleFilter.container.element.hide();
     this.roleFilter.container.element.top = 7;
 
