@@ -7,9 +7,13 @@ import {
   NavigationDirection,
 } from "../../../../src/ui/controls/navigation.js";
 import testMessages from "./messages.json";
+import { getLogger } from "../../helpers/log.js";
+import { keyActionListenerFactory } from "../../../../src/ui/controls/key-bindings.js";
+
+const logger = getLogger(true);
 
 const screen = blessed.screen({ title: "Messages" });
-const controlsManager = new ControlsManager(screen);
+const controlsManager = new ControlsManager(screen, logger);
 controlsManager.updateKeyActions(controlsManager.screen.id, {
   kind: "exclusive",
   actions: [
@@ -19,7 +23,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.EXIT_APP,
         listener: keyActionListenerFactory(() => {
           process.exit(0);
-        },
+        }),
       },
     },
     {
@@ -28,7 +32,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.IN_OUT,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.IN);
-        },
+        }),
       },
     },
     {
@@ -37,7 +41,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.IN_OUT,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.OUT);
-        },
+        }),
       },
     },
     {
@@ -46,7 +50,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.LEFT_RIGHT,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.LEFT);
-        },
+        }),
       },
     },
     {
@@ -55,7 +59,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.LEFT_RIGHT,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.RIGHT);
-        },
+        }),
       },
     },
     {
@@ -64,7 +68,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.UP_DOWN,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.UP);
-        },
+        }),
       },
     },
     {
@@ -73,7 +77,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.UP_DOWN,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.DOWN);
-        },
+        }),
       },
     },
     {
@@ -82,7 +86,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.NEXT_PREV,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.NEXT);
-        },
+        }),
       },
     },
     {
@@ -91,7 +95,7 @@ controlsManager.updateKeyActions(controlsManager.screen.id, {
         description: NavigationDescription.NEXT_PREV,
         listener: keyActionListenerFactory(() => {
           controlsManager.navigate(NavigationDirection.PREVIOUS);
-        },
+        }),
       },
     },
   ],
@@ -116,11 +120,15 @@ function extractChatFilterValues(messages) {
   };
 }
 
-const messages = new Messages({
-  parent: controlsManager.screen,
-  controlsManager,
-  getChatFilters: () => extractChatFilterValues(testMessages),
-});
+const messages = new Messages(
+  {
+    kind: "parent",
+    parent: controlsManager.screen,
+    controlsManager,
+    getChatFilters: () => extractChatFilterValues(testMessages),
+  },
+  logger,
+);
 controlsManager.focus(messages.container.id);
 
 testMessages.forEach((message) =>

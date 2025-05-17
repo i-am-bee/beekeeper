@@ -1,13 +1,17 @@
-import { ContainerComponent, ParentInput, ScreenInput } from "@/ui/base/monitor.js";
+import {
+  ContainerComponent,
+  ParentInput,
+  ScreenInput,
+} from "@/ui/base/monitor.js";
 import { ControllableContainer } from "@/ui/controls/controls-manager.js";
+import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
+import { NavigationDescription } from "@/ui/controls/navigation.js";
+import { Logger } from "beeai-framework";
+import clipboardy from "clipboardy";
 import blessed from "neo-blessed";
 import * as chatStyles from "../config.js";
 import { ChatFilterValues } from "../filter/filter.js";
 import { MessageTypeEnum } from "../runtime-handler.js";
-import clipboardy from "clipboardy";
-import { NavigationDescription } from "@/ui/controls/navigation.js";
-import { Logger } from "beeai-framework";
-import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
 
 export interface MessageValue {
   role: string;
@@ -22,6 +26,7 @@ type MessagesOptions = (ParentInput | ScreenInput) & {
 
 export class Messages extends ContainerComponent {
   private _container: ControllableContainer;
+  private _messagesBox: ControllableContainer;
   private _value: MessageValue[] = [];
   private _messageStartIndexes: number[] = [];
   private _currentMessageIndex = -1;
@@ -41,49 +46,56 @@ export class Messages extends ContainerComponent {
 
     this.getChatFilters = getChatFilters;
 
-    // Messages area - adjusted to make room for filter boxes
+    // Container
     this._container = this.controlsManager.add({
       kind: "container",
-      name: "messagesBox",
+      name: "messagesContainer",
       element: blessed.box({
         parent: this.parent.element,
         width: "100%",
         height: "100%-13", // Adjusted for filter boxes at top and input and help at bottom
         left: 0,
         top: 7, // Space for type filter box
+        scrollable: false,
+        alwaysScroll: false,
+        mouse: false,
+        keys: true,
+        ...chatStyles.getMessagesContainerStyle(),
+      }),
+      parent: this.parent,
+    });
+
+    // Messages area - adjusted to make room for filter boxes
+    this._messagesBox = this.controlsManager.add({
+      kind: "container",
+      name: "messagesBox",
+      element: blessed.box({
+        parent: this._container.element,
+        width: "100%-2",
+        height: "100%-2", // Adjusted for filter boxes at top and input and help at bottom
         tags: true,
         scrollable: true,
         alwaysScroll: true,
         mouse: false,
         keys: true,
-        vi: true,
         ...chatStyles.getMessagesBoxStyle(),
       }),
-      parent: this.parent,
+      parent: this._container,
     });
 
     this.controlsManager.screen.element.on(
       "resize",
       this.updateDisplay.bind(this),
     );
-    this._container.element.on("scroll", this.handleScroll.bind(this));
+    this._messagesBox.element.on("scroll", this.handleScroll.bind(this));
 
     this.setupControls();
   }
 
   private setupControls(shouldRender = true) {
-    this.controlsManager.updateKeyActions(this._container.id, {
+    this.controlsManager.updateKeyActions(this._messagesBox.id, {
       kind: "override",
       actions: [
-        {
-          key: "escape",
-          action: {
-            description: NavigationDescription.OUT,
-            listener: keyActionListenerFactory(() => {
-              this.resetCurrentMessageIndex();
-            }),
-          },
-        },
         {
           key: "up",
           action: {
@@ -113,7 +125,7 @@ export class Messages extends ContainerComponent {
 
               const height = this.getBoxHeight();
 
-              this._container.element.scroll(-height);
+              this._messagesBox.element.scroll(-height);
             }),
           },
         },
@@ -126,7 +138,7 @@ export class Messages extends ContainerComponent {
 
               const height = this.getBoxHeight();
 
-              this._container.element.scroll(height);
+              this._messagesBox.element.scroll(height);
             }),
           },
         },
@@ -139,7 +151,7 @@ export class Messages extends ContainerComponent {
 
               const scroll = 0;
 
-              this._container.element.scrollTo(scroll);
+              this._messagesBox.element.scrollTo(scroll);
             }),
           },
         },
@@ -150,9 +162,9 @@ export class Messages extends ContainerComponent {
             listener: keyActionListenerFactory(() => {
               this.resetCurrentMessageIndex();
 
-              const scroll = this._container.element.getScrollHeight();
+              const scroll = this._messagesBox.element.getScrollHeight();
 
-              this._container.element.scrollTo(scroll);
+              this._messagesBox.element.scrollTo(scroll);
             }),
           },
         },
@@ -168,7 +180,7 @@ export class Messages extends ContainerComponent {
                 if (scroll != null) {
                   this._currentMessageIndex = newIndex;
                   this.updateDisplay();
-                  this._container.element.scrollTo(scroll);
+                  this._messagesBox.element.scrollTo(scroll);
                 }
               }
             }),
@@ -189,7 +201,7 @@ export class Messages extends ContainerComponent {
                 if (scroll != null) {
                   this._currentMessageIndex = newIndex;
                   this.updateDisplay();
-                  this._container.element.scrollTo(scroll);
+                  this._messagesBox.element.scrollTo(scroll);
                 }
               }
             }),
@@ -217,28 +229,54 @@ export class Messages extends ContainerComponent {
       ],
     });
 
+    this.controlsManager.updateNavigation(this._container.id, {
+      in: this._messagesBox.id,
+      inEffect: () => {
+        // TODO Change color of container to indicate edit mode
+      },
+    });
+
+    this.controlsManager.updateNavigation(this._messagesBox.id, {
+      out: this._container.id,
+      outEffect: () => {
+        // TODO Change color of container back
+        this.resetCurrentMessageIndex(true);
+      },
+    });
+
     if (shouldRender) {
       this.screen.element.render();
     }
   }
 
-  private resetCurrentMessageIndex() {
+  focusContainer() {
+    this.controlsManager.focus(this.container.id);
+  }
+
+  focusMessagesBox() {
+    this.controlsManager.focus(this._messagesBox.id);
+  }
+
+  private resetCurrentMessageIndex(resetPosition = false) {
     this._currentMessageIndex = -1;
+    if (resetPosition) {
+      this._userScrolled = false;
+    }
     this.updateDisplay();
   }
 
   private measureMessageLines(msg: string) {
     const fakeBox = blessed.box({
-      width: this._container.element.width,
-      height: this._container.element.height,
+      width: this._messagesBox.element.width,
+      height: this._messagesBox.element.height,
       tags: true,
       scrollable: true,
       alwaysScroll: true,
       mouse: true,
       keys: true,
       vi: true,
-      parent: this._container.element,
-      ...chatStyles.getMessagesBoxStyle(),
+      parent: this._messagesBox.element,
+      ...chatStyles.getMessagesContainerStyle(),
     });
 
     fakeBox.setContent(msg);
@@ -251,8 +289,8 @@ export class Messages extends ContainerComponent {
   }
 
   private handleScroll() {
-    const scroll = this._container.element.getScroll() + 1;
-    const height = this._container.element.getScrollHeight();
+    const scroll = this._messagesBox.element.getScroll() + 1;
+    const height = this._messagesBox.element.getScrollHeight();
 
     this._userScrolled = scroll >= height ? false : true;
   }
@@ -260,8 +298,8 @@ export class Messages extends ContainerComponent {
   private getBoxHeight() {
     // Box height minus the border
     return (
-      Number(this._container.element.height) -
-      Number(this._container.element.iheight)
+      Number(this._messagesBox.element.height) -
+      Number(this._messagesBox.element.iheight)
     );
   }
 
@@ -270,7 +308,7 @@ export class Messages extends ContainerComponent {
       return false;
     }
 
-    const scroll = this._container.element.getScroll();
+    const scroll = this._messagesBox.element.getScroll();
     const normalizedScroll =
       scroll > 0 ? scroll - this.getBoxHeight() + 1 : scroll;
     const index = this._messageStartIndexes.findIndex(
@@ -327,11 +365,11 @@ export class Messages extends ContainerComponent {
       return formatted;
     });
 
-    this._container.element.setContent(formattedMessages.join("\n"));
+    this._messagesBox.element.setContent(formattedMessages.join("\n"));
 
     if (!this._userScrolled) {
-      this._container.element.scrollTo(
-        this._container.element.getScrollHeight(),
+      this._messagesBox.element.scrollTo(
+        this._messagesBox.element.getScrollHeight(),
       );
     }
 

@@ -1,19 +1,19 @@
-import blessed from "neo-blessed";
+import { Logger } from "beeai-framework";
 import EventEmitter from "events";
+import blessed from "neo-blessed";
+import { isNonNull } from "remeda";
 import {
   ContainerComponent,
   ParentInput,
   ScreenInput,
 } from "../../base/monitor.js";
+import { UIColors } from "../../colors.js";
+import { UIConfig } from "../../config.js";
 import {
   ControllableContainer,
   ControllableElement,
 } from "../../controls/controls-manager.js";
 import { MessageTypeEnum } from "../runtime-handler.js";
-import { UIColors } from "../../colors.js";
-import { UIConfig } from "../../config.js";
-import { isNonNull } from "remeda";
-import { Logger } from "beeai-framework";
 
 export interface MessageTypeFilterValues {
   messageTypes: MessageTypeEnum[];

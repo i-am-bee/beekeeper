@@ -81,8 +81,7 @@ export function findPath<T = string>(
   if (fromIsParent || toIsParent) {
     if (fromIsParent && toIsParent) {
       // Path to itself
-      // return [{ direction: "DOWN", el: mapper(lastCommonNode) }];
-      return mapElements([lastCommonNode], "DOWN");
+      return [{ direction: "DOWN", el: mapper(toPathString(toElements)) }];
     }
 
     if (fromIsParent) {

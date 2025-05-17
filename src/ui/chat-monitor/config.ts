@@ -1,3 +1,4 @@
+import { clone } from "remeda";
 import { UIColors } from "../colors.js";
 import * as st from "../config.js";
 import { MessageTypeEnum } from "./runtime-handler.js";
@@ -102,39 +103,43 @@ export function formatCompleteMessage(
  * Get UI styling for the messages box
  * @returns Object with UI configuration for the messages box
  */
+export function getMessagesContainerStyle() {
+  const border = clone(st.UIConfig.borders) as any;
+  return {
+    border,
+    label: " Messages ",
+    style: {
+      focus: border.focus,
+    },
+  };
+}
+
 export function getMessagesBoxStyle() {
   return {
-    border: st.UIConfig.borders as any,
-    label: " Messages ",
     scrollbar: st.UIConfig.scrollbar,
     style: {
       focus: {
-        border: {
-          fg: UIColors.blue.cyan,
-        },
+        bg: UIColors.green.dartmouth_green,
       },
     },
   };
 }
 
-/**
- * Get UI styling for the input box
- * @returns Object with UI configuration for the input box
- */
+export function getInputContainerBoxStyle() {
+  const border = clone(st.UIConfig.borders) as any;
+  return {
+    border: border,
+    label: " Input ",
+    style: {
+      focus: border.focus,
+    },
+  };
+}
+
 export function getInputBoxStyle() {
   return {
-    border: st.UIConfig.borders as any,
-    label: " Input ",
-    inputOnFocus: true,
-    mouse: true,
-    keys: true,
     style: {
       ...st.UIConfig.input,
-      focus: {
-        border: {
-          fg: "green",
-        },
-      },
     },
   };
 }

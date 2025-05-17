@@ -135,6 +135,10 @@ export class ChatFilter extends ContainerComponent {
     this.controlsManager.focus(this.roleFilter.selectAllRolesCheckbox.id);
   }
 
+  collapse() {
+    this.messageTypeFilter.collapse();
+  }
+
   private onFilterChange() {
     this._value = this.createChatFilterValue();
     this.emit("filter:change", this._value);

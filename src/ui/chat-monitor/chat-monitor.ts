@@ -11,25 +11,56 @@ import {
 import { CloseDialog } from "../shared/close-dialog.js";
 import { keyActionListenerFactory } from "../controls/key-bindings.js";
 import { ChatFilter } from "./filter/filter.js";
-// import { HelpBar } from "../shared/help-bar.js";
-// import { ChatFilter } from "./filter/filter.js";
-// import { ChatInput } from "./input/input.js";
-// import { Messages } from "./messages/messages.js";
+import { Messages } from "./messages/messages.js";
+import { HelpBar } from "../shared/help-bar.js";
+import { ChatInput } from "./input/input.js";
 
 export class ChatMonitor extends ContainerComponent {
   private closeDialog: CloseDialog;
-  private chatFilter: ChatFilter;
-  //   private messages: Messages;
-  //   private helpBar: HelpBar;
-  //   private chatInput: ChatInput;
+  private filter: ChatFilter;
+  private messages: Messages;
+  private helpBar: HelpBar;
+  private chatInput: ChatInput;
 
   constructor(arg: ParentInput | ScreenInput, logger: Logger) {
     super(arg, logger);
 
-    this.chatFilter = new ChatFilter(
+    this.helpBar = new HelpBar(
       {
         kind: "parent",
-        parent: this.screen,
+        parent: this.parent,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+    );
+
+    this.chatInput = new ChatInput(
+      {
+        kind: "parent",
+        parent: this.parent,
+        controlsManager: this.controlsManager,
+        onValueChange() {
+          return {} as any;
+        },
+      },
+      logger,
+    );
+
+    this.messages = new Messages(
+      {
+        kind: "parent",
+        parent: this.parent,
+        controlsManager: this.controlsManager,
+        getChatFilters: this.getChatFilters.bind(this),
+      },
+      logger,
+    );
+
+    // Keep filter on top due to pop-up role filter
+    this.filter = new ChatFilter(
+      {
+        kind: "parent",
+        parent: this.parent,
         controlsManager: this.controlsManager,
       },
       logger,
@@ -38,6 +69,10 @@ export class ChatMonitor extends ContainerComponent {
     // Should be last to appear on top
     this.closeDialog = new CloseDialog(this.controlsManager);
     this.setupControls();
+  }
+
+  private getChatFilters() {
+    return this.filter.values;
   }
 
   private setupControls(shouldRender = true) {
@@ -50,7 +85,7 @@ export class ChatMonitor extends ContainerComponent {
           action: {
             description: NavigationDescription.EXIT_APP,
             listener: keyActionListenerFactory(() => {
-              this.closeDialog.show(this.controlsManager.focused.id);
+              this.openCloseDialog();
             }),
           },
         },
@@ -126,12 +161,82 @@ export class ChatMonitor extends ContainerComponent {
             }),
           },
         },
+        {
+          key: "C-e",
+          action: {
+            description: NavigationDescription.ROLE_FILTER,
+            listener: keyActionListenerFactory(() => {
+              this.collapse();
+              this.filter.focusRoleFilters();
+            }),
+          },
+        },
+        {
+          key: "C-w",
+          action: {
+            description: NavigationDescription.MESSAGES_FILTER,
+            listener: keyActionListenerFactory(() => {
+              this.collapse();
+              this.filter.focusMessageFilters();
+            }),
+          },
+        },
+        {
+          key: "C-s",
+          action: {
+            description: NavigationDescription.MESSAGES,
+            listener: keyActionListenerFactory(() => {
+              this.collapse();
+              this.messages.focusMessagesBox();
+            }),
+          },
+        },
+        {
+          key: "C-x",
+          action: {
+            description: NavigationDescription.CHAT,
+            listener: keyActionListenerFactory(() => {
+              this.collapse();
+              this.chatInput.focusInputBox();
+            }),
+          },
+        },
       ],
     });
 
-    this.controlsManager.focus(this.chatFilter.container.id, false);
+    // Navigation
+    this.controlsManager.updateNavigation(this.filter.container.id, {
+      next: this.messages.container.id,
+      down: this.messages.container.id,
+      outEffect: this.openCloseDialog.bind(this),
+    });
+
+    this.controlsManager.updateNavigation(this.messages.container.id, {
+      previous: this.filter.container.id,
+      up: this.filter.container.id,
+      next: this.chatInput.container.id,
+      down: this.chatInput.container.id,
+      outEffect: this.openCloseDialog.bind(this),
+    });
+
+    this.controlsManager.updateNavigation(this.chatInput.container.id, {
+      previous: this.messages.container.id,
+      up: this.messages.container.id,
+      outEffect: this.openCloseDialog.bind(this),
+    });
+
+    this.chatInput.focusInputBox();
     if (shouldRender) {
       this.screen.element.render();
     }
+  }
+
+  private collapse() {
+    this.filter.collapse();
+    this.closeDialog.hide();
+  }
+
+  private openCloseDialog() {
+    this.closeDialog.show(this.controlsManager.focused.id);
   }
 }

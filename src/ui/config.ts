@@ -111,6 +111,7 @@ export const UIConfig = {
 
   colors: {
     focused: UIColors.blue.cyan,
+    bg: UIColors.gray.granite_gray,
   },
 
   status: {
@@ -182,9 +183,7 @@ export const UIConfig = {
     fg: UIColors.white.white,
     bg: "black",
     focus: {
-      border: {
-        fg: UIColors.green.green,
-      },
+      bg: UIColors.green.dartmouth_green,
     },
   },
 

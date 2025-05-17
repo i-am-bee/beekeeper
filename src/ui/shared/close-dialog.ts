@@ -286,6 +286,10 @@ export class CloseDialog {
    * Hide the dialog
    */
   public hide(): void {
+    if(!this.isVisible){
+      return;
+    }
+
     this.dialog.element.hide();
 
     if (!this.initiatorElementId) {

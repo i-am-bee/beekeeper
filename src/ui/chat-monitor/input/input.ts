@@ -1,19 +1,27 @@
-import { ContainerComponent, ParentInput, ScreenInput } from "@/ui/base/monitor.js";
-import { ControllableElement } from "@/ui/controls/controls-manager.js";
+import {
+  ContainerComponent,
+  ParentInput,
+  ScreenInput,
+} from "@/ui/base/monitor.js";
+import {
+  ControllableContainer,
+  ControllableElement,
+} from "@/ui/controls/controls-manager.js";
+import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
+import { NavigationDescription } from "@/ui/controls/navigation.js";
+import { noop } from "@/utils/noop.js";
+import { Logger } from "beeai-framework";
 import blessed from "neo-blessed";
 import { Textarea } from "../../blessed/Textarea.js";
 import * as st from "../../config.js";
 import * as chatStyles from "../config.js";
-import { NavigationDescription } from "@/ui/controls/navigation.js";
-import { noop } from "@/utils/noop.js";
-import { Logger } from "beeai-framework";
-import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
 
 type ChatInputOptions = (ParentInput | ScreenInput) & {
   onValueChange: () => void;
 };
 
 export class ChatInput extends ContainerComponent {
+  private _container: ControllableContainer;
   private _inputBox: ControllableElement;
   private _sendButton: ControllableElement;
   private _abortButton: ControllableElement;
@@ -24,6 +32,10 @@ export class ChatInput extends ContainerComponent {
   private _isAborting = false;
   private lastValue = ""; // Track the last value
   private valueCheckInterval: NodeJS.Timeout | null = null;
+
+  get container() {
+    return this._container;
+  }
 
   get inputBox() {
     return this._inputBox;
@@ -43,20 +55,38 @@ export class ChatInput extends ContainerComponent {
     this._onValueChange = onValueChange;
 
     // Input area
-    this._inputBox = this.controlsManager.add({
-      kind: "element",
-      name: "inputBox",
-      element: new Textarea({
+    this._container = this.controlsManager.add({
+      kind: "container",
+      name: "chatInputContainer",
+      element: blessed.box({
         parent: this.parent.element,
-        width: "100%-12", // Make room for abort button
+        width: "100%", // Make room for abort button
         height: 5,
         left: 0,
         top: "100%-6",
         vi: false,
-        ...chatStyles.getInputBoxStyle(),
-        scrollbar: st.UIConfig.scrollbar,
+        mouse: false,
+        keys: false,
+        ...chatStyles.getInputContainerBoxStyle(),
       }),
       parent: this.parent,
+    });
+
+    // Input area
+    this._inputBox = this.controlsManager.add({
+      kind: "element",
+      name: "inputBox",
+      element: new Textarea({
+        parent: this._container.element,
+        width: "100%-13", // Make room for abort button
+        top: "0",
+        vi: false,
+        mouse: true,
+        keys: false,
+        scrollbar: st.UIConfig.scrollbar,
+        ...chatStyles.getInputBoxStyle(),
+      }),
+      parent: this._container,
     });
 
     // Send/abort button
@@ -64,23 +94,23 @@ export class ChatInput extends ContainerComponent {
       kind: "element",
       name: "sendButton",
       element: blessed.button({
-        parent: this.parent.element,
+        parent: this._container.element,
         width: 10,
         height: 3,
-        left: "100%-11",
-        top: "100%-5",
+        left: "100%-12",
+        top: 0,
         ...chatStyles.getSendButtonStyle(true),
         tags: true,
         mouse: true,
       }),
-      parent: this.parent,
+      parent: this._container,
     });
 
     this._abortButton = this.controlsManager.add({
       kind: "element",
       name: "abortButton",
       element: blessed.button({
-        parent: this.parent.element,
+        parent: this._container.element,
         width: 10,
         height: 3,
         left: "50%-5",
@@ -90,15 +120,26 @@ export class ChatInput extends ContainerComponent {
         mouse: true,
         hidden: true,
       }),
-      parent: this.parent,
+      parent: this._container,
     });
 
+    this.setupEventHandlers();
     this.setupControls();
   }
 
-  private setupControls() {
+  private setupEventHandlers() {
+    this._inputBox.element.on("focus", () => {
+      // Hack how to enable input. Don't use inputOnFocus! It steal focus control.
+      (this._inputBox.element as any).readInput();
+    });
+    this._inputBox.element.on("", () => {
+      this.controlsManager.focus(this._container.id);
+    });
+  }
+
+  private setupControls(shouldRender = true) {
     this.controlsManager.updateKeyActions(this._inputBox.id, {
-      kind: "exclusive",
+      kind: "override",
       actions: [
         {
           key: "left",
@@ -158,6 +199,25 @@ export class ChatInput extends ContainerComponent {
         },
       ],
     });
+
+    this.controlsManager.updateNavigation(this._container.id, {
+      in: this._inputBox.id,
+    });
+
+    this.controlsManager.updateNavigation(this._inputBox.id, {
+      out: this._container.id,
+      outEffect: () => {
+        this.logger.debug("out effect");
+      },
+    });
+
+    if (shouldRender) {
+      this.screen.element.render();
+    }
+  }
+
+  focusInputBox() {
+    this.controlsManager.focus(this._inputBox.id);
   }
 
   public setProcessing(isProcessing: boolean) {

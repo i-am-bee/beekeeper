@@ -51,4 +51,8 @@ export const NavigationDescription = {
   MOVE_START_END_LINE: "Move to line start/end",
   HIGHLIGHT_NEXT_PREV: "Highlight next/prev message",
   COPY_MESSAGE: "Copy highlighted message",
+  MESSAGES_FILTER: "Messages filter",
+  ROLE_FILTER: "Roles filter",
+  MESSAGES: "Messages",
+  CHAT: "Chat",
 } as const;
