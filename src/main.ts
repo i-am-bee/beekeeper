@@ -95,8 +95,9 @@ async function main() {
   if (useChatMonitor) {
     // Create a write stream to a log file
     const chatMonitor = new ChatMonitor(
-      { title: "Runtime Chat Interface" },
+      { kind: "screen", title: "Runtime Chat Interface" },
       runtime,
+      logger,
     );
     await chatMonitor.start();
   } else {

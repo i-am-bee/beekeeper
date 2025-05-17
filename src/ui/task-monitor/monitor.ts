@@ -23,9 +23,10 @@ import { sortByObjectDateStringProperty } from "@/utils/time.js";
 import blessed from "neo-blessed";
 import { join } from "path";
 import { clone, isNonNull } from "remeda";
-import { BaseMonitorWithStatus } from "../base/monitor-with-status.js";
+import { MonitorWithStatus } from "../base/monitor-with-status.js";
 import { ParentInput, ScreenInput } from "../base/monitor.js";
 import * as st from "../config.js";
+import { Logger } from "beeai-framework";
 
 const TASK_CONFIG_DETAIL_DEFAULT_TEXT =
   "Select task pool to view task config detail";
@@ -45,7 +46,7 @@ const TAB_LABELS = {
   [TaskRunDetailTab.HISTORY]: "History",
 };
 
-export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
+export class TaskMonitor extends MonitorWithStatus<TaskStateBuilder> {
   private taskPoolList: blessed.Widgets.ListElement;
   private taskPoolListItemsData: {
     taskTypeId: TaskTypeId | TaskKindId;
@@ -76,8 +77,8 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
   private trajectoryTabButton: blessed.Widgets.ButtonElement;
   private historyTabButton: blessed.Widgets.ButtonElement;
 
-  constructor(arg: ParentInput | ScreenInput) {
-    super(arg, new TaskStateBuilder());
+  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+    super(arg, logger, new TaskStateBuilder());
     this.stateBuilder.on("state:updated", (update) => {
       switch (update.type) {
         case StateUpdateType.TASK_CONFIG:
@@ -108,7 +109,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
 
     // Left column - Pools and Task Runs (70%)
     this.taskPoolList = blessed.list({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "30%",
       height: "30%",
       left: 0,
@@ -125,7 +126,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     });
 
     this.taskVersionsList = blessed.list({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "30%",
       height: "20%",
       left: 0,
@@ -143,7 +144,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     });
 
     this.taskRunList = blessed.list({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "30%",
       height: "50%",
       left: 0,
@@ -162,7 +163,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
 
     // Center column - Details and Tools (40%)
     this.taskConfigDetail = blessed.box({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "70%",
       height: "40%",
       left: "30%",
@@ -179,7 +180,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     });
 
     this.taskRunDetail = blessed.box({
-      parent: this.contentBox,
+      parent: this.contentBox.element,
       width: "70%",
       height: "60%",
       left: "30%",
@@ -272,7 +273,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     });
 
     this.setupEventHandlers();
-    this.screen.render();
+    this.screen.element.render();
   }
 
   private onPoolSelect(selectedIndex: number) {
@@ -352,7 +353,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       }
     }
 
-    this.screen.render();
+    this.screen.element.render();
   }
 
   private setupEventHandlers() {
@@ -380,19 +381,19 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     });
 
     // Add keyboard shortcuts for tab switching
-    this.screen.key(["1"], () => {
+    this.screen.element.key(["1"], () => {
       this.onTabSelect(TaskRunDetailTab.DETAIL);
-      this.screen.render();
+      this.screen.element.render();
     });
 
-    this.screen.key(["2"], () => {
+    this.screen.element.key(["2"], () => {
       this.onTabSelect(TaskRunDetailTab.TRAJECTORY);
-      this.screen.render();
+      this.screen.element.render();
     });
 
-    this.screen.key(["3"], () => {
+    this.screen.element.key(["3"], () => {
       this.onTabSelect(TaskRunDetailTab.HISTORY);
-      this.screen.render();
+      this.screen.element.render();
     });
 
     // Mouse scrolling for all components
@@ -406,10 +407,10 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       component.on("mouse", (data) => {
         if (data.action === "wheelup") {
           component.scroll(-1);
-          this.screen.render();
+          this.screen.element.render();
         } else if (data.action === "wheeldown") {
           component.scroll(1);
-          this.screen.render();
+          this.screen.element.render();
         }
       });
     });
@@ -470,7 +471,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
 
     this.updateTaskVersionsList(false);
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -534,7 +535,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     );
     this.updateTaskList(false);
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -610,7 +611,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       this.taskRunListItemsData.length ? "" : TASK_RUN_LIST_DEFAULT_TEXT,
     );
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -618,7 +619,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     if (!taskConfig) {
       this.taskConfigDetail.setContent(TASK_CONFIG_DETAIL_DEFAULT_TEXT);
       if (shouldRender) {
-        this.screen.render();
+        this.screen.element.render();
       }
       return;
     }
@@ -641,7 +642,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     ].join("\n");
     this.taskConfigDetail.setContent(details);
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -655,7 +656,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
       this.trajectoryTabButton.hide();
       this.historyTabButton.hide();
       if (shouldRender) {
-        this.screen.render();
+        this.screen.element.render();
       }
       return;
     }
@@ -799,7 +800,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
     this.taskRunDetail.setContent("\n\n" + content);
 
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 
@@ -814,7 +815,7 @@ export class TaskMonitor extends BaseMonitorWithStatus<TaskStateBuilder> {
 
     // Render
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 

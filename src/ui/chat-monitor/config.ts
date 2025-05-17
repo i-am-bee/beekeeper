@@ -1,3 +1,4 @@
+import { clone } from "remeda";
 import { UIColors } from "../colors.js";
 import * as st from "../config.js";
 import { MessageTypeEnum } from "./runtime-handler.js";
@@ -11,8 +12,11 @@ import { MessageTypeEnum } from "./runtime-handler.js";
  * @param message The user message content
  * @returns Formatted user message
  */
-export function formatUserMessage(message: string): string {
-  return st.input(message);
+export function formatUserMessage(
+  message: string,
+  highlighted?: boolean,
+): string {
+  return st.input(message, undefined, highlighted);
 }
 
 /**
@@ -20,8 +24,13 @@ export function formatUserMessage(message: string): string {
  * @param message The system message content
  * @returns Formatted system message
  */
-export function formatSystemMessage(message: string): string {
-  return message.includes("Error") ? st.error(message) : st.system(message);
+export function formatSystemMessage(
+  message: string,
+  highlighted?: boolean,
+): string {
+  return message.includes("Error")
+    ? st.error(message, highlighted)
+    : st.system(message, highlighted);
 }
 
 /**
@@ -29,8 +38,11 @@ export function formatSystemMessage(message: string): string {
  * @param message The agent/task message content
  * @returns Formatted agent/task message
  */
-export function formatAgentMessage(message: string): string {
-  return st.output(message);
+export function formatAgentMessage(
+  message: string,
+  highlighted?: boolean,
+): string {
+  return st.output(message, undefined, highlighted);
 }
 
 /**
@@ -63,6 +75,7 @@ export function formatCompleteMessage(
   role: string,
   content: string,
   type: MessageTypeEnum,
+  highlighted: boolean,
 ): string {
   const formattedTimestamp = st.timestamp(timestamp);
   const formattedRole = formatRole(role);
@@ -71,16 +84,16 @@ export function formatCompleteMessage(
   let formattedContent;
   switch (type) {
     case MessageTypeEnum.INPUT:
-      formattedContent = formatUserMessage(content);
+      formattedContent = formatUserMessage(content, highlighted);
       break;
     case MessageTypeEnum.PROGRESS:
     case MessageTypeEnum.ERROR:
     case MessageTypeEnum.ABORT:
     case MessageTypeEnum.SYSTEM:
-      formattedContent = formatSystemMessage(content);
+      formattedContent = formatSystemMessage(content, highlighted);
       break;
     case MessageTypeEnum.FINAL:
-      formattedContent = formatAgentMessage(content);
+      formattedContent = formatAgentMessage(content, highlighted);
       break;
   }
   return `${formattedTimestamp} ${formattedRole}: ${formattedContent}`;
@@ -90,37 +103,43 @@ export function formatCompleteMessage(
  * Get UI styling for the messages box
  * @returns Object with UI configuration for the messages box
  */
-export function getMessagesBoxStyle() {
+export function getMessagesContainerStyle() {
+  const border = clone(st.UIConfig.borders) as any;
   return {
-    border: st.UIConfig.borders as any,
+    border,
     label: " Messages ",
-    scrollable: true,
-    alwaysScroll: true,
-    mouse: true,
-    keys: true,
-    vi: true,
-    scrollbar: st.UIConfig.scrollbar,
+    style: {
+      focus: border.focus,
+    },
   };
 }
 
-/**
- * Get UI styling for the input box
- * @returns Object with UI configuration for the input box
- */
+export function getMessagesBoxStyle() {
+  return {
+    scrollbar: st.UIConfig.scrollbar,
+    style: {
+      focus: {
+        bg: UIColors.green.dartmouth_green,
+      },
+    },
+  };
+}
+
+export function getInputContainerBoxStyle() {
+  const border = clone(st.UIConfig.borders) as any;
+  return {
+    border: border,
+    label: " Input ",
+    style: {
+      focus: border.focus,
+    },
+  };
+}
+
 export function getInputBoxStyle() {
   return {
-    border: st.UIConfig.borders as any,
-    label: " Input ",
-    inputOnFocus: true,
-    mouse: true,
-    keys: true,
     style: {
       ...st.UIConfig.input,
-      focus: {
-        border: {
-          fg: "green",
-        },
-      },
     },
   };
 }

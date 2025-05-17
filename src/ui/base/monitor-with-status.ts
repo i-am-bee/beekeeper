@@ -1,7 +1,9 @@
 import { BaseStateBuilder } from "@/base/state/base-state-builder.js";
 import { StatusBar } from "../shared/status-bar.js";
-import { BaseMonitor, ParentInput, ScreenInput } from "./monitor.js";
+import { ContainerComponent, ParentInput, ScreenInput } from "./monitor.js";
 import blessed from "neo-blessed";
+import { ControllableContainer } from "../controls/controls-manager.js";
+import { Logger } from "beeai-framework";
 
 // New interfaces for StatusBar options
 export interface StatusBarOptions {
@@ -9,10 +11,10 @@ export interface StatusBarOptions {
   updateIntervalMs?: number;
 }
 
-export abstract class BaseMonitorWithStatus<
+export abstract class MonitorWithStatus<
   TStateBuilder extends BaseStateBuilder<any, any>,
-> extends BaseMonitor {
-  protected contentBox: blessed.Widgets.BoxElement;
+> extends ContainerComponent {
+  protected contentBox: ControllableContainer;
   protected statusBar: StatusBar;
   protected _stateBuilder?: TStateBuilder;
 
@@ -25,28 +27,35 @@ export abstract class BaseMonitorWithStatus<
 
   constructor(
     arg: ParentInput | ScreenInput,
+    logger: Logger,
     stateBuilder?: TStateBuilder,
     statusBarOptions?: StatusBarOptions,
   ) {
     // Initialize the parent BaseMonitor
-    super(arg);
+    super(arg, logger);
 
     // Content box
-    this.contentBox = blessed.box({
+    this.contentBox = this.controlsManager.add({
+      kind: "container",
+      name: "contentBox",
+      element: blessed.box({
+        parent: this.parent.element,
+        width: "100%",
+        height: "100%-3",
+        left: 0,
+        top: 0,
+        tags: true,
+        mouse: true,
+        keys: true,
+        vi: true,
+      }),
       parent: this.parent,
-      width: "100%",
-      height: "100%-3",
-      left: 0,
-      top: 0,
-      tags: true,
-      mouse: true,
-      keys: true,
-      vi: true,
     });
 
     // Add the status bar at the bottom
     this.statusBar = new StatusBar({
       parent: this.parent,
+      controlsManager: this.controlsManager,
       width: "100%-1",
       height: 3,
       left: 0,
@@ -79,7 +88,7 @@ export abstract class BaseMonitorWithStatus<
     this.statusBar.log("Reading initial state from log...");
 
     if (shouldRender) {
-      this.screen.render();
+      this.screen.element.render();
     }
   }
 }

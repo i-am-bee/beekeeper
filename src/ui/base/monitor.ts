@@ -1,29 +1,46 @@
 import blessed from "neo-blessed";
+import {
+  ControllableContainer,
+  ControllableScreen,
+  ControlsManager,
+} from "../controls/controls-manager.js";
+import { Logger } from "beeai-framework";
 
 export interface ParentInput {
-  screen: blessed.Widgets.Screen;
-  parent: blessed.Widgets.BoxElement;
+  kind: "parent";
+  parent: ControllableContainer | ControllableScreen;
+  controlsManager: ControlsManager;
 }
 
 export interface ScreenInput {
+  kind: "screen";
   title: string;
 }
 
-export abstract class BaseMonitor {
-  protected screen: blessed.Widgets.Screen;
-  protected parent: blessed.Widgets.Node;
+export abstract class ContainerComponent {
+  protected logger: Logger;
+  protected controlsManager: ControlsManager;
+  protected screen: ControllableScreen;
+  protected parent: ControllableContainer | ControllableScreen;
 
-  constructor(arg: ParentInput | ScreenInput) {
-    if ((arg as ScreenInput).title) {
-      this.screen = blessed.screen({
-        smartCSR: true,
-        title: (arg as ScreenInput).title,
-        debug: true,
-      });
+  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+    this.logger = logger.child({
+      name: this.constructor.name,
+    });
+    if (arg.kind === "screen") {
+      this.controlsManager = new ControlsManager(
+        blessed.screen({
+          smartCSR: true,
+          title: arg.title,
+        }),
+        this.logger,
+      );
+      this.screen = this.controlsManager.screen;
       this.parent = this.screen;
     } else {
-      const { screen, parent } = arg as ParentInput;
-      this.screen = screen;
+      const { parent, controlsManager } = arg as ParentInput;
+      this.controlsManager = controlsManager;
+      this.screen = this.controlsManager.screen;
       this.parent = parent;
     }
   }
