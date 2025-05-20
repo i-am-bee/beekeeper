@@ -6,16 +6,23 @@ import { WorkflowComposerInput, WorkflowComposerOutput } from "./dto.js";
 import { ProblemDecomposer } from "./problem-decomposer/problem-decomposer.js";
 import { TaskInitializer } from "./task-initializer/task-initalizer.js";
 import { AgentIdValue } from "@/agents/registry/dto.js";
+import { AgentRegistry } from "@/agents/registry/registry.js";
+import { ServiceLocator } from "@/utils/service-locator.js";
+import { TaskManager } from "@/tasks/manager/manager.js";
 
 export class WorkflowComposer extends Runnable<
   WorkflowComposerInput,
   WorkflowComposerOutput
 > {
+  protected agentRegistry: AgentRegistry<unknown>;
+  protected taskManager: TaskManager;
   protected problemDecomposer: ProblemDecomposer;
   protected taskInitializer: TaskInitializer;
 
   constructor(logger: Logger, agentId: AgentIdValue) {
     super(logger, agentId);
+    this.agentRegistry = ServiceLocator.getInstance().get(AgentRegistry);
+    this.taskManager = ServiceLocator.getInstance().get(TaskManager);
     this.problemDecomposer = new ProblemDecomposer(logger, agentId);
     this.taskInitializer = new TaskInitializer(logger, agentId);
   }
@@ -24,9 +31,23 @@ export class WorkflowComposer extends Runnable<
     input: WorkflowComposerInput,
     ctx: Context,
   ): Promise<WorkflowComposerOutput> {
+    const availableTools = Array.from(
+      this.agentRegistry.getToolsFactory("operator").availableTools.values(),
+    );
+    const existingAgents = this.agentRegistry.getAgentConfigs({
+      kind: "operator",
+    });
+
     const { output: problemDecomposerOutput } =
       await this.problemDecomposer.run(
-        { userMessage: input.input, data: input },
+        {
+          userMessage: input.input,
+          data: {
+            input: input.input,
+            availableTools,
+            existingAgents,
+          },
+        },
         ctx,
       );
     if (problemDecomposerOutput.type === "ERROR") {

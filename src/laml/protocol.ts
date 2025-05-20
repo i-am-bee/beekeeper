@@ -2,7 +2,7 @@ import { clone, isNonNullish, omit, reverse } from "remeda";
 import * as dto from "./dto.js";
 import { protocolToSchema } from "./dto.js";
 import { Parser } from "./parser.js";
-import { printLAMLObject } from "./utils.js";
+import { LAMLPrimitiveValueFormatter, printLAMLObject } from "./utils.js";
 
 export const DEFAULT_INDENT = "  ";
 export const INDENT_LENGTH = DEFAULT_INDENT.length;
@@ -326,16 +326,16 @@ export class Protocol<TResult> {
   printExplanation() {
     return `All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
 <!required|optional; indent; type; human-readable hint>
-- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).  
+- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).
 - type - One of the following:
-  - text – single-line string  
-  - number – floating-point value (e.g., 3.14)  
-  - integer – whole number  
-  - boolean - true / false  
-  - constant – one literal chosen from the values listed in the protocol  
-  - array – list of items of the specified item-type (comma-separated or JSON-style)  
+  - text – single-line string
+  - number – floating-point value (e.g., 3.14)
+  - integer – whole number
+  - boolean - true / false
+  - constant – one literal chosen from the values listed in the protocol
+  - array – list of items of the specified item-type (comma-separated or JSON-style)
   - list - human readable list of items numbered or with bullet points
-  - object – nested attributes, each described by its own metadata tag  
+  - object – nested attributes, each described by its own metadata tag
 - indent – integer; the key’s left-margin offset in spaces (0 = column 0)
 - human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
 
@@ -345,9 +345,12 @@ ${this.toString()}
 \`\`\`<STOP HERE>`;
   }
 
-  printExample(input: ProtocolResult<typeof this>) {
+  printExample(
+    input: ProtocolResult<typeof this>,
+    formatters?: LAMLPrimitiveValueFormatter[],
+  ) {
     return `\`\`\`
-${printLAMLObject(input as dto.LAMLObject)}
+${printLAMLObject(input as dto.LAMLObject, { formatters })}
 \`\`\``;
   }
 }

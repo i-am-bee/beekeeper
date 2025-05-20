@@ -7,7 +7,6 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { BaseAgentFactory, CreateAgentInput } from "./base/agent-factory.js";
 import { SupervisorWorkflow } from "./supervisor-workflow/supervisor-workflow.js";
 
-
 export type AgentUpdateCallback = (key: string, value: string) => void;
 
 export class AgentFactory extends BaseAgentFactory<
@@ -82,7 +81,7 @@ export class AgentFactory extends BaseAgentFactory<
     addToMemory?: (AssistantMessage | ToolMessage)[],
   ): Promise<string> {
     if (agent instanceof SupervisorWorkflow) {
-      return await agent.run({prompt,onUpdate});
+      return await agent.run({ prompt, onUpdate });
     } else {
       if (addToMemory) {
         agent.memory.addMany(addToMemory);

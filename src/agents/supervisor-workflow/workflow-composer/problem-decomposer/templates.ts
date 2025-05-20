@@ -2,7 +2,7 @@ import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body
 import * as laml from "@/laml/index.js";
 import {
   AgentAvailableTool,
-  AgentConfigMinimal,
+  AgentConfigTiny,
 } from "../task-initializer/agent-config-initializer/dto.js";
 
 export class ExistingResourcesBuilder {
@@ -16,7 +16,7 @@ export class ExistingResourcesBuilder {
     return new ExistingResourcesBuilder();
   }
 
-  agentConfigs(configs?: AgentConfigMinimal[]) {
+  agentConfigs(configs?: AgentConfigTiny[], introduction?: string) {
     const agents = !configs?.length
       ? "There is no existing agents yet."
       : laml.printLAMLObject(
@@ -33,15 +33,18 @@ export class ExistingResourcesBuilder {
           }, {}),
         );
 
-    const content = `Agents that are already running. Each can be assigned tasks that fall within its instructions.
-
-${agents}`;
+    const content = `${introduction ? `${introduction}\n\n` : ""}${agents}`;
 
     this.output += BodyTemplateBuilder.new()
       .section({
         title: {
           text: "Existing agents",
           level: 3,
+        },
+        newLines: {
+          start: 1,
+          contentEnd: 0,
+          end: 0,
         },
         content,
       })
@@ -50,7 +53,7 @@ ${agents}`;
     return this;
   }
 
-  availableTools(tools?: AgentAvailableTool[]) {
+  availableTools(tools?: AgentAvailableTool[], introduction?: string) {
     const availableTools = !tools?.length
       ? "There is no available agent tools."
       : laml.printLAMLObject(
@@ -64,9 +67,7 @@ ${agents}`;
           }, {}),
         );
 
-    const content = `Standalone tools that future agents *could* invoke if you create a step requiring them.
-  
-${availableTools}`;
+    const content = `${introduction ? `${introduction}\n\n` : ""}${availableTools}`;
 
     this.output += BodyTemplateBuilder.new()
       .section({
@@ -75,7 +76,9 @@ ${availableTools}`;
           level: 3,
         },
         newLines: {
+          start: 1,
           contentEnd: 0,
+          end: 0,
         },
         content,
       })
