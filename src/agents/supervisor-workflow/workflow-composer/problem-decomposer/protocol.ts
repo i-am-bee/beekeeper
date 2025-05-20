@@ -18,10 +18,13 @@ export const protocol = laml.ProtocolBuilder.new()
   .object({
     name: "RESPONSE_STEP_SEQUENCE",
     isOptional: true,
-    attributes: laml.ProtocolBuilder.new().list({
-      name: "step_sequence",
-      type: "numbered",
-    }),
+    attributes: laml.ProtocolBuilder.new()
+      .list({
+        name: "step_sequence",
+        type: "numbered",
+        description:
+          "Ordered list of high-level tasks that collectively achieve the user's goal. Each step must include necessary inputs, whether it uses a tool or agent, and any dependencies on previous steps.",
+      })
   })
   .object({
     name: "RESPONSE_UNSOLVABLE",

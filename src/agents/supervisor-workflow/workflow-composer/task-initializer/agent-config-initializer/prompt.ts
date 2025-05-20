@@ -9,9 +9,98 @@ import {
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
 
+export const prompt = ({
+  existingAgentConfigs,
+  availableTools,
+}: Pick<
+  AgentConfigInitializerInput,
+  "existingAgentConfigs" | "availableTools"
+>) =>
+  BodyTemplateBuilder.new()
+    .introduction(
+      `You are an **AgentConfigCreator** — the action module in a multi-agent workflow.  
+Your mission is to select, or—if none exists—create new agent configs to accomplish the task. You can also update an existing config as long as the update doesn’t change its purpose.`,
+    )
+    .section({
+      title: {
+        text: "Existing resources",
+        level: 2,
+      },
+      newLines: {
+        start: 1,
+        contentStart: 0,
+        contentEnd: 0,
+      },
+      delimiter: {
+        start: true,
+        end: true,
+      },
+      content: ExistingResourcesBuilder.new()
+        .agentConfigs(existingAgentConfigs)
+        .availableTools(availableTools)
+        .build(),
+    })
+    .section({
+      title: {
+        text: "Response Format",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+      },
+      delimiter: { end: true },
+      content: protocol.printExplanation(),
+    })
+    .section({
+      title: {
+        text: "Decision Criteria",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: decisionCriteria,
+    })
+    .section({
+      title: {
+        text: "Response Guidelines",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: guidelines,
+    })
+    .section({
+      title: {
+        text: "Examples",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: examples,
+    })
+    .callToAction("This is the task")
+    .build();
+
 const guidelines = BodyTemplateBuilder.new()
   .section({
-    content: `Agent config is a general template or a prescription (like a class in a programming language) for agents (like an instances) that will actually run at the runtime. They will receive an input from assigned task that is suitable to its purpose. Keep that in mind and design agent config general not just for one use with one set of parameters. Each specific adjustments should will provided through task inputs as an attributes.`,
+    content: `Agent config is a **general-purpose template** for an agent that is activated externally by a task. The agent **does not self-trigger**, schedule, or continuously run on its own. Each time it executes, it receives an input payload from the task that triggered it. Therefore, define the agent’s behavior in a **stateless, input-driven** manner—ensuring it performs the assigned task only during the time it’s invoked.
+
+Do **not** design agents as continuous monitors, autonomous loopers, or triggerers of other agents. Their role is **purely functional**: consume input → perform task → return result.
+
+Each agent config should generalize across many similar tasks. Specific parameters (e.g., time ranges, coordinates, query strings) must be passed in as **runtime input**, not hardcoded.`,
   })
   .section({
     title: {
@@ -141,9 +230,187 @@ const examples = ((inputs: ExampleInput[]) =>
     )
     .join("\n"))([
   {
-    title: "Create agent config",
+    title: "CREATE_AGENT_CONFIG",
+    subtitle: "Tornado alert lookup (invoked agent — not self-triggering)",
+    context: {
+      existingAgentConfigs: [],
+      availableTools: [
+        {
+          toolName: "weather_alert_feed",
+          description:
+            "Provides structured severe weather alerts (e.g., watches, warnings) by location and event type. Returns geographic area, issue time, expiration, and full alert text.",
+        },
+      ],
+    },
+    user: "Continuously monitor weather_alert_feed for tornado watches or warnings within 50 km of the user’s coordinates and notify immediately.",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "No existing agent can check tornado alerts via weather_alert_feed based on runtime coordinates; a new agent is needed.",
+      RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+      RESPONSE_CREATE_AGENT_CONFIG: {
+        agent_type: "tornado_alert_lookup",
+        tools: ["weather_alert_feed"],
+        instructions: `Context: You are a weather alert lookup agent. You are activated by an external task and receive coordinates as input. You have access to the weather_alert_feed tool, which provides real-time severe weather alerts by location.
+
+Objective: Check for any tornado-related alerts (watch or warning) within 50 km of the user-supplied location. If one or more relevant alerts exist, return them in a clear, concise format.
+
+Response format: If alerts are found, list each alert with its type, area, and time range:
+
+🚨 Tornado Alert 🚨  
+- Type: [Watch or Warning]  
+- Area: [geographic description]  
+- Issued: [timestamp]  
+- Expires: [timestamp]  
+- Details: [brief alert summary]
+
+If no qualifying alert is found, respond with: "No tornado watches or warnings near the specified location."`,
+        description:
+          "Checks for tornado watches or warnings near a specified location using the weather_alert_feed.",
+      },
+    },
+  },
+  {
+    title: "SELECT_AGENT_CONFIG",
+    subtitle: "Tornado alert lookup (Reuse Existing Agent)",
+    context: {
+      existingAgentConfigs: [
+        {
+          agentType: "tornado_alert_lookup",
+          tools: ["weather_alert_feed"],
+          instructions: `Context: You are a weather alert lookup agent. You are activated by an external task and receive coordinates as input. You have access to the weather_alert_feed tool, which provides real-time severe weather alerts by location.
+
+Objective: Check for any tornado-related alerts (watch or warning) within 50 km of the user-supplied location. If one or more relevant alerts exist, return them in a clear, concise format.
+
+Response format: If alerts are found, list each alert with its type, area, and time range:
+
+🚨 Tornado Alert 🚨  
+- Type: [Watch or Warning]  
+- Area: [geographic description]  
+- Issued: [timestamp]  
+- Expires: [timestamp]  
+- Details: [brief alert summary]
+
+If no qualifying alert is found, respond with: "No tornado watches or warnings near the specified location."`,
+          description:
+            "Checks for tornado watches or warnings near a specified location using the weather_alert_feed.",
+        },
+      ],
+      availableTools: [
+        {
+          toolName: "news_search",
+          description:
+            "Query a curated index of newspapers, magazines, and wire-services for articles that match a keyword or topic.",
+        },
+        {
+          toolName: "weather_alert_feed",
+          description:
+            "Provides structured severe weather alerts (e.g., watches, warnings) by location and event type. Returns geographic area, issue time, expiration, and full alert text.",
+        },
+      ],
+    },
+    user: "Is there any tornado warning in my region?",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The existing tornado_alert_lookup agent config satisfies the new request without changes.",
+      RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
+      RESPONSE_SELECT_AGENT_CONFIG: {
+        agent_type: "tornado_alert_lookup",
+      },
+    },
+  },
+  {
+    title: "UPDATE_AGENT_CONFIG",
     subtitle:
-      "Collect tweets (Available suitable agent tool allow to create a new agent config)",
+      "Tornado alert lookup (Expand from tornado-only to all severe alerts)",
+    context: {
+      existingAgentConfigs: [
+        {
+          agentType: "tornado_alert_lookup",
+          tools: ["weather_alert_feed"],
+          instructions: `Context: You are a weather alert lookup agent. You are activated by an external task and receive coordinates as input. You have access to the weather_alert_feed tool, which provides real-time severe weather alerts by location.
+
+Objective: Check for any tornado-related alerts (watch or warning) within 50 km of the user-supplied location. If one or more relevant alerts exist, return them in a clear, concise format.
+
+Response format: If alerts are found, list each alert with its type, area, and time range:
+
+🚨 Tornado Alert 🚨  
+- Type: [Watch or Warning]  
+- Area: [geographic description]  
+- Issued: [timestamp]  
+- Expires: [timestamp]  
+- Details: [brief alert summary]
+
+If no qualifying alert is found, respond with: "No tornado watches or warnings near the specified location."`,
+          description:
+            "Checks for tornado watches or warnings near a specified location using the weather_alert_feed.",
+        },
+      ],
+      availableTools: [
+        {
+          toolName: "news_search",
+          description:
+            "Query a curated index of newspapers, magazines, and wire-services for articles that match a keyword or topic.",
+        },
+        {
+          toolName: "weather_alert_feed",
+          description:
+            "Provides structured severe weather alerts (e.g., watches, warnings) by location and event type. Returns geographic area, issue time, expiration, and full alert text.",
+        },
+      ],
+    },
+    user: "I’d like to be notified of all kinds of severe weather alerts — not just tornadoes.",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The core purpose remains the same (weather alert checking), but the scope is broadened from tornado-specific to all severe alerts.",
+      RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
+      RESPONSE_UPDATE_AGENT_CONFIG: {
+        agent_type: "tornado_alert_lookup",
+        instructions: `Context: You are a weather alert lookup agent. You are activated by an external task and receive coordinates as input. You have access to the weather_alert_feed tool, which provides real-time severe weather alerts by location.
+
+Objective: Check for any severe weather alerts (e.g., tornadoes, thunderstorms, floods) within 50 km of the user-supplied location. If one or more relevant alerts exist, return them in a clear, concise format.
+
+Response format: If alerts are found, list each alert with its type, area, and time range:
+
+⚠️ Severe Weather Alert ⚠️  
+- Type: [Alert type]  
+- Area: [geographic description]  
+- Issued: [timestamp]  
+- Expires: [timestamp]  
+- Details: [brief alert summary]
+
+If no qualifying alert is found, respond with: "No severe weather alerts near the specified location."`,
+        description:
+          "Checks for any severe weather alerts near a specified location using the weather_alert_feed.",
+      },
+    },
+  },
+  {
+    title: "AGENT_CONFIG_UNAVAILABLE",
+    subtitle: "Tornado alert lookup (No weather alert capability)",
+    context: {
+      existingAgentConfigs: [],
+      availableTools: [
+        {
+          toolName: "news_search",
+          description:
+            "Query a curated index of newspapers, magazines, and wire-services for articles that match a keyword or topic.",
+        },
+      ],
+    },
+    user: "Check for active tornado warnings near my location using weather_alert_feed.",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The weather_alert_feed tool is required but not available.",
+      RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
+      RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
+        explanation:
+          "Cannot create or update an agent because the tool weather_alert_feed is not available.",
+      },
+    },
+  },
+  {
+    title: "CREATE_AGENT_CONFIG",
+    subtitle: "Tweet collector agent (valid tool available)",
     context: {
       existingAgentConfigs: [],
       availableTools: [
@@ -157,29 +424,29 @@ const examples = ((inputs: ExampleInput[]) =>
     user: "Collect tweets containing the hashtag #AI from the past 24 hours.",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "No existing agent can gather tweets on demand; a new config is required.",
+        "No existing agent can collect tweets; a new agent using twitter_search is needed.",
       RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
       RESPONSE_CREATE_AGENT_CONFIG: {
         agent_type: "tweets_collector",
         tools: ["twitter_search"],
         description:
-          "Gathers tweets that match a user-supplied query or hashtag within a given time window (default = 24 h).",
-        instructions: `Context: You are a tweet collection agent specializing in gathering tweets containing specific hashtags. You have access to a web search tool that allows you to find tweets based on search queries. Users will provide you with a hashtag and a time frame for the tweets they want collected. 
+          "Collects tweets matching user-defined queries or hashtags within a specified time window.",
+        instructions: `Context: You are a tweet collector agent that retrieves tweets matching a given hashtag or query. You are invoked by external tasks and receive both the hashtag and time window as input. You use the twitter_search tool to execute the query and retrieve tweet content.
 
-Objective: Collect tweets containing the specified hashtag from the specific time window. Use the web search tool to execute a search query for the hashtag and filter results to include only tweets from the specific time window. Provide a list of tweet URLs and their content.
+Objective: Use the provided hashtag and time window to fetch relevant tweets. Return a list of tweet URLs and their associated content.
 
-Response format: Begin with a summary of the search query and time frame. Then list each tweet with its URL and content. Ensure the list is clear and organized, with each tweet entry on a new line. For example:
+Response format: Start with a sentence summarizing the search criteria. Then list each tweet in the format:
 
-#AI Tweets from the past [time_window]:
-1. URL: [tweet_url_1] Content: [tweet_content_1]
-2. URL: [tweet_url_2] Content: [tweet_content_2]`,
+#AI Tweets from the past 24 hours:
+1. URL: [tweet_url_1] — Content: [tweet_content_1]
+2. URL: [tweet_url_2] — Content: [tweet_content_2]`,
       },
     },
   },
   {
-    title: "Agent config unavailable",
+    title: "AGENT_CONFIG_UNAVAILABLE",
     subtitle:
-      "Collect tweets (No suitable agent tool or existing agent config)",
+      "Tweet collector agent (No suitable agent tool or existing agent config)",
     context: {
       existingAgentConfigs: [],
       availableTools: [
@@ -193,16 +460,16 @@ Response format: Begin with a summary of the search query and time frame. Then l
     user: "Collect tweets containing the hashtag #AI from the past 24 hours.",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "No existing agent can gather tweets on demand; a new config is required but there is no suitable tool.",
+        "No agent can collect tweets and no suitable tool exists for this functionality.",
       RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
       RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
         explanation:
-          "Cannot create or update an agent because there is no tool for collecting tweets.",
+          "Cannot create or update an agent because there is no tool for collecting tweets..",
       },
     },
   },
   {
-    title: "Update agent config",
+    title: "UPDATE_AGENT_CONFIG",
     subtitle: "Generalization of restaurants recommendation",
     context: {
       existingAgentConfigs: [
@@ -230,26 +497,26 @@ Response format: Present the information in a list format with each restaurant h
         },
       ],
     },
-    user: "I want to recommend chinese restaurants.",
+    user: "I want to recommend Chinese restaurants.",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "There isn’t an existing agent configuration specifically designed to find Chinese restaurants, but there is one for recommending vegan options, so I’ll update that agent to make it more general.",
+        "The agent's purpose remains restaurant recommendations, but its scope must be generalized beyond vegan cuisine.",
       RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
       RESPONSE_UPDATE_AGENT_CONFIG: {
         agent_type: "restaurant_recommender",
         tools: ["google_search", "web_extract"],
         description: "Agent for recommending restaurants in a city.",
-        instructions: `Context: You are an agent specialized in finding restaurants that satisfy user-defined criteria—such as cuisine (e.g., Italian, Thai), dietary needs (e.g., vegan, gluten-free), budget, or vibe—in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
+        instructions: `Context: You are an agent specialized in recommending restaurants based on user-defined criteria—such as cuisine, dietary restrictions, budget, or ambiance. You use web search tools to gather current information about dining spots. Users will provide a city and any relevant preferences.
 
-Objective: Return a curated list of restaurants that fit the user’s parameters, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
+Objective: Return a curated list of restaurants that match the user's parameters, including details like location, menu highlights, and reservation info.
 
-Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
+Response format: Present results in a structured list where each restaurant includes name, brief description, and key dining details.`,
       },
     },
   },
   {
-    title: "Select agent config",
-    subtitle: "Weather information",
+    title: "SELECT_AGENT_CONFIG",
+    subtitle: "Weather information (Existing agent config)",
     context: {
       existingAgentConfigs: [
         {
@@ -290,7 +557,7 @@ Current Weather in [Location] on [Date]:
     user: "What’s the weather right now in Prague?",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "There is an existing agent configuration for getting actual weather situation that can satisfy the request without modification.",
+        "The weather_lookup agent matches the task and can be reused without changes.",
       RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
       RESPONSE_SELECT_AGENT_CONFIG: {
         agent_type: "weather_lookup",
@@ -298,17 +565,17 @@ Current Weather in [Location] on [Date]:
     },
   },
   {
-    title: "Agent config unavailable",
+    title: "SELECT_AGENT_CONFIG",
     subtitle: "3-D house rendering",
     context: {
       existingAgentConfigs: [
         {
           agentType: "restaurant_recommender",
-          tools: ["web_search"],
-          description: "Agent for recommending restaurants in a city.",
-          instructions: `Context: You are an agent specialized in recommending restaurants in a given city. You have access to web search tools to gather information about popular dining spots, including Italian, Chinese, and French cuisines. Users will provide the city and any specific dining preferences they have. 
+          tools: ["google_search", "web_extract"],
+          description: "Agent for recommending vegan restaurants in a city.",
+          instructions: `Context: You are an agent specialized in finding vegan restaurants in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have.
 
-Objective: Provide a list of recommended restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
+Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information.
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
         },
@@ -328,7 +595,7 @@ Response format: Present the information in a list format with each restaurant h
     user: "Render a 3-D model of my house from this floor plan.",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "No existing agent handles 3-D rendering and no available tool supports CAD or graphics output.",
+        "No existing or viable tool supports 3-D rendering or CAD visualization.",
       RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
       RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
         explanation:
@@ -337,7 +604,7 @@ Response format: Present the information in a list format with each restaurant h
     },
   },
   {
-    title: "Agent config unavailable",
+    title: "SELECT_AGENT_CONFIG",
     subtitle: "Missing suitable tool",
     context: {
       existingAgentConfigs: [],
@@ -351,7 +618,7 @@ Response format: Present the information in a list format with each restaurant h
     user: "Gathers news headlines from the past 24 hours that match user-supplied keywords.",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "No listed tool can collect headline; agent cannot be created.",
+        "No tool can retrieve or filter news headlines; task is not feasible.",
       RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
       RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
         explanation:
@@ -360,88 +627,3 @@ Response format: Present the information in a list format with each restaurant h
     },
   },
 ]);
-
-export const prompt = ({
-  existingAgentConfigs,
-  availableTools,
-}: Pick<
-  AgentConfigInitializerInput,
-  "existingAgentConfigs" | "availableTools"
->) =>
-  BodyTemplateBuilder.new()
-    .introduction(
-      `You are an **AgentConfigCreator** — the action module in a multi-agent workflow.  
-Your mission is to select, or—if none exists—create new agent configs to accomplish the task. You can also update an existing config as long as the update doesn’t change its purpose.`,
-    )
-    .section({
-      title: {
-        text: "Existing resources",
-        level: 2,
-      },
-      newLines: {
-        start: 1,
-        contentStart: 0,
-        contentEnd: 0,
-      },
-      delimiter: {
-        start: true,
-        end: true,
-      },
-      content: ExistingResourcesBuilder.new()
-        .agentConfigs(existingAgentConfigs)
-        .availableTools(availableTools)
-        .build(),
-    })
-    .section({
-      title: {
-        text: "Response Format",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-      },
-      delimiter: { end: true },
-      content: protocol.printExplanation(),
-    })
-    .section({
-      title: {
-        text: "Decision Criteria",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: decisionCriteria,
-    })
-    .section({
-      title: {
-        text: "Response Guidelines",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: guidelines,
-    })
-    .section({
-      title: {
-        text: "Examples",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: examples,
-    })
-    .callToAction("This is the task")
-    .build();
