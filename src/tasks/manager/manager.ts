@@ -58,7 +58,6 @@ import {
 } from "./dto.js";
 import {
   extendBlockingTaskRunOutput,
-  serializeTaskRunInput,
   taskRunError,
   taskRunOutput,
 } from "./helpers.js";
@@ -1144,10 +1143,13 @@ export class TaskManager extends WorkspaceRestorable {
     this.persist();
   }
 
-  getAllTaskConfigs(actingAgentId: AgentIdValue) {
+  getAllTaskConfigs(
+    actingAgentId: AgentIdValue,
+    filter?: { kind: TaskKindEnum },
+  ) {
     this.logger.info({ actingAgentId }, "Getting all task configs");
 
-    const taskConfigs = Array.from(this.taskConfigs.values())
+    const all = Array.from(this.taskConfigs.values())
       .map((taskKindConfig) => Array.from(taskKindConfig.values()))
       .flat(2)
       .filter((taskConfig) =>
@@ -1158,11 +1160,11 @@ export class TaskManager extends WorkspaceRestorable {
         ),
       );
 
-    this.logger.debug(
-      { actingAgentId, count: taskConfigs.length },
-      "Retrieved task runs",
-    );
-    return taskConfigs;
+    if (filter) {
+      return all.filter((t) => t.taskKind === filter.kind);
+    }
+
+    return all;
   }
 
   createTaskRun(
@@ -1240,16 +1242,18 @@ export class TaskManager extends WorkspaceRestorable {
       }
     }
 
-    const hasUnfinishedBlockingTasks = !!blockedByTaskRunIds.filter(
-      (id) => (options?.originTaskRunId ?? taskRunId) !== id,
-    ).length;
-    const input = serializeTaskRunInput({
-      context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
-      input: taskRunInput,
-      options: {
-        hasUnfinishedBlockingTasks,
-      },
-    });
+    // TODO Fix this it should be different for the supervisor workflow. Agent should has specified own mapping function from agent factory
+    // const hasUnfinishedBlockingTasks = !!blockedByTaskRunIds.filter(
+    //   (id) => (options?.originTaskRunId ?? taskRunId) !== id,
+    // ).length;
+    // const input = serializeTaskRunInput({
+    //   context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
+    //   input: taskRunInput,
+    //   options: {
+    //     hasUnfinishedBlockingTasks,
+    //   },
+    // });
+    const input = taskRunInput;
 
     const originTaskRunId = options?.originTaskRunId ?? taskRunId;
     const baseTaskRun: BaseTaskRun = {

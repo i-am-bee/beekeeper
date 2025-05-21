@@ -201,7 +201,7 @@ export class AgentRegistryTool extends Tool<
         });
         break;
       case "getAllAgentConfigs":
-        data = this.agentRegistry.getAllAgentConfigs();
+        data = this.agentRegistry.getAgentConfigs();
         break;
       case "getAgentConfig":
         data = this.agentRegistry.getAgentConfig(

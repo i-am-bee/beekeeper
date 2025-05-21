@@ -55,7 +55,7 @@ export async function createRuntime({
   let _agentFactory = agentFactory;
   if (_agentFactory == null) {
     // Default agent factory
-    _agentFactory = new AgentFactory();
+    _agentFactory = new AgentFactory(logger);
   }
 
   const registry = new AgentRegistry<

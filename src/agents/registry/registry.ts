@@ -665,15 +665,20 @@ export class AgentRegistry<TAgentInstance> extends WorkspaceRestorable {
    * Returns list of all registered agent configs
    * @returns Array of agent type identifiers
    */
-  getAllAgentConfigs(): AgentConfig[] {
+  getAgentConfigs(filter?: { kind: AgentKindEnum }): AgentConfig[] {
     this.logger.trace("Getting registered agent configs");
-    return Array.from(this.agentConfigs.entries())
+    const all = Array.from(this.agentConfigs.entries())
       .map(([, typeMap]) =>
         Array.from(typeMap.entries())
           .map(([, versions]) => versions.at(-1)?.[1])
           .filter(isNonNullish),
       )
       .flat();
+
+    if (filter) {
+      return all.filter((c) => c.agentKind === filter.kind);
+    }
+    return all;
   }
 
   isAgentConfigExists(

@@ -57,7 +57,8 @@
     "monitor": "cross-env NODE_ENV=production BEE_FRAMEWORK_LOG_LEVEL=error node --no-warnings dist/ui/main.js",
     "monitor:dev": "tsx --inspect --no-warnings src/ui/main.js",
     "ts:check": "tsc --noEmit --project tsconfig.json",
-    "build": "rimraf dist && tsc -b && tsc-alias",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc -b tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "format": "prettier --check .",
@@ -96,8 +97,9 @@
     "@types/eslint-config-prettier": "^6.11.3",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^18.15.3",
-    "beeai-framework": "0.1.10",
+    "beeai-framework": "0.1.14",
     "cross-env": "^7.0.3",
+    "date-fns": "^4.1.0",
     "eslint": "^9.10.0",
     "eslint-config-prettier": "^9.1.0",
     "husky": "^9.1.6",
@@ -118,6 +120,6 @@
     "@ai-sdk/openai": "^1.1.14",
     "@eslint/js": "^9.21.0",
     "@i-am-bee/acp-sdk": "0.0.4",
-    "beeai-framework": "0.1.9"
+    "beeai-framework": "0.1.14"
   }
 }
