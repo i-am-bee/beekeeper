@@ -13,6 +13,7 @@ import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { AgentConfigInitializerTool } from "./tool.js";
 import { AgentIdValue } from "@/agents/registry/dto.js";
+import { Context } from "@/agents/supervisor-workflow/base/context.js";
 
 /**
  * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
@@ -32,7 +33,10 @@ export class AgentConfigInitializer extends LLMCall<
   protected async processResult(
     result: laml.ProtocolResult<typeof protocol>,
     input: LLMCallInput<AgentConfigInitializerInput>,
+    ctx: Context,
   ): Promise<AgentConfigInitializerOutput> {
+    const { onUpdate } = ctx;
+
     try {
       let toolCallResult;
       switch (result.RESPONSE_TYPE) {
@@ -42,15 +46,26 @@ export class AgentConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_CREATE_AGENT_CONFIG is missing`);
           }
 
+          const config = {
+            agentType: response.agent_type,
+            description: response.description,
+            instructions: response.instructions,
+            tools: response.tools,
+          };
+
+          this.handleOnUpdate(onUpdate, {
+            type: result.RESPONSE_TYPE,
+            value: `I'm going to create a brand new agent config \`${config.agentType}\``,
+          });
+          this.handleOnUpdate(onUpdate, {
+            type: result.RESPONSE_TYPE,
+            value: JSON.stringify(config, null, " "),
+          });
+
           toolCallResult = await this.tool.run({
             method: "createAgentConfig",
             agentKind: "operator",
-            config: {
-              agentType: response.agent_type,
-              description: response.description,
-              instructions: response.instructions,
-              tools: response.tools,
-            },
+            config,
           });
           return {
             type: "SUCCESS",
@@ -70,15 +85,26 @@ export class AgentConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_UPDATE_AGENT_CONFIG is missing`);
           }
 
+          const config = {
+            description: response.description,
+            instructions: response.instructions,
+            tools: response.tools,
+          };
+
+          this.handleOnUpdate(onUpdate, {
+            type: result.RESPONSE_TYPE,
+            value: `I'm going to update an existing agent config \`${response.agent_type}\``,
+          });
+          this.handleOnUpdate(onUpdate, {
+            type: result.RESPONSE_TYPE,
+            value: JSON.stringify(config, null, " "),
+          });
+
           toolCallResult = await this.tool.run({
             method: "updateAgentConfig",
             agentKind: "operator",
             agentType: response.agent_type,
-            config: {
-              description: response.description,
-              instructions: response.instructions,
-              tools: response.tools,
-            },
+            config,
           });
           return {
             type: "SUCCESS",
@@ -97,6 +123,11 @@ export class AgentConfigInitializer extends LLMCall<
           if (!response) {
             throw new Error(`RESPONSE_SELECT_AGENT_CONFIG is missing`);
           }
+
+          this.handleOnUpdate(onUpdate, {
+            type: result.RESPONSE_TYPE,
+            value: `I'm going to pick an existing agent config \`${response.agent_type}\``,
+          });
 
           const selected = input.data.existingAgentConfigs.find(
             (c) => c.agentType === response.agent_type,
@@ -120,6 +151,11 @@ export class AgentConfigInitializer extends LLMCall<
           if (!response) {
             throw new Error(`RESPONSE_AGENT_CONFIG_UNAVAILABLE is missing`);
           }
+
+          this.handleOnUpdate(onUpdate, {
+            type: result.RESPONSE_TYPE,
+            value: `There is no suitable agent config`,
+          });
 
           return {
             type: "ERROR",

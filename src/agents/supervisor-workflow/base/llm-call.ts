@@ -51,7 +51,7 @@ export abstract class LLMCall<
     this.logger.debug(`${raw}\n\n`);
     this.logger.debug(`### PARSED`);
     const parsed = this.protocol.parse(
-      laml.unwrapString(raw, {
+      laml.unwrapString(raw.trim(), {
         envelops: [["`", "`"]],
         greedy: true,
       }),

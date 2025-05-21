@@ -31,7 +31,11 @@ export class ProblemDecomposer extends LLMCall<
         }
         this.handleOnUpdate(onUpdate, {
           type: result.RESPONSE_TYPE,
-          value: `I've decomposed problem into task's sequence:${laml.listFormatter("numbered")(response.step_sequence)}`,
+          value: `I've decomposed problem into task's sequence`,
+        });
+        this.handleOnUpdate(onUpdate, {
+          type: result.RESPONSE_TYPE,
+          value: laml.listFormatter("numbered")(response.step_sequence),
         });
         return {
           type: "SUCCESS",

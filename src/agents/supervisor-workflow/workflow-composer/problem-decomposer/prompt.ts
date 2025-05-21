@@ -113,22 +113,23 @@ const decisionCriteria = BodyTemplateBuilder.new()
     },
     content: `| If **ALL** these are true → | …then choose **RESPONSE_TYPE** | Short rationale |
 | --- | --- | --- |
-| • The problem statement is logically consistent (no internal contradictions).<br>• The desired goal is realistically achievable with ordinary human knowledge, tools, or well-defined agent capabilities.<br>• **For every step you would plan, at least one existing agent *or* available tool can plausibly carry it out.**<br>• Any missing details can be filled by safe, **explicitly stated** assumptions that do not change the user’s intent. | **STEP_SEQUENCE** | Decompose the solvable problem into an ordered, generic plan. |
+| • The problem statement is logically consistent (no internal contradictions).<br>• The desired goal is realistically achievable with ordinary human knowledge, tools, or well-defined agent capabilities.<br>• **For every step you would plan, at least one existing agent *or* available tool can plausibly carry it out.**<br>• Any non-essential missing details can be filled by safe, explicitly stated assumptions that do not change the user’s intent. | **STEP_SEQUENCE** | Decompose the solvable problem into an ordered, generic plan. |
 | • The problem contains irreconcilable contradictions (e.g., mutually exclusive outcomes).<br>• Achieving the goal would require resources, knowledge, or abilities outside the system’s scope.<br>• **At least one intended step lacks a suitable agent/tool**, or no resources are provided at all.<br>• Essential information is missing and cannot be responsibly inferred. | **UNSOLVABLE** | Explain clearly why no workable plan can be created. |
 
 **Guidelines for all branches**
 
 1. **Favor solvability, but be rigorous.** Attempt the plan only if every step has a matching resource.  
-2. **Assumptions must be minimal and explicit.** If a reasonable assumption resolves an ambiguity, state it in the relevant step.  
+2. **Assumptions must be minimal and explicit.** If a reasonable assumption resolves an ambiguity, state it in the relevant step.
+  a. Examples of acceptable defaults: interpreting “last 24 hours” as now minus 24 h → now; treating the absence of sentiment filters as “no sentiment filtering”.  
 3. **Granularity.** A **STEP_SEQUENCE** should list 3 – 10 high-level, generic actions (not tool calls or implementation details).  
 4. **Resource check.** Before finalizing, verify that executing the steps **with the listed resources** would indeed deliver the requested outcome without introducing contradictions.  
 5. **Consistency check.** Ensure the ordered steps flow logically toward the goal.
 
 **Tool-selection constraint**
 
-* When referencing a tool in any \`[tool1_name, tool2_name]\` square brackets, you **MUST** pick **one or more** tools that appears in the current “Available agent tools” list.  
-* **Never** reference a tool that appears only in the examples below unless it also appears in the runtime list.  
-* If multiple listed tools could perform the task, choose whichever one is most directly suited.
+1. When referencing a tool in any \`[tool1_name, tool2_name]\` square brackets, you **MUST** pick **one or more** tools that appears in the current “Available agent tools” list.  
+2. **Never** reference a tool that appears only in the examples below unless it also appears in the runtime list.  
+3. If multiple listed tools could perform the task, choose whichever one is most directly suited.
 `,
   })
   .build();
@@ -139,8 +140,8 @@ const guidelines = BodyTemplateBuilder.new()
       text: "Fidelity to Input",
       level: 3,
     },
-    content: `1. **Do not invent, assume, or request extra information.**
-2. If a parameter is vital and absent, switch to **UNSOLVABLE** rather than adding a “Collect X from user” step.
+    content: `1. **Do not ask the user for information they did not request.**
+2. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to UNSOLVABLE.
 3. If a parameter is helpful but not essential (e.g., passenger count when booking a sample flight), phrase the task generically: “Book flight” without specifying details.`,
   })
   .section({
