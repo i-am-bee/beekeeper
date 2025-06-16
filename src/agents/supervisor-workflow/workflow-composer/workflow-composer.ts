@@ -31,12 +31,16 @@ export class WorkflowComposer extends Runnable<
     input: WorkflowComposerInput,
     ctx: Context,
   ): Promise<WorkflowComposerOutput> {
+    const { onUpdate } = ctx;
+
     const availableTools = Array.from(
       this.agentRegistry.getToolsFactory("operator").availableTools.values(),
     );
     const existingAgents = this.agentRegistry.getAgentConfigs({
       kind: "operator",
     });
+
+    this.handleOnUpdate(onUpdate, `Decomposing problem`);
 
     const { output: problemDecomposerOutput } =
       await this.problemDecomposer.run(
@@ -53,6 +57,8 @@ export class WorkflowComposer extends Runnable<
     if (problemDecomposerOutput.type === "ERROR") {
       return problemDecomposerOutput;
     }
+
+    this.handleOnUpdate(onUpdate, `Initializing tasks`);
 
     const taskRuns: TaskConfig[] = [];
     for (const task of problemDecomposerOutput.result) {

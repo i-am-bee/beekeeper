@@ -1014,4 +1014,101 @@ RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a ne
       });
     });
   });
+
+  describe("Bugfix", () => {
+    describe(`Repeated attribute names`, () => {
+      it("Update cnn_trump_news_search agent config", () => {
+        const protocol = ProtocolBuilder.new()
+          .text({
+            name: "RESPONSE_CHOICE_EXPLANATION",
+            description:
+              "Brief explanation of *why* you selected the given RESPONSE_TYPE",
+          })
+          .constant({
+            name: "RESPONSE_TYPE",
+            values: [
+              "CREATE_AGENT_CONFIG",
+              "UPDATE_AGENT_CONFIG",
+              "SELECT_AGENT_CONFIG",
+              "AGENT_CONFIG_UNAVAILABLE",
+            ] as const,
+            description:
+              "Valid values: CREATE_AGENT_CONFIG | UPDATE_AGENT_CONFIG | SELECT_AGENT_CONFIG | AGENT_CONFIG_UNAVAILABLE",
+          })
+          .comment({
+            comment:
+              "Follow by one of the possible responses format based on the chosen response type",
+          })
+          .object({
+            name: "RESPONSE_UPDATE_AGENT_CONFIG",
+            isOptional: true,
+            attributes: ProtocolBuilder.new()
+              .text({
+                name: "agent_type",
+                description: "Name of an existing agent config type to update",
+              })
+              .array({
+                name: "tools",
+                isOptional: true,
+                description:
+                  "list of selected tools identifiers that this agent type can utilize",
+                type: "text",
+              })
+              .text({
+                name: "description",
+                isOptional: true,
+                description:
+                  "Description of the agent's behavior and purpose of his existence",
+              })
+              .text({
+                name: "instructions",
+                isOptional: true,
+                description:
+                  "Natural language but structured text instructs on how agent should act",
+              }),
+          })
+          .build();
+
+        const parser = new Parser(protocol);
+        const parsed = parser.parse(`\`\`\`
+RESPONSE_CHOICE_EXPLANATION: An existing agent config, cnn_trump_news_search, already fulfills this task with minor adjustments needed.
+RESPONSE_TYPE: UPDATE_AGENT_CONFIG
+RESPONSE_UPDATE_AGENT_CONFIG:
+  agent_type: bbc_trump_news_search
+  tools: web_search
+  description: Agent for fetching recent BBC articles about Trump.
+  instructions: Context: You are a news search agent. You are activated by an external task and receive a search query ("Trump"), a source (BBC), and a timeframe (last 24 hours) as input. You have access to the web_search tool, which allows you to query BBC for recent articles.
+
+Objective: Use the provided query, source, and timeframe to fetch relevant news articles from BBC. Return a list of article titles along with their URLs.
+
+Response format: Start with a sentence indicating the search criteria. Then list each article with its title and URL:
+
+BBC News on Trump (Last 24 Hours):
+1. Title: [Article Title 1] - URL: [Article URL 1]
+2. Title: [Article Title 2] - URL: [Article URL 2]
+  description: Searches BBC for news articles related to Trump within the last 24 hours.`);
+
+        expect(parsed).toEqual({
+          RESPONSE_CHOICE_EXPLANATION:
+            "An existing agent config, cnn_trump_news_search, already fulfills this task with minor adjustments needed.",
+          RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
+          RESPONSE_UPDATE_AGENT_CONFIG: {
+            agent_type: "bbc_trump_news_search",
+            tools: ["web_search"],
+            description: "Agent for fetching recent BBC articles about Trump.",
+            instructions: `Context: You are a news search agent. You are activated by an external task and receive a search query ("Trump"), a source (BBC), and a timeframe (last 24 hours) as input. You have access to the web_search tool, which allows you to query BBC for recent articles.
+
+Objective: Use the provided query, source, and timeframe to fetch relevant news articles from BBC. Return a list of article titles along with their URLs.
+
+Response format: Start with a sentence indicating the search criteria. Then list each article with its title and URL:
+
+BBC News on Trump (Last 24 Hours):
+1. Title: [Article Title 1] - URL: [Article URL 1]
+2. Title: [Article Title 2] - URL: [Article URL 2]
+  description: Searches BBC for news articles related to Trump within the last 24 hours.`,
+          },
+        });
+      });
+    });
+  });
 });

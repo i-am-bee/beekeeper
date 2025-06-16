@@ -34,7 +34,7 @@ export class TaskInitializer extends Runnable<
     { task }: TaskInitializerRun,
     ctx: Context,
   ): Promise<TaskInitializerOutput> {
-    const { agentId: supervisorAgentId } = ctx;
+    const { agentId: supervisorAgentId, onUpdate } = ctx;
 
     // Agent config
     const availableTools = Array.from(
@@ -44,14 +44,19 @@ export class TaskInitializer extends Runnable<
       kind: "operator",
     });
 
+    const agentData = {
+      availableTools,
+      existingAgentConfigs,
+      task: task,
+    };
+
+    this.handleOnUpdate(onUpdate, `Initializing agent config for \`${task}\``);
+    this.handleOnUpdate(onUpdate, JSON.stringify(agentData, null, " "));
+
     const { output: agentConfigOutput } = await this.agentConfigInitialized.run(
       {
         userMessage: task,
-        data: {
-          availableTools,
-          existingAgentConfigs,
-          task: task,
-        },
+        data: agentData,
       },
       ctx,
     );
@@ -65,15 +70,21 @@ export class TaskInitializer extends Runnable<
       supervisorAgentId,
       { kind: "operator" },
     );
+
+    const taskData = {
+      existingTaskConfigs,
+      actingAgentId: supervisorAgentId,
+      existingAgentConfigs: [agentConfig],
+      task,
+    };
+
+    this.handleOnUpdate(onUpdate, `Initializing task config for \`${task}\``);
+    this.handleOnUpdate(onUpdate, JSON.stringify(taskData, null, " "));
+
     const { output: taskConfigOutput } = await this.taskConfigInitialized.run(
       {
         userMessage: task,
-        data: {
-          existingTaskConfigs,
-          actingAgentId: supervisorAgentId,
-          existingAgentConfigs: [agentConfig],
-          task,
-        },
+        data: taskData,
       },
       ctx,
     );

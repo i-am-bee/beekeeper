@@ -184,27 +184,7 @@ export class Parser<TResult> {
         rest = rest.substring(paramNameString.length);
         const fieldPath = path.concat(field.name);
         if (field.kind !== "object") {
-          let end = -1;
-          if (nextFields?.length) {
-            for (const nextFieldRef of nextFields) {
-              if (nextFieldRef.field.kind === "comment") {
-                throw new Error(
-                  `Unparsable next field kind \`${nextFieldRef.field.kind}\``,
-                );
-              }
-              const nextParamNameString = Parser.getParamNameString(
-                protocol,
-                nextFieldRef.path,
-                nextFieldRef.field.name,
-                true,
-              );
-              end = rest.lastIndexOf(`${nextParamNameString}`); // FIXME We have to check that the index is before index of the following next field(s)
-              if (end >= 0) {
-                break;
-              }
-            }
-          }
-
+          const end = this.getEndIndex(nextFields, rest);
           const value = end >= 0 ? rest.substring(0, end) : rest;
           const convertedValue = this.applyConversions(
             { field, path: fieldPath },
@@ -431,5 +411,46 @@ export class Parser<TResult> {
     newLineBeginning: boolean,
   ) {
     return `${newLineBeginning ? "\n" : ""}${protocol.indent.repeat(path.length)}${paramName}:`;
+  }
+
+  private getEndIndex(nextFields: FieldRef[] | undefined, rest: string) {
+    let end = -1;
+    if (!nextFields) {
+      return end;
+    }
+
+    let idx = 0;
+    for (const nextFieldRef of nextFields) {
+      const afterNextFieldRef =
+        idx + 1 < nextFields.length ? nextFields[idx + 1] : undefined;
+
+      if (nextFieldRef.field.kind === "comment") {
+        throw new Error(
+          `Unparsable next field kind \`${nextFieldRef.field.kind}\``,
+        );
+      }
+      const nextParamNameString = Parser.getParamNameString(
+        this._protocol,
+        nextFieldRef.path,
+        nextFieldRef.field.name,
+        true,
+      );
+
+      if (
+        !afterNextFieldRef ||
+        nextFieldRef.path.length > afterNextFieldRef.path.length
+      ) {
+        // FIXME Handle case of the same attribute on the same level but in different following object. This will take it!
+        end = rest.lastIndexOf(`${nextParamNameString}`);
+      } else {
+        end = rest.indexOf(`${nextParamNameString}`);
+      }
+
+      if (end >= 0) {
+        break;
+      }
+      idx++;
+    }
+    return end;
   }
 }
