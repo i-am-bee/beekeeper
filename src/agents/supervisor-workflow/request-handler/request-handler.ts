@@ -238,7 +238,6 @@ RESPONSE: {
 
 ### Pass to Planner – Current Time
 **User:** What time is it?
-
 **Assistant:**
 RESPONSE_CHOICE_EXPLANATION: The answer depends on real-time data, so it must be routed to a planner step.
 RESPONSE_TYPE: PASS_TO_PLANNER
