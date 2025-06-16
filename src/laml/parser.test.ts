@@ -590,6 +590,11 @@ RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a ne
               expected: [],
             },
             {
+              name: "Empty []",
+              value: "[]",
+              expected: [],
+            },
+            {
               name: "A",
               value: "A",
               expected: ["A"],

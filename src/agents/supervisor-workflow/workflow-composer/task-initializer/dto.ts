@@ -1,14 +1,16 @@
-import { TaskConfigSchema } from "@/tasks/manager/dto.js";
 import { z } from "zod";
-import { TaskStepSchema } from "../dto.js";
+import { ResourcesSchema } from "../helpers/resources/dto.js";
+import { TaskStepSchema } from "../helpers/task-step/dto.js";
 
 export const TaskInitializerInputSchema = z.object({
-  task: z.string(),
+  resources: ResourcesSchema,
+  previousSteps: z.array(TaskStepSchema),
+  taskStep: TaskStepSchema,
 });
 export type TaskInitializerInput = z.infer<typeof TaskInitializerInputSchema>;
 
 export const TaskInitializerOutputSchema = z.object({
-  taskConfig: TaskConfigSchema,
+  resources: ResourcesSchema,
   taskStep: TaskStepSchema,
 });
 export type TaskInitializerOutput = z.infer<typeof TaskInitializerOutputSchema>;

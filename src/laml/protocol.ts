@@ -314,7 +314,7 @@ export class Protocol<TResult> {
         const text =
           field.kind === "comment"
             ? `<${field.comment}>`
-            : `${field.name}: <${[field.isOptional ? "!optional" : "!required", field.kind, path.length * INDENT_LENGTH, field.description].filter(isNonNullish).join(";")}>`;
+            : `${field.name}: <${[field.isOptional ? "!optional" : "!required", field.kind === 'list' ? `${field.type}-${field.kind}`: field.kind, path.length * INDENT_LENGTH, field.description].filter(isNonNullish).join(";")}>`;
         output += `${_indent}${text}\n`;
         return "CONTINUE";
       },
@@ -324,22 +324,19 @@ export class Protocol<TResult> {
   }
 
   printExplanation() {
-    return `All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
-<!required|optional; indent; type; human-readable hint>
-- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).
-- type - One of the following:
-  - text – single-line string
-  - number – floating-point value (e.g., 3.14)
-  - integer – whole number
-  - boolean - true / false
-  - constant – one literal chosen from the values listed in the protocol
-  - array – list of items of the specified item-type (comma-separated or JSON-style)
-  - list - human readable list of items numbered or with bullet points
-  - object – nested attributes, each described by its own metadata tag
-- indent – integer; the key’s left-margin offset in spaces (0 = column 0)
-- human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
+    return `All your responses **MUST** strictly adhere to the following template. Each line describes exactly what you must provide:
 
-The format:
+* Each attribute has a **metadata tag** (\`<!required|optional; indent; type; human-readable hint>\`).
+* **IMPORTANT:** These metadata tags are **guidelines only**—do **not** include them literally in your final response. They exist solely to guide you on what information is expected.
+
+### Metadata Tag Explanation (for your internal reference only)
+
+* \`required | optional\` – Indicates if the attribute **must** be included.
+* \`type\` – Defines the attribute's data type (text, number, integer, boolean, constant, array, numbered-list, bullets-list, object).
+* \`indent\` – Specifies indentation level (spaces).
+* \`human-readable hint\` – Brief guidance explaining the attribute's content.
+
+**When composing your response, use the format below exactly:**
 \`\`\`
 ${this.toString()}
 \`\`\`<STOP HERE>`;

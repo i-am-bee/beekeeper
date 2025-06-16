@@ -9,6 +9,11 @@ import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import { clone } from "remeda";
 import {
+  extendResources,
+  replaceTaskByTaskTypeInResources
+} from "../../helpers/resources/utils.js";
+import { assignResource } from "../../helpers/task-step/helpers/assign-resource.js";
+import {
   TaskConfigInitializerInput,
   TaskConfigInitializerOutput,
 } from "./dto.js";
@@ -43,8 +48,11 @@ export class TaskConfigInitializer extends LLMCall<
   ): Promise<FnResult<TaskConfigInitializerOutput>> {
     const { onUpdate } = ctx;
     const {
-      data: { existingAgentConfigs, existingTaskConfigs },
+      data: { resources, taskStep },
     } = input;
+
+    const { agents: existingAgentConfigs, tasks: existingTaskConfigs } =
+      resources;
 
     const getMissingTaskTypes = (taskTypes: string | string[]) => {
       return (typeof taskTypes === "string" ? [taskTypes] : taskTypes).filter(
@@ -62,7 +70,6 @@ export class TaskConfigInitializer extends LLMCall<
     };
 
     try {
-      let toolCallResult;
       switch (result.RESPONSE_TYPE) {
         case "CREATE_TASK_CONFIG": {
           const response = result.RESPONSE_CREATE_TASK_CONFIG;
@@ -94,18 +101,26 @@ export class TaskConfigInitializer extends LLMCall<
             }
           }
 
-          toolCallResult = await this.tool.run({
+          const toolCallResult = await this.tool.run({
             method: "createTaskConfig",
             config,
             actingAgentId: input.data.actingAgentId,
           });
+
+          const {
+            result: { data: task },
+          } = toolCallResult;
+
           return {
             type: "SUCCESS",
             result: {
-              agentType: toolCallResult.result.data.agentType,
-              taskType: toolCallResult.result.data.taskType,
-              description: toolCallResult.result.data.description,
-              taskConfigInput: toolCallResult.result.data.taskConfigInput,
+              resources: extendResources(resources, {
+                tasks: [task],
+              }),
+              taskStep: assignResource(taskStep, {
+                type: "task",
+                task,
+              }),
             },
           };
         }
@@ -144,20 +159,26 @@ export class TaskConfigInitializer extends LLMCall<
             }
           }
 
-          toolCallResult = await this.tool.run({
+          const toolCallResult = await this.tool.run({
             method: "updateTaskConfig",
             taskKind: "operator",
             taskType: response.task_type,
             config,
             actingAgentId: input.data.actingAgentId,
           });
+
+          const {
+            result: { data: task },
+          } = toolCallResult;
+
           return {
             type: "SUCCESS",
             result: {
-              agentType: toolCallResult.result.data.agentType,
-              taskType: toolCallResult.result.data.taskType,
-              description: toolCallResult.result.data.description,
-              taskConfigInput: toolCallResult.result.data.taskConfigInput,
+              resources: replaceTaskByTaskTypeInResources(resources, task),
+              taskStep: assignResource(taskStep, {
+                type: "task",
+                task,
+              }),
             },
           };
         }
@@ -172,20 +193,26 @@ export class TaskConfigInitializer extends LLMCall<
             value: `I'm going to pick an existing task config \`${response.task_type}\``,
           });
 
-          const selected = input.data.existingTaskConfigs.find(
+          const selected = existingTaskConfigs.find(
             (c) => c.taskType === response.task_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `You can't select task config with task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are:\`${input.data.existingTaskConfigs.map((c) => c.taskType).join(",")}\`. Please use one of them.`,
+              explanation: `You can't select task config with task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are:\`${existingTaskConfigs.map((c) => c.taskType).join(",")}\`. Please use one of them.`,
             };
           }
 
           return {
             type: "SUCCESS",
-            result: clone(selected),
+            result: {
+              resources: clone(resources),
+              taskStep: assignResource(taskStep, {
+                type: "task",
+                task: selected,
+              }),
+            },
           };
           break;
         }
@@ -210,9 +237,9 @@ export class TaskConfigInitializer extends LLMCall<
     } catch (err) {
       let explanation;
       if (err instanceof Error) {
-        explanation = `Unexpected error \`${err.name}\` when processing agent config initializer result. The error message: ${err.message}`;
+        explanation = `Unexpected error \`${err.name}\` when processing task config initializer result. The error message: ${err.message}`;
       } else {
-        explanation = `Unexpected error \`${String(err)}\` when processing agent config initializer result.`;
+        explanation = `Unexpected error \`${String(err)}\` when processing task config initializer result.`;
       }
 
       return {

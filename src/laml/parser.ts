@@ -211,6 +211,11 @@ export class Parser<TResult> {
           output.set(fieldPath, convertedValue);
           rest = rest.length > value.length ? rest.substring(value.length) : "";
         } else {
+          // Remove everything until the new line. LLM often adds extra spaces or pipes, but object attributes should start from the new line.
+          const newLineIndex = rest.indexOf("\n");
+          if (newLineIndex > 0) {
+            rest = rest.substring(newLineIndex);
+          }
           output.set(fieldPath, {});
         }
 

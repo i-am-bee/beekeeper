@@ -6,19 +6,13 @@ import { Logger } from "beeai-framework";
 import { Context } from "../../base/context.js";
 import { FnResult } from "../../base/retry/types.js";
 import { Runnable } from "../../base/runnable.js";
-import { TaskStep } from "../dto.js";
-import { TaskStepMapper } from "../task-step-mapper.js";
+import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { AgentConfigInitializer } from "./agent-config-initializer/agent-config-initializer.js";
-import { TaskInitializerOutput } from "./dto.js";
+import { TaskInitializerInput, TaskInitializerOutput } from "./dto.js";
 import { TaskConfigInitializer } from "./task-config-initializer/task-config-initializer.js";
 
-export interface TaskInitializerRun {
-  previousSteps: TaskStep[];
-  taskStep: TaskStep;
-}
-
 export class TaskInitializer extends Runnable<
-  TaskInitializerRun,
+  TaskInitializerInput,
   FnResult<TaskInitializerOutput>
 > {
   protected agentConfigInitialized: AgentConfigInitializer;
@@ -35,32 +29,16 @@ export class TaskInitializer extends Runnable<
   }
 
   async run(
-    { taskStep, previousSteps }: TaskInitializerRun,
+    { taskStep, previousSteps, resources }: TaskInitializerInput,
     ctx: Context,
   ): Promise<FnResult<TaskInitializerOutput>> {
-    const { agentId: supervisorAgentId, onUpdate } = ctx;
+    const { actingAgentId, onUpdate } = ctx;
     this.handleOnUpdate(
       onUpdate,
       `Initializing task step: \`${TaskStepMapper.format(taskStep)}\``,
     );
 
-    // Agent config
-    const availableTools = Array.from(
-      this.agentRegistry.getToolsFactory("operator").availableTools.values(),
-    );
-    const existingAgentConfigs = this.agentRegistry.getAgentConfigs({
-      kind: "operator",
-    });
-
     const task = TaskStepMapper.format(taskStep);
-
-    const agentData = {
-      availableTools,
-      existingAgentConfigs,
-      previousSteps,
-      selectOnly: taskStep.resource.type === "agent",
-      task: task,
-    };
 
     // this.handleOnUpdate(onUpdate, `Initializing agent config for \`${task}\``);
     // this.handleOnUpdate(onUpdate, JSON.stringify(agentData, null, " "));
@@ -68,38 +46,34 @@ export class TaskInitializer extends Runnable<
     const agentConfigOutput = await this.agentConfigInitialized.run(
       {
         userMessage: task,
-        data: agentData,
+        data: {
+          previousSteps,
+          taskStep,
+          resources,
+        },
       },
       ctx,
     );
     if (agentConfigOutput.type === "ERROR") {
       return agentConfigOutput;
     }
-    const agentConfig = agentConfigOutput.result;
 
-    // Task config
-    const existingTaskConfigs = this.taskManager.getAllTaskConfigs(
-      supervisorAgentId,
-      { kind: "operator" },
-    );
-
-    const taskStepWithAgent = { ...taskStep, agentType: agentConfig.agentType };
-
-    const taskData = {
-      existingTaskConfigs,
-      actingAgentId: supervisorAgentId,
-      existingAgentConfigs: [agentConfig],
-      previousSteps,
-      taskStep: taskStepWithAgent,
-    };
+    const {
+      result: { taskStep: taskStepWithAgent, resources: resourcesWithAgent },
+    } = agentConfigOutput;
 
     // this.handleOnUpdate(onUpdate, `Initializing task config for \`${task}\``);
     // this.handleOnUpdate(onUpdate, JSON.stringify(taskData, null, " "));
 
     const taskConfigOutput = await this.taskConfigInitialized.run(
       {
-        userMessage: task,
-        data: taskData,
+        userMessage: TaskStepMapper.format(taskStepWithAgent),
+        data: {
+          resources: resourcesWithAgent,
+          previousSteps,
+          taskStep: taskStepWithAgent,
+          actingAgentId,
+        },
       },
       ctx,
     );
@@ -108,15 +82,16 @@ export class TaskInitializer extends Runnable<
       return taskConfigOutput;
     }
 
-    const taskConfig = this.taskManager.getTaskConfig(
-      "operator",
-      taskConfigOutput.result.taskType,
-      supervisorAgentId,
-    );
+    const {
+      result: { taskStep: taskStepWithTask, resources: resourcesWithTask },
+    } = taskConfigOutput;
 
     return {
       type: "SUCCESS",
-      result: { taskConfig, taskStep: taskStepWithAgent },
+      result: {
+        resources: resourcesWithTask,
+        taskStep: taskStepWithTask,
+      },
     };
   }
 }

@@ -1,6 +1,7 @@
+import { AgentConfig } from "@/agents/registry/dto.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import * as laml from "@/laml/index.js";
-import { AgentAvailableTool, AgentConfigTiny } from "./dto.js";
+import { AgentAvailableTool } from "./dto.js";
 
 export class ExistingResourcesBuilder {
   private output: string;
@@ -34,8 +35,8 @@ export class ExistingResourcesBuilder {
     return this;
   }
 
-  agentConfigs(configs?: AgentConfigTiny[]) {
-    const content = !configs?.length
+  agentConfigs(configs?: readonly AgentConfig[], introduction?: string) {
+    const agents = !configs?.length
       ? "There is no existing agent config yet."
       : laml.printLAMLObject(
           configs.reduce((acc, curr, idx) => {
@@ -50,6 +51,8 @@ export class ExistingResourcesBuilder {
             return acc;
           }, {}),
         );
+
+    const content = `${introduction ? `${introduction}\n\n` : ""}${agents}`;
 
     this.output += BodyTemplateBuilder.new()
       .section({
@@ -69,8 +72,8 @@ export class ExistingResourcesBuilder {
     return this;
   }
 
-  availableTools(tools?: AgentAvailableTool[]) {
-    const content = !tools?.length
+  availableTools(tools?: readonly AgentAvailableTool[], introduction?: string) {
+    const availableTools = !tools?.length
       ? "There is no available agent tool"
       : laml.printLAMLObject(
           tools.reduce((acc, curr, idx) => {
@@ -82,6 +85,8 @@ export class ExistingResourcesBuilder {
             return acc;
           }, {}),
         );
+        
+    const content = `${introduction ? `${introduction}\n\n` : ""}${availableTools}`;
 
     this.output += BodyTemplateBuilder.new()
       .section({

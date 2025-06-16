@@ -1,62 +1,53 @@
 import { AgentIdValue } from "@/agents/registry/dto.js";
-import { AgentRegistry } from "@/agents/registry/registry.js";
-import { TaskManager } from "@/tasks/manager/manager.js";
-import { ServiceLocator } from "@/utils/service-locator.js";
+import { TaskRun } from "@/tasks/manager/dto.js";
 import { Logger } from "beeai-framework";
 import { Context } from "../base/context.js";
+import { FnResult } from "../base/retry/types.js";
 import { Runnable } from "../base/runnable.js";
-import {
-  TaskStep,
-  WorkflowComposerInput,
-  WorkflowComposerOutput,
-} from "./dto.js";
+import { WorkflowComposerInput, WorkflowComposerOutput } from "./dto.js";
+import { collectResources } from "./helpers/resources/utils.js";
+import { TaskStep } from "./helpers/task-step/dto.js";
+import { TaskStepMapper } from "./helpers/task-step/task-step-mapper.js";
 import { ProblemDecomposer } from "./problem-decomposer/problem-decomposer.js";
 import { TaskInitializer } from "./task-initializer/task-initalizer.js";
-import { TaskConfig } from "@/tasks/manager/dto.js";
-import { FnResult } from "../base/retry/types.js";
+import { TaskRunInitializer } from "./task-run-initializer/task-run-initializer.js";
+import { assertTaskStepResourceType } from "./helpers/task-step/helpers/assert.js";
 
 export class WorkflowComposer extends Runnable<
   WorkflowComposerInput,
   FnResult<WorkflowComposerOutput>
 > {
-  protected agentRegistry: AgentRegistry<unknown>;
-  protected taskManager: TaskManager;
   protected problemDecomposer: ProblemDecomposer;
   protected taskInitializer: TaskInitializer;
+  protected taskRunInitializer: TaskRunInitializer;
 
   constructor(logger: Logger, agentId: AgentIdValue) {
     super(logger, agentId);
-    this.agentRegistry = ServiceLocator.getInstance().get(AgentRegistry);
-    this.taskManager = ServiceLocator.getInstance().get(TaskManager);
     this.problemDecomposer = new ProblemDecomposer(logger, agentId);
     this.taskInitializer = new TaskInitializer(logger, agentId);
+    this.taskRunInitializer = new TaskRunInitializer(logger, agentId);
   }
 
   async run(
     input: WorkflowComposerInput,
     ctx: Context,
   ): Promise<FnResult<WorkflowComposerOutput>> {
+    const { input: userMessage, originTaskRunId } = input;
     const { onUpdate } = ctx;
-
-    const availableTools = Array.from(
-      this.agentRegistry.getToolsFactory("operator").availableTools.values(),
-    );
-    const existingAgents = this.agentRegistry.getAgentConfigs({
-      kind: "operator",
-    });
-
-    const problemDecomposerRunResult =
-      await this.problemDecomposer.run(
-        {
-          userMessage: input.input,
-          data: {
-            availableTools,
-            existingAgents,
-            request: input.input,
-          },
+    let resources = collectResources("operator", ctx.actingAgentId);
+    const problemDecomposerRunResult = await this.problemDecomposer.run(
+      {
+        userMessage,
+        data: {
+          // The existing resources that can be used to initialize tasks.
+          resources,
+          // The request is the original user input that needs to be decomposed into tasks.
+          // It is passed to user message in the first iteration.
+          request: userMessage,
         },
-        ctx,
-      );
+      },
+      ctx,
+    );
 
     if (problemDecomposerRunResult.type === "ERROR") {
       this.handleOnUpdate(
@@ -72,27 +63,56 @@ export class WorkflowComposer extends Runnable<
 
     this.handleOnUpdate(onUpdate, `Initializing tasks`);
 
-    const taskRuns: TaskConfig[] = [];
+    const taskRuns: TaskRun[] = [];
     const previousSteps: TaskStep[] = [];
     for (const taskStep of problemDecomposerResult) {
-      const taskInitializerOutput = await this.taskInitializer.run(
-        { taskStep, previousSteps },
+      // TASK CONFIG and AGENT CONFIG INITIALIZATION
+      const taskInitializerRunResult = await this.taskInitializer.run(
+        { taskStep, previousSteps, resources },
         ctx,
       );
 
-      if (taskInitializerOutput.type === "ERROR") {
-        return taskInitializerOutput;
+      if (taskInitializerRunResult.type === "ERROR") {
+        return taskInitializerRunResult;
       }
 
-      const taskConfig = taskInitializerOutput.result.taskConfig;
-      const taskStepWithAgent = taskInitializerOutput.result.taskStep;
-      taskRuns.push(taskConfig);
-      previousSteps.push(taskStepWithAgent);
-      this.handleOnUpdate(
-        onUpdate,
-        `Task \`${taskConfig.taskType}\` initialized`,
+      // TASK RUN CREATION
+      const taskRunInitializerRunResult = await this.taskRunInitializer.run(
+        {
+          data: {
+            actingAgentId: ctx.actingAgentId,
+            previousSteps,
+            originTaskRunId,
+            resources: taskInitializerRunResult.result.resources,
+            taskStep: taskInitializerRunResult.result.taskStep,
+          },
+          userMessage: TaskStepMapper.format(
+            taskInitializerRunResult.result.taskStep,
+          ),
+        },
+        ctx,
       );
-      this.handleOnUpdate(onUpdate, JSON.stringify(taskConfig, null, " "));
+
+      if (taskRunInitializerRunResult.type === "ERROR") {
+        return taskRunInitializerRunResult;
+      }
+
+      const {
+        result: { taskStep: newTaskStep, resources: newResources },
+      } = taskRunInitializerRunResult;
+
+      assertTaskStepResourceType(newTaskStep, "task_run");
+
+      taskRuns.push(newTaskStep.resource.taskRun);
+
+      resources = newResources;
+      previousSteps.push(newTaskStep);
+      // this.handleOnUpdate(onUpdate, {
+      //   value: `Task run initialized: ${taskStep.resource.taskRun.taskRunId}`,
+      //   payload: {
+      //     toJson: taskStep.resource.taskRun,
+      //   },
+      // });
     }
 
     return {

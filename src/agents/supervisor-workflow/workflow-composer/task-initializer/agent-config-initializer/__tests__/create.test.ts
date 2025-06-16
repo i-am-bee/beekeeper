@@ -1,9 +1,10 @@
 import { PatternBuilder, pb } from "@test/helpers/pattern-builder.js";
 import { expect } from "vitest";
-import { tool as toolFn, ToolName } from "./__fixtures__/tools.js";
+// import { tool as toolFn, ToolName } from "../../../../fixtures/__test__/tools.js";
 import { AgentCase, runMatrix } from "./helpers.js";
 import { TestMatrix } from "@test/test-matrix/test-matrix.js";
 import { CellMeta, Coord, Dimension } from "@test/test-matrix/types.js";
+import { ToolName } from "@/agents/supervisor-workflow/fixtures/prompt/tools.js";
 
 /**
  * ⚠️ **Generated Test Suite – Requires Manual Oversight**

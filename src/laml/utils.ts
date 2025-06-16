@@ -37,6 +37,8 @@ export function unwrapString(
       value = value.substring(s.length);
       if (value.length > 1) {
         value = value.substring(0, value.length - e.length);
+      }else{
+        value = "";
       }
 
       if (!greedy) {
@@ -76,16 +78,6 @@ export function unwrapString(
       }
       // eslint-disable-next-line no-constant-condition
     } while (1 == 1);
-    // while (
-    //   (Array.isArray(endValue) ? endValue : [endValue]).some((s) =>
-    //     value.endsWith(s),
-    //   )
-    // ) {
-    //   value = value.substring(0, value.length - 1);
-    //   if (!greedy) {
-    //     break;
-    //   }
-    // }
   }
   return value;
 }

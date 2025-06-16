@@ -199,7 +199,7 @@ export type TaskRunStatusEnum = z.infer<typeof TaskRunStatusEnumSchema>;
 export const TaskRunIdValueSchema = z
   .string()
   .describe(
-    "Unique task run id composed of '{taskKind}:{taskType}[{instanceNum}]:{version}' e.g: 'task:poem_generation[1]:1' or 'task:web_scrap[2]:3'",
+    "Unique task run id composed of '{taskKind}:{taskType}[{instanceNum}]:{version}' e.g: 'operator:poem_generation[1]:1' or 'supervisor:web_scrap[2]:3'",
   );
 export type TaskRunIdValue = z.infer<typeof TaskRunIdValueSchema>;
 

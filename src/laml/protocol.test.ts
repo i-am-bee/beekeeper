@@ -293,4 +293,49 @@ tools: sec_filings_search
       .toThrowError(`Can't find field \`RESPONSE_CREATE_AGENT_CONFIG.tools\`. It should start with \`
   tools:\` but actually starts with \`\``);
   });
+
+  describe("Bugs", () => {
+    it("RESPONSE_CREATE_AGENT_CONFIG with extra characters at the end should not fail", () => {
+      const parser = new Parser(protocol);
+      expect(
+        parser.parse(`RESPONSE_CHOICE_EXPLANATION: An explanation
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG: 
+  agent_type: agent_type_1
+  tools: tool_1
+  description: Some description
+  instructions: Some instruction
+`),
+      ).toEqual({
+        RESPONSE_CHOICE_EXPLANATION: "An explanation",
+        RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+        RESPONSE_CREATE_AGENT_CONFIG: {
+          agent_type: "agent_type_1",
+          tools: ["tool_1"],
+          description: "Some description",
+          instructions: `Some instruction`,
+        },
+      });
+
+      expect(
+        parser.parse(`RESPONSE_CHOICE_EXPLANATION: An explanation
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG: | 
+  agent_type: agent_type_1
+  tools: tool_1
+  description: Some description
+  instructions: Some instruction
+`),
+      ).toEqual({
+        RESPONSE_CHOICE_EXPLANATION: "An explanation",
+        RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+        RESPONSE_CREATE_AGENT_CONFIG: {
+          agent_type: "agent_type_1",
+          tools: ["tool_1"],
+          description: "Some description",
+          instructions: `Some instruction`,
+        },
+      });
+    });
+  });
 });

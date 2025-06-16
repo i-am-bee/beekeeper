@@ -1,0 +1,48 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { getChatLLM } from "@/helpers/llm.js";
+import { Logger } from "beeai-framework";
+import { describe, expect, it } from "vitest";
+import { RequestHandler } from "./request-handler.js";
+import { SUPERVISOR_AGENT_ID } from "../__test__/defaults.js";
+import local_parks_fixtures from "../fixtures/__test__/local-parks/index.js";
+import poetry_song_analysis_fixtures from "../fixtures/__test__/poetry-song-analysis/index.js";
+import disaster_relief_fixtures from "../fixtures/prompt/showcases/disaster-relief-supply-drop/index.js";
+import medieval_charter_fixtures from "../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
+import micro_grid_fixtures from "../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
+import smart_farm_fixtures from "../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
+import narrative_fusion_fixtures from "../fixtures/prompt/showcases/narrative-fusion/index.js";
+import boston_trip_fixtures from "../fixtures/__test__/boston-trip/index.js";
+
+const logger = Logger.root.child({ name: "agent-config-tests" });
+const llm = getChatLLM("supervisor");
+const agentId = SUPERVISOR_AGENT_ID;
+const onUpdate = () => ({});
+
+/**
+ * !!! WARNING !!!
+ * This file is a playground.
+ * It contains tests that are not meant to be run as part of the regular test suite.
+ * All tests should be marked as `.fails()`.
+ */
+describe(`Request Handler (Playground)`, () => {
+  it.fails(`play`, async () => {
+    const requestHandler = new RequestHandler(logger, agentId);
+
+    const fixtures = narrative_fusion_fixtures;
+
+    const request = fixtures.request;
+    const runOutput = await requestHandler.run(
+      {
+        data: { request },
+        userMessage: request,
+      },
+      { llm, actingAgentId: agentId, onUpdate },
+    );
+
+    if (runOutput.type === "ERROR") {
+      throw new Error(`Request handler failed: ${runOutput.explanation}`);
+    }
+
+    expect(runOutput).toBe({});
+  });
+});

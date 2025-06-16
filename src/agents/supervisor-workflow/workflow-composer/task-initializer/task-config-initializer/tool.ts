@@ -16,7 +16,7 @@ import {
 } from "beeai-framework/tools/base";
 import { z } from "zod";
 
-export const TOOL_NAME = "task_manager";
+export const TOOL_NAME = "task_config_initializer";
 
 export interface TaskConfigInitializerToolResult {
   method: "createTaskConfig" | "updateTaskConfig";

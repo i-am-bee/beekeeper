@@ -2,8 +2,8 @@ import { PatternBuilder, pb } from "@test/helpers/pattern-builder.js";
 import { TestMatrix } from "@test/test-matrix/test-matrix.js";
 import { CellMeta, Coord, Dimension } from "@test/test-matrix/types.js";
 import { expect } from "vitest";
-import { agentConfig, AgentConfigType } from "./__fixtures__/agent-configs.js";
-import { tool as toolFn, ToolName } from "./__fixtures__/tools.js";
+import { agentConfigMinimal, AgentConfigType } from "../../../../fixtures/__test__/agent-configs.js";
+import { tool as toolFn, ToolName } from "../../../../fixtures/__test__/tools.js";
 import { AgentCase, runMatrix } from "./helpers.js";
 
 /**
@@ -220,11 +220,11 @@ const testCases: {
     cases: [
       {
         input:
-          "Please update the historical_sites_search agent to also use google_search so it can include opening hours.",
+          "Please update the historical_sites_identifier agent to also use google_search so it can include opening hours.",
         availableTools: ["google_search", "historical_sites_search_api"],
-        existingAgentConfigs: ["historical_sites_search"],
+        existingAgentConfigs: ["historical_sites_identifier"],
         expected: {
-          agent_type: "historical_sites_search",
+          agent_type: "historical_sites_identifier",
           tools: ["google_search", "historical_sites_search_api"],
           instructions: pb().alt("opening hours", "hours"),
         },
@@ -482,7 +482,7 @@ const testCases: {
         existingAgentConfigs: [
           "city_events_weekend",
           "podcast_ai_weekly",
-          "historical_sites_search",
+          "historical_sites_identifier",
         ],
         expected: {
           agent_type: "city_events_weekend",
@@ -605,11 +605,11 @@ const testCases: {
           "Between 22:00 and 06:00 only push tornado *warnings*, not watches.",
         availableTools: ["weather_alert_feed"],
         existingAgentConfigs: [
-          "weather_tornado_immediate",
+          "tornado_watcher",
           "crypto_price_tracker_hourly",
         ],
         expected: {
-          agent_type: "weather_tornado_immediate",
+          agent_type: "tornado_watcher",
           instructions: pb().alt("22:00", "06:00"),
         },
       },
@@ -629,13 +629,13 @@ const testCases: {
           "Make the historical sites agent smarter: let it query Google too and say so in the description.",
         availableTools: ["historical_sites_search_api", "google_search"],
         existingAgentConfigs: [
-          "historical_sites_search",
+          "historical_sites_identifier",
           "news_headlines",
           "crypto_price_tracker_hourly",
           "scifi_movies_weekly",
         ],
         expected: {
-          agent_type: "historical_sites_search",
+          agent_type: "historical_sites_identifier",
           tools: ["historical_sites_search_api", "google_search"],
           instructions: pb().alt("google_search", "Google"),
           description: pb().alt("Google", "search"),
@@ -663,7 +663,7 @@ const testCases: {
           "crypto_price_tracker_hourly",
           "flight_price_tracker_weekly",
           "news_headlines",
-          "historical_sites_search",
+          "historical_sites_identifier",
           "scifi_movies_weekly",
         ],
         expected: {
@@ -695,7 +695,7 @@ const testCases: {
           "news_headlines",
           "crypto_price_tracker_hourly",
           "flight_price_tracker_weekly",
-          "weather_tornado_immediate",
+          "tornado_watcher",
         ],
         expected: {
           agent_type: "arxiv_rl_daily",
@@ -724,7 +724,7 @@ const testCases: {
           "phrase_generator",
           "crypto_price_tracker_hourly",
           "flight_tracker_daily",
-          "weather_tornado_immediate",
+          "tornado_watcher",
         ],
         expected: {
           agent_type: "arxiv_rl_daily",
@@ -750,7 +750,7 @@ const testCases: {
           "news_headlines",
           "arxiv_rl_daily",
           "crypto_price_tracker_hourly",
-          "historical_sites_search",
+          "historical_sites_identifier",
           "flight_price_tracker_weekly",
           "podcast_ai_weekly",
         ],
@@ -811,7 +811,7 @@ const testCases: {
           "news_headlines",
           "crypto_price_tracker_hourly",
           "flight_price_tracker_weekly",
-          "historical_sites_search",
+          "historical_sites_identifier",
           "phrase_generator",
         ],
         expected: {
@@ -840,7 +840,7 @@ const testCases: {
           "phrase_generator",
           "news_headlines",
           "crypto_price_tracker_hourly",
-          "historical_sites_search",
+          "historical_sites_identifier",
           "scifi_movies_weekly",
           "flight_price_tracker_weekly",
         ],
@@ -871,7 +871,7 @@ const testCases: {
           "flight_price_tracker_weekly",
           "news_headlines",
           "crypto_price_tracker_hourly",
-          "historical_sites_search",
+          "historical_sites_identifier",
           "phrase_generator",
           "arxiv_rl_daily",
           "scifi_movies_weekly",
@@ -904,7 +904,7 @@ const testCases: {
           "podcast_ai_weekly",
           "news_headlines",
           "crypto_price_tracker_hourly",
-          "historical_sites_search",
+          "historical_sites_identifier",
           "flight_price_tracker_weekly",
           "phrase_generator",
         ],
@@ -940,7 +940,7 @@ for (const { coord, meta, cases } of testCases) {
         data: {
           availableTools: availableTools.map((tool) => toolFn(tool)),
           existingAgentConfigs: existingAgentConfigs.map((ac) =>
-            agentConfig(ac),
+            agentConfigMinimal(ac),
           ),
         },
         assert: (parsed) => {

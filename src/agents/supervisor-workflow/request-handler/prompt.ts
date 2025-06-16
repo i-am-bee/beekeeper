@@ -2,6 +2,72 @@ import * as laml from "@/laml/index.js";
 import { BodyTemplateBuilder } from "../templates/body.js";
 import { ChatExampleTemplateBuilder } from "../templates/chat-example.js";
 import { protocol } from "./protocol.js";
+import { examplesEnabled } from "../helpers/env.js";
+
+export const prompt = () => {
+  const builder = BodyTemplateBuilder.new()
+    .introduction(
+      `You are a **RequestHandler**—a step within a multi‑agent workflow system.  
+Your primary responsibility is to efficiently analyze user request and determine the appropriate processing path.`,
+    )
+    .section({
+      title: {
+        text: "Response Format",
+        level: 2,
+      },
+      newLines: {
+        start: 1,
+        contentStart: 1,
+      },
+      delimiter: { start: true, end: true },
+      content: protocol.printExplanation(),
+    })
+    .section({
+      title: {
+        text: "Decision Criteria",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: decisionCriteria,
+    })
+    .section({
+      title: {
+        text: "Response Guidelines",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: guidelines,
+    });
+
+  if (examplesEnabled()) {
+    builder.section({
+      title: {
+        text: "Examples",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: examples,
+    });
+  }
+  builder.callToAction("This is the user request");
+
+  return builder.build();
+};
 
 const decisionCriteria = BodyTemplateBuilder.new()
   .section({
@@ -221,7 +287,7 @@ const examples = ((inputs: ExampleInput[]) =>
   {
     title: "COMPOSE_WORKFLOW",
     subtitle: "Data Analysis",
-    user: "I have a year's worth of e‑commerce purchase data …",
+    user: "I have a year's worth of e‑commerce purchase data. Can you analyze it for trends and insights?",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "Complex analysis with visualizations beyond a direct answer",
@@ -229,11 +295,11 @@ const examples = ((inputs: ExampleInput[]) =>
       RESPONSE_COMPOSE_WORKFLOW: `{
   "requestType": "data_analysis",
   "primaryGoal": "Generate e‑commerce trend report with visuals",
-  "dataDetails": {
+  "userParameters": {
     "type": "customer purchases",
     "timespan": "last 12 months"
-  },
-  "analysisRequirements": [
+  },  
+  "requiredComponents": [
     "seasonal trend detection",
     "top‑product ranking",
     "demographic correlations",
@@ -312,63 +378,3 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
 ]);
-
-export const prompt = () =>
-  BodyTemplateBuilder.new()
-    .introduction(
-      `You are a **RequestHandler**—a step within a multi‑agent workflow system.  
-Your primary responsibility is to efficiently analyze user request and determine the appropriate processing path.`,
-    )
-    .section({
-      title: {
-        text: "Response Format",
-        level: 2,
-      },
-      newLines: {
-        start: 1,
-        contentStart: 1,
-      },
-      delimiter: { start: true, end: true },
-      content: protocol.printExplanation(),
-    })
-    .section({
-      title: {
-        text: "Decision Criteria",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: decisionCriteria,
-    })
-    .section({
-      title: {
-        text: "Response Guidelines",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: guidelines,
-    })
-    .section({
-      title: {
-        text: "Examples",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: examples,
-    })
-    .callToAction("This is the user request")
-    .build();

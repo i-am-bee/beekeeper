@@ -4,7 +4,7 @@ export const protocol = laml.ProtocolBuilder.new()
   .text({
     name: "RESPONSE_CHOICE_EXPLANATION",
     description:
-      "Brief explanation of *why* you selected the given RESPONSE_TYPE",
+      "Justify your RESPONSE_TYPE decision based on agent scope, input/output structure, and tool availability—not on specific runtime values like names or topics.",
   })
   .constant({
     name: "RESPONSE_TYPE",

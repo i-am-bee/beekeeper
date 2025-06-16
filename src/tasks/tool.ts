@@ -315,7 +315,7 @@ export class TaskManagerTool extends Tool<
         break;
       }
       case "getAllTaskConfigs":
-        data = this.taskManager.getAllTaskConfigs(input.actingAgentId);
+        data = this.taskManager.getTaskConfigs(input.actingAgentId);
         break;
       case "getPoolStats": {
         const { taskKind, taskType, actingAgentId } = input;
@@ -393,7 +393,7 @@ export class TaskManagerTool extends Tool<
         );
         break;
       case "getAllTaskRuns":
-        data = this.taskManager.getAllTaskRuns(input.actingAgentId);
+        data = this.taskManager.getTaskRuns(input.actingAgentId);
         break;
       case "isTaskRunOccupied":
         data = this.taskManager.isTaskRunOccupied(

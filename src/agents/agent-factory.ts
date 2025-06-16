@@ -1,6 +1,7 @@
 import { BaseToolsFactory } from "@/base/tools-factory.js";
 import { getChatLLM } from "@/helpers/llm.js";
 import { Switches } from "@/runtime/factory.js";
+import { TaskRunIdValue } from "@/tasks/manager/dto.js";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { AssistantMessage, ToolMessage } from "beeai-framework/backend/message";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
@@ -78,10 +79,11 @@ export class AgentFactory extends BaseAgentFactory<
     prompt: string,
     onUpdate: AgentUpdateCallback,
     signal: AbortSignal,
+    taskRunId: TaskRunIdValue,
     addToMemory?: (AssistantMessage | ToolMessage)[],
   ): Promise<string> {
     if (agent instanceof SupervisorWorkflow) {
-      return await agent.run({ prompt, onUpdate });
+      return await agent.run({ prompt, onUpdate, originTaskRunId: taskRunId });
     } else {
       if (addToMemory) {
         agent.memory.addMany(addToMemory);

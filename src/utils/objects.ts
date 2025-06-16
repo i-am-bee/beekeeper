@@ -10,8 +10,12 @@ type DeepPartial<T> = {
  */
 export function updateDeepPartialObject<T extends object>(
   original: T,
-  update: DeepPartial<T>,
+  update?: DeepPartial<T>,
 ): T {
+  if (!update) {
+    return original;
+  }
+
   const keys = Object.keys(update) as (keyof T)[];
 
   for (const key of keys) {

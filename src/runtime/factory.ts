@@ -163,6 +163,7 @@ export async function createRuntime({
             );
           },
           taskRunAbortScope.signal,
+          taskRun.taskRunId,
           addToMemory,
         )
         .then((resp) =>

@@ -175,7 +175,7 @@
 //     input:
 //       "List underrated historical sites in Kyoto within walking distance of the main train station.",
 //     existingAgentConfigs: [
-//       "historical_sites_search",
+//       "historical_sites_identifier,
 //       "news_headlines",
 //       "crypto_price_tracker_hourly",
 //       "phrase_generator",
@@ -189,7 +189,7 @@
 //       "family_events_under_20",
 //     ],
 //     expected: {
-//       agent_type: "historical_sites_search",
+//       agent_type: "historical_sites_identifier,
 //       task_type: pb().alt("historical", "sites", "kyoto"),
 //       task_config_input: pb()
 //         .alt("train", "station")
@@ -204,11 +204,11 @@
 //       "Find flights from Prague to Tokyo under €650 that depart after 18:00 and include average rainfall in Tokyo for that week.",
 //     existingAgentConfigs: [
 //       "flight_price_tracker_weekly",
-//       "weather_tornado_immediate",
+//       "tornado_watcher",
 //       "crypto_price_tracker_hourly",
 //       "news_headlines",
 //       "city_events_weekend",
-//       "historical_sites_search",
+//       "historical_sites_identifier,
 //       "phrase_generator",
 //     ],
 //     existingTaskConfigs: [
@@ -237,7 +237,7 @@
 //       "news_headlines",
 //       "arxiv_rl_daily",
 //       "city_events_weekend",
-//       "historical_sites_search",
+//       "historical_sites_identifier,
 //       "phrase_generator",
 //       "podcast_ai_weekly",
 //     ],

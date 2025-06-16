@@ -1,4 +1,5 @@
-import { TaskRun } from "./dto.js";
+import { parseEnv } from "beeai-framework/internals/env";
+import { TaskKindEnum, TaskRun } from "./dto.js";
 
 export function taskRunOutput(taskRun: TaskRun, checkTerminalStatus = true) {
   const record = taskRun.history.at(-1);
@@ -70,11 +71,22 @@ interface TaskRunInput {
   };
 }
 
-export function serializeTaskRunInput({
-  context,
-  input,
-  options: { hasUnfinishedBlockingTasks, blockingTasksOutputs },
-}: TaskRunInput): string {
+export function serializeTaskRunInput(
+  {
+    context,
+    input,
+    options: { hasUnfinishedBlockingTasks, blockingTasksOutputs },
+  }: TaskRunInput,
+  taskKind: TaskKindEnum = "operator",
+): string {
+  if (
+    parseEnv.asBoolean("DEV_SUPERVISOR_WORKFLOW_ENABLED", false) &&
+    taskKind === "supervisor"
+  ) {
+    // Workflow receives plain input
+    return input ?? "";
+  }
+
   let inputPart = "";
   if (input?.length) {
     inputPart += `\n\n${TASK_INPUT_DELIMITER}\n${input}`;
@@ -164,6 +176,7 @@ export function extendBlockingTaskRunOutput(
   existingTaskRunInput: string,
   blockingTaskRunOutput: string,
   hasUnfinishedBlockingTasks: boolean,
+  taskKind: TaskKindEnum = "operator",
 ) {
   const {
     context,
@@ -171,12 +184,15 @@ export function extendBlockingTaskRunOutput(
     options: { blockingTasksOutputs },
   } = deserializeTaskRunInput(existingTaskRunInput);
 
-  return serializeTaskRunInput({
-    context,
-    input,
-    options: {
-      hasUnfinishedBlockingTasks,
-      blockingTasksOutputs: `${blockingTasksOutputs ? `${blockingTasksOutputs}\n\n` : ""}${blockingTaskRunOutput}`,
+  return serializeTaskRunInput(
+    {
+      context,
+      input,
+      options: {
+        hasUnfinishedBlockingTasks,
+        blockingTasksOutputs: `${blockingTasksOutputs ? `${blockingTasksOutputs}\n\n` : ""}${blockingTaskRunOutput}`,
+      },
     },
-  });
+    taskKind,
+  );
 }

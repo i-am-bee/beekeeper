@@ -14,11 +14,12 @@ export class ExistingResourcesBuilder {
   static new() {
     return new ExistingResourcesBuilder();
   }
-  previousSteps(previousSteps: string[]) {
-    const content = !previousSteps.length
+  previousSteps(previousSteps: string[], introduction?: string) {
+    const steps = !previousSteps.length
       ? "There is no previous steps yet."
       : listFormatter("numbered")(previousSteps, "");
 
+    const content = `${introduction ? `${introduction}\n\n` : ""}${steps}`;
     this.output += BodyTemplateBuilder.new()
       .section({
         title: {
@@ -35,8 +36,8 @@ ${content}`,
     return this;
   }
 
-  agentConfigs(configs?: AgentConfigTiny[]) {
-    const content = !configs?.length
+  agentConfigs(configs?: readonly AgentConfigTiny[], introduction?: string) {
+    const agents = !configs?.length
       ? "There is no existing agent config yet."
       : laml.printLAMLObject(
           configs.reduce((acc, curr, idx) => {
@@ -52,6 +53,7 @@ ${content}`,
           }, {}),
         );
 
+    const content = `${introduction ? `${introduction}\n\n` : ""}${agents}`;
     this.output += BodyTemplateBuilder.new()
       .section({
         title: {
@@ -68,8 +70,8 @@ ${content}`,
     return this;
   }
 
-  taskConfigs(configs?: TaskConfigMinimal[]) {
-    const content = !configs?.length
+  taskConfigs(configs?: readonly TaskConfigMinimal[], introduction?: string) {
+    const tasks = !configs?.length
       ? "There is no existing task configs yet."
       : laml.printLAMLObject(
           configs.reduce((acc, curr, idx) => {
@@ -85,6 +87,7 @@ ${content}`,
           }, {}),
         );
 
+    const content = `${introduction ? `${introduction}\n\n` : ""}${tasks}`;
     this.output += BodyTemplateBuilder.new()
       .section({
         title: {

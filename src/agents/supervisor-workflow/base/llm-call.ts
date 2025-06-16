@@ -9,7 +9,7 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { clone } from "remeda";
 import { Context } from "./context.js";
 import { retry } from "./retry/retry.js";
-import { FnResult, FnResultWithPayload } from "./retry/types.js";
+import { FnResult, FnResultWithPayload, RetryResult } from "./retry/types.js";
 import { Runnable } from "./runnable.js";
 
 export interface LLMCallInput<TInput> {
@@ -27,7 +27,7 @@ export type LLMCallOutput<TParsed, TOutput> = FnResultWithPayload<
   BaseMemory
 >;
 
-export type LLMCallRunOutput<TOutput> = FnResult<TOutput>;
+export type LLMCallRunOutput<TOutput> = RetryResult<TOutput>;
 
 export abstract class LLMCall<
   P extends laml.Protocol<any>,

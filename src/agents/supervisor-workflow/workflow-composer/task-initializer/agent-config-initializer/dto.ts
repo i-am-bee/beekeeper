@@ -1,10 +1,12 @@
 import { AgentConfigSchema } from "@/agents/registry/dto.js";
 import { z } from "zod";
-import { TaskStepSchema } from "../../dto.js";
+import { ResourcesSchema } from "../../helpers/resources/dto.js";
+import { TaskStepSchema } from "../../helpers/task-step/dto.js";
 
 export const AgentAvailableToolSchema = z.object({
   toolName: z.string(),
   description: z.string(),
+  toolInput: z.string().optional(),
 });
 export type AgentAvailableTool = z.infer<typeof AgentAvailableToolSchema>;
 
@@ -27,17 +29,20 @@ export const AgentConfigTinySchema = AgentConfigSchema.pick({
 export type AgentConfigTiny = z.infer<typeof AgentConfigTinySchema>;
 
 export const AgentConfigInitializerInputSchema = z.object({
-  existingAgentConfigs: z.array(AgentConfigMinimalSchema),
+  resources: ResourcesSchema,
   previousSteps: z.array(TaskStepSchema),
-  availableTools: z.array(AgentAvailableToolSchema),
   selectOnly: z.boolean().optional(),
-  task: z.string(),
+  taskStep: TaskStepSchema,
 });
 export type AgentConfigInitializerInput = z.infer<
   typeof AgentConfigInitializerInputSchema
 >;
 
-export const AgentConfigInitializerOutputSchema = AgentConfigMinimalSchema;
+export const AgentConfigInitializerOutputSchema = z.object({
+  resources: ResourcesSchema,
+  taskStep: TaskStepSchema,
+});
+
 export type AgentConfigInitializerOutput = z.infer<
   typeof AgentConfigInitializerOutputSchema
 >;

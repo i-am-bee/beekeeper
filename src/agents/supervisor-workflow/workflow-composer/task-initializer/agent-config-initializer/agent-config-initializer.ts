@@ -7,7 +7,11 @@ import {
 import { FnResult } from "@/agents/supervisor-workflow/base/retry/types.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
-import { clone } from "remeda";
+import {
+  extendResources,
+  replaceAgentByAgentTypeInResources,
+} from "../../helpers/resources/utils.js";
+import { assignResource } from "../../helpers/task-step/helpers/assign-resource.js";
 import {
   AgentConfigInitializerInput,
   AgentConfigInitializerOutput,
@@ -15,6 +19,7 @@ import {
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { AgentConfigInitializerTool } from "./tool.js";
+import { clone } from "remeda";
 
 /**
  * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
@@ -38,8 +43,9 @@ export class AgentConfigInitializer extends LLMCall<
   ): Promise<FnResult<AgentConfigInitializerOutput>> {
     const { onUpdate } = ctx;
     const {
-      data: { availableTools, existingAgentConfigs },
+      data: { resources, taskStep },
     } = input;
+    const { tools: availableTools, agents: existingAgentConfigs } = resources;
 
     const getMissingTools = (tools?: string[]) => {
       return (tools || []).filter(
@@ -56,7 +62,6 @@ export class AgentConfigInitializer extends LLMCall<
     };
 
     try {
-      let toolCallResult;
       switch (result.RESPONSE_TYPE) {
         case "CREATE_AGENT_CONFIG": {
           const response = result.RESPONSE_CREATE_AGENT_CONFIG;
@@ -78,10 +83,9 @@ export class AgentConfigInitializer extends LLMCall<
           });
 
           const missingTools = getMissingTools(config.tools);
-          
-          if (missingTools.length > 0) {
 
-          const explanation = `The response contains the following issues:${laml.listFormatter("numbered")([`Can't create agent config \`${config.agentType}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\``], "")}
+          if (missingTools.length > 0) {
+            const explanation = `The response contains the following issues:${laml.listFormatter("numbered")([`Can't create agent config \`${config.agentType}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\``], "")}
 \nAvailable resources that can be used:
 - Tools: ${availableTools.map((t) => t.toolName).join(", ")}
 
@@ -92,20 +96,33 @@ Please address these issues and provide the corrected response:`;
             };
           }
 
-          toolCallResult = await this.tool.run({
+          const toolCallResult = await this.tool.run({
             method: "createAgentConfig",
             agentKind: "operator",
-            config,
+            config: {
+              agentType: response.agent_type,
+              description: response.description,
+              instructions: response.instructions,
+              tools: response.tools,
+              autoPopulatePool: true,
+              maxPoolSize: 5,
+            },
           });
+
+          const {
+            result: { data: agent },
+          } = toolCallResult;
+
           return {
             type: "SUCCESS",
             result: {
-              agentType: toolCallResult.result.data.agentType,
-              description: toolCallResult.result.data.description,
-              instructions: toolCallResult.result.data.instructions,
-              tools: clone(toolCallResult.result.data.tools),
-              agentConfigId: toolCallResult.result.data.agentConfigId,
-              agentConfigVersion: toolCallResult.result.data.agentConfigVersion,
+              resources: extendResources(resources, {
+                agents: [agent],
+              }),
+              taskStep: assignResource(taskStep, {
+                type: "agent",
+                agent,
+              }),
             },
           };
         }
@@ -143,21 +160,25 @@ Please address these issues and provide the corrected response:`;
             };
           }
 
-          toolCallResult = await this.tool.run({
+          const toolCallResult = await this.tool.run({
             method: "updateAgentConfig",
             agentKind: "operator",
             agentType: response.agent_type,
             config,
           });
+
+          const {
+            result: { data: agent },
+          } = toolCallResult;
+
           return {
             type: "SUCCESS",
             result: {
-              agentType: toolCallResult.result.data.agentType,
-              description: toolCallResult.result.data.description,
-              instructions: toolCallResult.result.data.instructions,
-              tools: clone(toolCallResult.result.data.tools),
-              agentConfigId: toolCallResult.result.data.agentConfigId,
-              agentConfigVersion: toolCallResult.result.data.agentConfigVersion,
+              resources: replaceAgentByAgentTypeInResources(resources, agent),
+              taskStep: assignResource(taskStep, {
+                type: "agent",
+                agent,
+              }),
             },
           };
         }
@@ -180,20 +201,26 @@ Please address these issues and provide the corrected response:`;
             };
           }
 
-          const selected = input.data.existingAgentConfigs.find(
+          const selected = existingAgentConfigs.find(
             (c) => c.agentType === response.agent_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${input.data.existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
             };
           }
 
           return {
             type: "SUCCESS",
-            result: clone(selected),
+            result: {
+              resources: clone(resources),
+              taskStep: assignResource(taskStep, {
+                type: "agent",
+                agent: selected,
+              }),
+            },
           };
         }
 

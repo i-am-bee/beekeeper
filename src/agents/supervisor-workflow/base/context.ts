@@ -4,6 +4,6 @@ import { ChatModel } from "beeai-framework";
 
 export interface Context {
   llm: ChatModel;
-  agentId: AgentIdValue;
+  actingAgentId: AgentIdValue;
   onUpdate: AgentUpdateCallback;
 }

@@ -60,7 +60,7 @@ export function generateMatrixTests<
           const input = mapCaseToInput(c);
           const { result } = await llmCall.callLLM(
             { data: input, userMessage: input.task },
-            { llm, agentId: "supervisor:boss[1]:1", onUpdate: () => ({}) },
+            { llm, actingAgentId: "supervisor:boss[1]:1", onUpdate: () => ({}) },
           );
 
           if (result.type === "ERROR") {

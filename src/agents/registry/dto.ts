@@ -76,13 +76,11 @@ export const AgentConfigSchema = z.object({
     .number()
     .int()
     .min(0)
-    .default(0)
     .describe(
       "Maximum number of agents to maintain in the pool for this type.",
     ),
   autoPopulatePool: z
     .boolean()
-    .default(false)
     .describe(
       "Populates the agent pool for a specific type up to its configured size.",
     ),
