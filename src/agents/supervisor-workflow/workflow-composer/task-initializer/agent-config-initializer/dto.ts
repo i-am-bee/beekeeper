@@ -1,6 +1,6 @@
 import { AgentConfigSchema } from "@/agents/registry/dto.js";
-import { StepResultSchema } from "@/agents/supervisor-workflow/base/dto.js";
 import { z } from "zod";
+import { TaskStepSchema } from "../../dto.js";
 
 export const AgentAvailableToolSchema = z.object({
   toolName: z.string(),
@@ -28,6 +28,7 @@ export type AgentConfigTiny = z.infer<typeof AgentConfigTinySchema>;
 
 export const AgentConfigInitializerInputSchema = z.object({
   existingAgentConfigs: z.array(AgentConfigMinimalSchema),
+  previousSteps: z.array(TaskStepSchema),
   availableTools: z.array(AgentAvailableToolSchema),
   task: z.string(),
 });
@@ -35,9 +36,7 @@ export type AgentConfigInitializerInput = z.infer<
   typeof AgentConfigInitializerInputSchema
 >;
 
-export const AgentConfigInitializerOutputSchema = StepResultSchema(
-  AgentConfigMinimalSchema,
-);
+export const AgentConfigInitializerOutputSchema = AgentConfigMinimalSchema;
 export type AgentConfigInitializerOutput = z.infer<
   typeof AgentConfigInitializerOutputSchema
 >;

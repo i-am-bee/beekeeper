@@ -15,7 +15,7 @@ const decisionCriteria = BodyTemplateBuilder.new()
     content: `| If **ALL** these are true →                                                                                                                                                                                                                                                                                                                 | …then choose **RESPONSE_TYPE** | Short rationale                                               |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
 | • The user’s request is **clear, specific, and answerable** with a concise factual response or brief list.<br>• No additional context or data collection is required.<br>• Fulfilling the request needs **no multi-step plan** or coordination with other agents/tools.                                                                     | **DIRECT_ANSWER**              | Provide the answer immediately.                               |
-| • The request is **ambiguous, incomplete, or self-contradictory** *and* you cannot safely infer the missing pieces.<br>• Obtaining targeted information from the user would unlock the ability to answer or plan effectively.                                                                                                               | **CLARIFICATION**               | Ask the user a focused follow-up question to resolve the gap. |
+| • The request is **ambiguous, incomplete, or self-contradictory** *and* you cannot safely infer the missing pieces (e.g., missing file, unclear goal, no location given for location-sensitive task).<br>• Obtaining targeted information from the user would unlock the ability to answer or plan effectively.                             | **CLARIFICATION**               | Ask the user a focused follow-up question to resolve the gap. |
 | • The request involves a **non-trivial, multi-step objective** (e.g., research project, itinerary, data pipeline).<br>• The intent and key parameters are already inferable from the user’s message (or after minimal internal normalization).<br>• Executing the task will require orchestration by downstream planning/execution modules. | **COMPOSE_WORKFLOW**           | Hand off a structured task description for detailed planning. |
 
 **Guidelines for all branches**
@@ -55,7 +55,8 @@ If you catch yourself beginning to write the user’s content (poem, code, analy
     },
     content: `1. Ask focused questions that close information gaps.
 2. Briefly state why the information is needed.
-3. List multiple needed details clearly, numbered or bulleted`,
+3. List multiple needed details clearly, numbered or bulleted
+4. If the request references parameters that are clearly required (e.g., location, time, file, or input source) but not supplied, prompt for them explicitly. Do not assume defaults or fabricate missing values.`,
   })
   .section({
     title: {
@@ -97,7 +98,7 @@ const examples = ((inputs: ExampleInput[]) =>
     )
     .join("\n"))([
   {
-    title: "Direct Answer",
+    title: "DIRECT_ANSWER",
     subtitle: "Greeting",
     user: "Hi there!",
     example: {
@@ -108,7 +109,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Direct Answer",
+    title: "DIRECT_ANSWER",
     subtitle: "Capability Question",
     user: "What kinds of files can you process?",
     example: {
@@ -120,7 +121,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Clarification",
+    title: "CLARIFICATION",
     subtitle: "Ambiguous Request",
     user: "Can you analyze this for me?",
     example: {
@@ -134,7 +135,18 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Clarification",
+    title: "CLARIFICATION",
+    subtitle: "Missing location for restaurant search",
+    user: "Can you recommend good Italian restaurants within walking distance?",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "Request depends on physical proximity, but no location was provided",
+      RESPONSE_TYPE: "CLARIFICATION",
+      RESPONSE_CLARIFICATION: `I’d be happy to help! Could you let me know your current location or the area where you're looking for Italian restaurants?`,
+    },
+  },
+  {
+    title: "CLARIFICATION",
     subtitle: "Flight Search",
     user: "I want to book a flight to London.",
     example: {
@@ -150,7 +162,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Clarification",
+    title: "CLARIFICATION",
     subtitle: "Missing country context",
     user: "Who is the president?",
     example: {
@@ -161,7 +173,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Clarification",
+    title: "CLARIFICATION",
     subtitle: "Flat search",
     user: "Can you find me a flat?",
     example: {
@@ -177,7 +189,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Compose workflow",
+    title: "COMPOSE_WORKFLOW",
     subtitle: "Multi‑step Trip",
     user: "I need to plan a business trip to Tokyo for a tech conference next month …",
     example: {
@@ -207,7 +219,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Compose workflow",
+    title: "COMPOSE_WORKFLOW",
     subtitle: "Data Analysis",
     user: "I have a year's worth of e‑commerce purchase data …",
     example: {
@@ -233,7 +245,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Compose workflow",
+    title: "COMPOSE_WORKFLOW",
     subtitle: "Time‑sensitive data #1",
     user: "Tell me about the latest iPhone.",
     example: {
@@ -258,7 +270,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Compose workflow",
+    title: "COMPOSE_WORKFLOW",
     subtitle: "Time‑sensitive data #2",
     user: "Who is the president of Czechia?",
     example: {
@@ -281,7 +293,7 @@ const examples = ((inputs: ExampleInput[]) =>
     },
   },
   {
-    title: "Compose workflow",
+    title: "COMPOSE_WORKFLOW",
     subtitle: "Current Time",
     user: "What time is it?",
     example: {

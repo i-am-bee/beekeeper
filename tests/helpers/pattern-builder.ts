@@ -1,4 +1,3 @@
-import { expect } from "vitest";
 import { timeFormats, TimeNode } from "./time.js";
 
 export type PatternNode =
@@ -354,26 +353,3 @@ export class PatternBuilder {
 }
 
 export const pb = () => PatternBuilder.create();
-
-// ---------------- Vitest Matcher Integration ----------------
-
-expect.extend({
-  toMatchPattern(received: string, pattern: PatternBuilder) {
-    const pass = pattern.matches(received);
-    const reason = pass ? null : pattern.getFailureReason(received);
-
-    return {
-      pass,
-      message: () =>
-        !pass
-          ? `❌ Pattern match failed:\n→ ${reason ?? "Unknown reason"}\n↳ Input: «${received}»`
-          : `❌ Pattern matched but was expected NOT to match:\n↳ Input: «${received}»\n↳ Pattern: ${pattern.explain()}`,
-    };
-  },
-});
-
-declare module "vitest" {
-  interface Assertion<T = any> {
-    toMatchPattern(pattern: PatternBuilder): T;
-  }
-}

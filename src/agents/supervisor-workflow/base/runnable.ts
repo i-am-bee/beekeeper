@@ -28,13 +28,21 @@ export abstract class Runnable<TInput, TOutput> {
 
   protected handleOnUpdate(
     onUpdate: AgentUpdateCallback,
-    input: { type?: string; value: string } | string,
+    input:
+      | { type?: string; value: string; payload?: string | { toJson: any } }
+      | string,
   ) {
-    onUpdate(
-      this._agentId,
-      typeof input === "string"
-        ? `${this._name}: ${input}`
-        : `${this._name}: ${input.type ? `${input.type} > ` : ""}${input.value}`,
-    );
+    let value;
+    if (typeof input === "string") {
+      value = `${this._name} > ${input}$`;
+    } else {
+      value = `${this._name}${input.type ? `[${input.type}] > ` : " "}${input.value}`;
+
+      if (input.payload) {
+        value += `\n${typeof input.payload === "string" ? input.payload : JSON.stringify(input.payload.toJson, null, " ")}`;
+      }
+    }
+
+    onUpdate(this._agentId, value);
   }
 }

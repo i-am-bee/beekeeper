@@ -1,7 +1,8 @@
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import * as laml from "@/laml/index.js";
+import { listFormatter } from "@/laml/index.js";
+import { AgentConfigTiny } from "../agent-config-initializer/dto.js";
 import { TaskConfigMinimal } from "./dto.js";
-import { AgentConfigMinimal } from "../agent-config-initializer/dto.js";
 
 export class ExistingResourcesBuilder {
   private output: string;
@@ -13,10 +14,30 @@ export class ExistingResourcesBuilder {
   static new() {
     return new ExistingResourcesBuilder();
   }
+  previousSteps(previousSteps: string[]) {
+    const content = !previousSteps.length
+      ? "There is no previous steps yet."
+      : listFormatter("numbered")(previousSteps, "");
 
-  agentConfigs(configs?: AgentConfigMinimal[]) {
+    this.output += BodyTemplateBuilder.new()
+      .section({
+        title: {
+          text: "Previous steps",
+          level: 3,
+        },
+        content: !previousSteps.length
+          ? content
+          : `The previous steps represent the sequence of tasks completed before the current user input:
+${content}`,
+      })
+      .build();
+
+    return this;
+  }
+
+  agentConfigs(configs?: AgentConfigTiny[]) {
     const content = !configs?.length
-      ? "There is no existing agent configs yet."
+      ? "There is no existing agent config yet."
       : laml.printLAMLObject(
           configs.reduce((acc, curr, idx) => {
             Object.assign(acc, {
@@ -38,6 +59,9 @@ export class ExistingResourcesBuilder {
           level: 3,
         },
         content,
+        newLines: {
+          contentEnd: 1,
+        },
       })
       .build();
 

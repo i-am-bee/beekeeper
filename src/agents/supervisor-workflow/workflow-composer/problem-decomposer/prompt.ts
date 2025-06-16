@@ -19,7 +19,7 @@ If the problem contains contradictions, requires unavailable resources, or other
     )
     .section({
       title: {
-        text: "Existing resources",
+        text: "Context",
         level: 2,
       },
       newLines: {
@@ -47,7 +47,10 @@ ${ExistingResourcesBuilder.new()
 
 **IMPORTANT** – If at least one **suitable** agent *or* tool does **not** exist for every step you would otherwise propose, you **must** output  
 \`RESPONSE_TYPE: UNSOLVABLE\` and explicitly name the unattainable step(s).  
-If *no* agents or tools are provided at all, always answer \`UNSOLVABLE\`.`,
+If *no* agents or tools are provided at all, always answer \`UNSOLVABLE\`.
+
+**CRITICAL** – You **must not** generate results that reference tools not included in the "Available agent tools" list. Only use tools explicitly listed here.
+If a required tool is missing, the problem is **UNSOLVABLE**.`,
     })
     .section({
       title: {
@@ -127,9 +130,15 @@ const decisionCriteria = BodyTemplateBuilder.new()
 
 **Tool-selection constraint**
 
-1. When referencing a tool in any \`[tool1_name, tool2_name]\` square brackets, you **MUST** pick **one or more** tools that appears in the current “Available agent tools” list.  
+1. When referencing a tool in any \`[tools: tool1_name, tool2_name ...]\` square brackets, you **MUST** pick **one or more** tools that appears in the current “Available agent tools” list.  
 2. **Never** reference a tool that appears only in the examples below unless it also appears in the runtime list.  
 3. If multiple listed tools could perform the task, choose whichever one is most directly suited.
+
+**Agent-selection constraint**
+
+1. When referencing an agent in any \`[agent: agent1_name]\` square brackets, you **MUST** pick **exactly one** agent that appears in the current “Existing agents” list.  
+2. **Never** reference an agent that appears only in the examples below unless it also appears in the runtime list.  
+3. If multiple listed agents could perform the task, choose whichever one is most directly suited.
 `,
   })
   .build();
@@ -161,11 +170,11 @@ const guidelines = BodyTemplateBuilder.new()
 10. Format each step as a single line including:
   - the **imperative description** of the task,
   - followed by \`(input: ..., output: ...)\`,
-  - followed by a resource in square brackets: \`[tool_name]\`, \`[agent_name]\`, or \`[LLM]\`.
+  - followed by a resource in square brackets: \`[tools: tool_name_1, tool_name_2...]\`, \`[agent: agent_name]\`, or \`[LLM]\`.
 
 **Example:**
 \`\`\`
-Generate directions from the user’s current location to the nearest shelter (input: user coordinates, list of nearby shelters from Step 2; output: step-by-step directions) [google_maps]
+Generate directions from the user’s current location to the nearest shelter (input: user coordinates, list of nearby shelters from Step 2; output: step-by-step directions) [tools: google_maps]
 \`\`\`
 `,
   })
@@ -238,14 +247,14 @@ const examples = ((inputs: ExampleInput[]) =>
             "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
         },
         {
-          toolName: "web_search",
+          toolName: "openstreetmap_search",
           description:
-            "A lightweight utility that fires off a query to web search and returns the top‑ranked results (title, URL, snippet, and source site) in a compact JSON array.",
+            "Query the OpenStreetMap database to find geographic locations, landmarks, and detailed mapping information.",
         },
         {
-          toolName: "maps",
+          toolName: "tavily_api",
           description:
-            "Searches for geographic locations, businesses, and directions using maps data.",
+            "Perform fast and relevant web searches using the Tavily API, returning concise summaries of top-ranked results.",
         },
       ],
       existingAgentConfigs: [],
@@ -276,10 +285,10 @@ const examples = ((inputs: ExampleInput[]) =>
       RESPONSE_TYPE: "STEP_SEQUENCE",
       RESPONSE_STEP_SEQUENCE: {
         step_sequence: [
-          "Search for round-trip flight options to Tokyo for a 5-day business trip scheduled next month (input: destination, timeframe; output: flight list) [web_search]",
-          "Identify hotels in Tokyo located near the conference center that meet the user's accommodation requirements (input: destination, accommodation preferences; output: hotel list) [maps]",
-          "Gather conference schedule, venue address, and registration details (input: purpose; output: conference info) [web_search]",
-          "Find historical and cultural sites and restaurants offering authentic cuisine (input: activities, destination; output: attraction list, dining list) [maps]",
+          "Search for round-trip flight options to Tokyo for a 5-day business trip scheduled next month (input: destination, timeframe; output: flight list) [tools: tavily_api]",
+          "Identify hotels in Tokyo located near the conference center that meet the user's accommodation requirements (input: destination, accommodation preferences; output: hotel list) [tools: openstreetmap_search]",
+          "Gather conference schedule, venue address, and registration details (input: purpose; output: conference info) [tools: tavily_api]",
+          "Find historical and cultural sites and restaurants offering authentic cuisine (input: activities, destination; output: attraction list, dining list) [tools: openstreetmap_search]",
           "Compile a comprehensive 5-day itinerary using the flights from Step 1, hotels from Step 2, conference details from Step 3, and activities from Step 4 (input: outputs of Steps 1–4; output: final itinerary) [LLM]",
         ],
       },
@@ -291,19 +300,19 @@ const examples = ((inputs: ExampleInput[]) =>
     context: {
       availableTools: [
         {
-          toolName: "arxiv_search",
+          toolName: "bing",
           description:
-            "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
+            "Query the web via the Bing Search API to retrieve recent, high-quality results with snippets and source links.",
         },
         {
-          toolName: "web_search",
+          toolName: "crypto_price_feed",
           description:
-            "A lightweight utility that fires off a query to web search and returns the top‑ranked results (title, URL, snippet, and source site) in a compact JSON array.",
+            "Stream current and historical cryptocurrency prices for major exchanges.",
         },
         {
-          toolName: "maps",
+          toolName: "mapbox_places",
           description:
-            "Searches for geographic locations, businesses, and directions using maps data.",
+            "Use Mapbox Places API to look up addresses and place names, returning geocoded location data and contextual metadata.",
         },
       ],
       existingAgentConfigs: [],
@@ -329,10 +338,10 @@ const examples = ((inputs: ExampleInput[]) =>
       RESPONSE_TYPE: "STEP_SEQUENCE",
       RESPONSE_STEP_SEQUENCE: {
         step_sequence: [
-          "Identify the current flagship iPhone model and launch date (input: product focus; output: model name and launch date) [web_search]",
-          "Retrieve official specifications and key features for the model (input: model name from Step 1; output: feature summary) [web_search]",
-          "Gather pricing and availability data for the model in major regions (input: model name from Step 1; output: regional price list) [web_search]",
-          "Summarize differences between the current and previous iPhone generation (input: model name from Step 1, product series from Step 2; output: change list) [web_search]",
+          "Identify the current flagship iPhone model and launch date (input: product focus; output: model name and launch date) [tools: bing]",
+          "Retrieve official specifications and key features for the model (input: model name from Step 1; output: feature summary) [tools: bing]",
+          "Gather pricing and availability data for the model in major regions (input: model name from Step 1; output: regional price list) [tools: bing]",
+          "Summarize differences between the current and previous iPhone generation (input: model name from Step 1, product series from Step 2; output: change list) [tools: bing]",
           "Compile a comprehensive report (input: outputs of Steps 1–4; output: structured report) [LLM]",
         ],
       },
@@ -344,19 +353,14 @@ const examples = ((inputs: ExampleInput[]) =>
     context: {
       availableTools: [
         {
-          toolName: "arxiv_search",
-          description:
-            "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
-        },
-        {
-          toolName: "web_search",
+          toolName: "google_search",
           description:
             "A lightweight utility that fires off a query to web search and returns the top‑ranked results (title, URL, snippet, and source site) in a compact JSON array.",
         },
         {
-          toolName: "maps",
+          toolName: "news_search",
           description:
-            "Searches for geographic locations, businesses, and directions using maps data.",
+            "Query a curated index of newspapers, magazines, and wire-services for articles that match a keyword or topic. Supports source and date filters, returning structured results with headline, outlet, publication date, snippet, and article URL.",
         },
       ],
       existingAgentConfigs: [],
@@ -380,8 +384,8 @@ const examples = ((inputs: ExampleInput[]) =>
       RESPONSE_TYPE: "STEP_SEQUENCE",
       RESPONSE_STEP_SEQUENCE: {
         step_sequence: [
-          "Use google_search to retrieve the name of the current Czech president from official or reputable news sources (input: country; output: current president name) [web_search]",
-          "Verify inauguration date and term length using the president name retrieved in Step 1 (input: president name from Step 1; output: inauguration date and term info) [web_search]",
+          "Use google_search to retrieve the name of the current Czech president from official or reputable news sources (input: country; output: current president name) [tools: google_search]",
+          "Verify inauguration date and term length using the president name retrieved in Step 1 (input: president name from Step 1; output: inauguration date and term info) [tools: google_search]",
           "Summarize and present the president’s name, inauguration date, and source citation (input: outputs of Steps 1–2; output: verified fact summary) [LLM]",
         ],
       },
@@ -393,19 +397,14 @@ const examples = ((inputs: ExampleInput[]) =>
     context: {
       availableTools: [
         {
-          toolName: "arxiv_search",
-          description:
-            "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
-        },
-        {
-          toolName: "web_search",
+          toolName: "duckduckgo_search",
           description:
             "A lightweight utility that fires off a query to web search and returns the top‑ranked results (title, URL, snippet, and source site) in a compact JSON array.",
         },
         {
-          toolName: "maps",
+          toolName: "here_maps_search",
           description:
-            "Searches for geographic locations, businesses, and directions using maps data.",
+            "Search for places, addresses, and geographic features using HERE Maps API; returns precise location data with rich place attributes.",
         },
         {
           toolName: "weather_alert_feed",
@@ -419,7 +418,7 @@ const examples = ((inputs: ExampleInput[]) =>
           tools: ["weather_alert_feed"],
           instructions: `Context: You are a weather alert lookup agent. You are activated by an external task and receive coordinates as input. You have access to the weather_alert_feed tool, which provides real-time severe weather alerts by location.
 
-Objective: Check for any tornado-related alerts (watch or warning) within 50 km of the user-supplied location. If one or more relevant alerts exist, return them in a clear, concise format.
+Objective: Check for any tornado-related alerts (watch or warning) within [radius] km of the user-supplied [coordinates]. If one or more relevant alerts exist, return them in a clear, concise format.
 
 Response format: If alerts are found, list each alert with its type, area, and time range:
 
@@ -455,9 +454,9 @@ If no qualifying alert is found, respond with: "No tornado watches or warnings n
       RESPONSE_TYPE: "STEP_SEQUENCE",
       RESPONSE_STEP_SEQUENCE: {
         step_sequence: [
-          "Monitor real-time tornado alerts within a 50 km radius using weather_tornado_immediate (input: user coordinates, radius; output: tornado alert signal) [weather_tornado_immediate]",
-          "Locate nearest public tornado shelters using maps (input: user coordinates; output: list of nearby shelters) [maps]",
-          "Generate directions from the user’s current location to the nearest shelter (input: user coordinates, list of nearby shelters from Step 2; output: step-by-step directions to the nearest shelter) [maps]",
+          "Monitor real-time tornado alerts within a 50 km radius using tornado_alert_lookup (input: user coordinates, radius; output: tornado alert signal) [agent: tornado_alert_lookup]",
+          "Locate nearest public tornado shelters using maps (input: user coordinates; output: list of nearby shelters) [tools: here_maps_search]",
+          "Generate directions from the user’s current location to the nearest shelter (input: user coordinates, list of nearby shelters from Step 2; output: step-by-step directions to the nearest shelter) [tools: here_maps_search]",
           "Combine alert signal and shelter directions into a unified notification (input: outputs from Steps 1 and 3; output: user alert) [LLM]",
         ],
       },
@@ -473,6 +472,16 @@ If no qualifying alert is found, respond with: "No tornado watches or warnings n
           description:
             "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
         },
+        {
+          toolName: "crypto_price_feed",
+          description:
+            "Stream current and historical cryptocurrency prices for major exchanges.",
+        },
+        {
+          toolName: "tavily_api",
+          description:
+            "Perform fast and relevant web searches using the Tavily API, returning concise summaries of top-ranked results.",
+        },
       ],
       existingAgentConfigs: [
         {
@@ -481,6 +490,13 @@ If no qualifying alert is found, respond with: "No tornado watches or warnings n
           instructions:
             "At 07:00 Prague time search arxiv_search for new submissions tagged cs.LG or cs.AI whose abstract mentions “reinforcement learning” and send a three‑sentence summary for each paper.",
           description: "Daily RL arXiv digest.",
+        },
+        {
+          agentType: "crypto_price_tracker_hourly",
+          description: "Tracks BTC & ETH prices every hour.",
+          instructions:
+            "Fetch Bitcoin and Ethereum spot prices every hour with crypto_price_feed and alert on > 3 % moves.",
+          tools: ["crypto_price_feed"],
         },
       ],
     },
@@ -500,9 +516,9 @@ If no qualifying alert is found, respond with: "No tornado watches or warnings n
       RESPONSE_TYPE: "STEP_SEQUENCE",
       RESPONSE_STEP_SEQUENCE: {
         step_sequence: [
-          "Query arXiv for today’s new cs.LG or cs.AI submissions mentioning “reinforcement learning” (input: current date, arXiv categories, keyword; output: list of relevant papers) [arxiv_rl_daily]",
-          "Generate a three-sentence summary for each paper using results from Step 1 (input: paper abstracts from Step 1; output: summary list) [arxiv_rl_daily]",
-          "Compile summaries into a structured daily digest using the summaries from Step 2 (input: summary list from Step 2; output: daily digest report) [arxiv_rl_daily]",
+          "Query arXiv for today’s new cs.LG or cs.AI submissions mentioning “reinforcement learning” (input: current date, arXiv categories, keyword; output: list of relevant papers) [agent: arxiv_rl_daily]",
+          "Generate a three-sentence summary for each paper using results from Step 1 (input: paper abstracts from Step 1; output: summary list) [LLM]",
+          "Compile summaries into a structured daily digest using the summaries from Step 2 (input: summary list from Step 2; output: daily digest report) [LLM]",
         ],
       },
     },
@@ -554,7 +570,7 @@ Upcoming family-friendly events in [City] this weekend:
       RESPONSE_TYPE: "STEP_SEQUENCE",
       RESPONSE_STEP_SEQUENCE: {
         step_sequence: [
-          "Search for family-friendly events in the user’s city scheduled for the upcoming weekend (input: city name, weekend date range; output: list of matching events with basic metadata) [city_events_weekend]",
+          "Search for family-friendly events in the user’s city scheduled for the upcoming weekend (input: city name, weekend date range; output: list of matching events with basic metadata) [agent: city_events_weekend]",
           "Format each event with name, venue, start time, and ticket price (input: event list from Step 1; output: structured list of formatted event entries) [LLM]",
         ],
       },
@@ -610,7 +626,7 @@ All other assets follow the same format but without the prefix.`,
       RESPONSE_TYPE: "STEP_SEQUENCE",
       RESPONSE_STEP_SEQUENCE: {
         step_sequence: [
-          "Track BTC and ETH prices, compare to reference values, and format alert output if change exceeds 3% (input: asset symbols = BTC, ETH; reference prices; threshold = 3%; output: structured price list with alerts) [crypto_price_tracker]",
+          "Track BTC and ETH prices, compare to reference values, and format alert output if change exceeds 3% (input: asset symbols = BTC, ETH; reference prices; threshold = 3%; output: structured price list with alerts) [agent: crypto_price_tracker]",
         ],
       },
     },
@@ -648,9 +664,9 @@ All other assets follow the same format but without the prefix.`,
             "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
         },
         {
-          toolName: "web_search",
+          toolName: "bing",
           description:
-            "A lightweight utility that fires off a query to web search and returns the top-ranked results (title, URL, snippet, and source site) in a compact JSON array.",
+            "Query the web via the Bing Search API to retrieve recent, high-quality results with snippets and source links.",
         },
       ],
     },
@@ -712,9 +728,9 @@ All other assets follow the same format but without the prefix.`,
             "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
         },
         {
-          toolName: "web_search",
+          toolName: "duckduckgo_search",
           description:
-            "A lightweight utility that fires off a query to web search and returns the top-ranked results (title, URL, snippet, and source site) in a compact JSON array.",
+            "Use the DuckDuckGo Search API to find current web content with a focus on privacy and relevance; returns key results with titles, links, and short summaries.",
         },
       ],
     },
@@ -745,14 +761,14 @@ All other assets follow the same format but without the prefix.`,
       existingAgentConfigs: [],
       availableTools: [
         {
-          toolName: "arxiv_search",
+          toolName: "historical_sites_search_api",
           description:
-            "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
+            "Purpose-built lookup for *place-based* heritage queries. Give it any neighborhood, city, or lat/long (e.g., “Back Bay”) and it returns structured JSON for each matching historic or archaeological site: official name, era, brief significance, coordinates, jurisdiction, and citation links from authoritative registers (UNESCO, U.S. National Register, state inventories, etc.). **Use this tool whenever the user wants to *find, list, or map* historic sites at a location—no generic web search needed.**",
         },
         {
-          toolName: "web_search",
+          toolName: "podcast_search",
           description:
-            "A lightweight utility that fires off a query to web search and returns the top-ranked results (title, URL, snippet, and source site) in a compact JSON array.",
+            "Search a catalogue of podcast episodes by keyword and date; returns title, show, release date, and audio URL.",
         },
       ],
     },

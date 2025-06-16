@@ -1,9 +1,10 @@
 import * as laml from "@/laml/index.js";
+import { Context } from "../base/context.js";
 import { LLMCall, LLMCallInput } from "../base/llm-call.js";
+import { FnResult } from "../base/retry/types.js";
 import { RequestHandlerInput, RequestHandlerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
-import { Context } from "../base/context.js";
 
 export class RequestHandler extends LLMCall<
   typeof protocol,
@@ -17,11 +18,12 @@ export class RequestHandler extends LLMCall<
   get protocol() {
     return protocol;
   }
+
   protected async processResult(
     result: laml.ProtocolResult<typeof protocol>,
     input: LLMCallInput<RequestHandlerInput>,
     { onUpdate }: Context,
-  ): Promise<RequestHandlerOutput> {
+  ): Promise<FnResult<RequestHandlerOutput>> {
     let response;
     const type = result.RESPONSE_TYPE;
     const explanation = result.RESPONSE_CHOICE_EXPLANATION;
@@ -64,9 +66,12 @@ export class RequestHandler extends LLMCall<
     this.handleOnUpdate(onUpdate, { value: response });
 
     return {
-      type: result.RESPONSE_TYPE,
-      explanation,
-      response,
+      type: "SUCCESS",
+      result: {
+        type,
+        explanation,
+        response,
+      },
     };
   }
 }

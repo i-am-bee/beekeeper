@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { StepResultSchema } from "../../base/dto.js";
+import { TaskStepSchema } from "../dto.js";
 import {
   AgentAvailableToolSchema,
   AgentConfigMinimalSchema,
@@ -8,15 +8,14 @@ import {
 export const ProblemDecomposerInputSchema = z.object({
   availableTools: z.array(AgentAvailableToolSchema),
   existingAgents: z.array(AgentConfigMinimalSchema),
-  input: z.string(),
+  request: z.string(),
 });
 export type ProblemDecomposerInput = z.infer<
   typeof ProblemDecomposerInputSchema
 >;
 
-export const ProblemDecomposerOutputSchema = StepResultSchema(
-  z.array(z.string()),
-);
+export const ProblemDecomposerOutputSchema =
+  z.array(TaskStepSchema);
 export type ProblemDecomposerOutput = z.infer<
   typeof ProblemDecomposerOutputSchema
 >;

@@ -1,7 +1,10 @@
+import { AgentIdValue } from "@/agents/registry/dto.js";
+import { Context } from "@/agents/supervisor-workflow/base/context.js";
 import {
   LLMCall,
-  LLMCallInput,
+  LLMCallInput
 } from "@/agents/supervisor-workflow/base/llm-call.js";
+import { FnResult } from "@/agents/supervisor-workflow/base/retry/types.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import { clone } from "remeda";
@@ -12,8 +15,6 @@ import {
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { TaskConfigInitializerTool } from "./tool.js";
-import { AgentIdValue } from "@/agents/registry/dto.js";
-import { Context } from "@/agents/supervisor-workflow/base/context.js";
 
 export class TaskConfigInitializer extends LLMCall<
   typeof protocol,
@@ -39,7 +40,7 @@ export class TaskConfigInitializer extends LLMCall<
     result: laml.ProtocolResult<typeof protocol>,
     input: LLMCallInput<TaskConfigInitializerInput>,
     ctx: Context,
-  ): Promise<TaskConfigInitializerOutput> {
+  ): Promise<FnResult<TaskConfigInitializerOutput>> {
     const { onUpdate } = ctx;
 
     try {
@@ -97,9 +98,7 @@ export class TaskConfigInitializer extends LLMCall<
           this.handleOnUpdate(onUpdate, {
             type: result.RESPONSE_TYPE,
             value: `I'm going to update an existing agent config \`${response.task_config_input}\``,
-          });
-          this.handleOnUpdate(onUpdate, {
-            value: JSON.stringify(config, null, " "),
+            payload: { toJson: config },
           });
 
           toolCallResult = await this.tool.run({

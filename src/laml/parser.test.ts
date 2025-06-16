@@ -1109,6 +1109,185 @@ BBC News on Trump (Last 24 Hours):
           },
         });
       });
+      it("Create cnn_trump_news_search agent config", () => {
+        const protocol = ProtocolBuilder.new()
+          .text({
+            name: "RESPONSE_CHOICE_EXPLANATION",
+            description:
+              "Brief explanation of *why* you selected the given RESPONSE_TYPE",
+          })
+          .constant({
+            name: "RESPONSE_TYPE",
+            values: [
+              "CREATE_AGENT_CONFIG",
+              "UPDATE_AGENT_CONFIG",
+              "SELECT_AGENT_CONFIG",
+              "AGENT_CONFIG_UNAVAILABLE",
+            ] as const,
+            description:
+              "Valid values: CREATE_AGENT_CONFIG | UPDATE_AGENT_CONFIG | SELECT_AGENT_CONFIG | AGENT_CONFIG_UNAVAILABLE",
+          })
+          .comment({
+            comment:
+              "Follow by one of the possible responses format based on the chosen response type",
+          })
+          .object({
+            name: "RESPONSE_CREATE_AGENT_CONFIG",
+            isOptional: true,
+            attributes: ProtocolBuilder.new()
+              .text({
+                name: "agent_type",
+                description: "Name of the new agent config type in snake_case",
+              })
+              .array({
+                name: "tools",
+                description:
+                  "list of selected tools identifiers that this agent type can utilize",
+                type: "text",
+              })
+              .text({
+                name: "description",
+                description:
+                  "Description of the agent's behavior and purpose of his existence",
+              })
+              .text({
+                name: "instructions",
+                description:
+                  "Natural language but structured text instructs on how agent should act",
+              }),
+          })
+          .build();
+
+        const parser = new Parser(protocol);
+        const parsed = parser.parse(`\`\`\`
+RESPONSE_CHOICE_EXPLANATION: No existing agent can search CNN for news articles about Trump within the last 24 hours; a new agent is needed.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: cnn_trump_news_search
+  tools: web_search
+  description: Searches CNN for articles about Trump published in the last 24 hours using web_search
+  instructions: Context: You are a news search agent. You are activated by an external task and receive the query "Trump", source "CNN", and timeframe "last 24 hours" as input. You have access to the web_search tool, which can query CNN for news articles.
+
+Objective: Find and return a list of CNN articles about Trump published in the last 24 hours. Use the web_search tool to execute the query and retrieve article titles, links, and brief summaries.
+
+Response format: Present the articles in a list format, each entry including the title, link, and a short summary. For example:
+
+- Title: [Article Title]
+  Link: [Article URL]
+  Summary: [Short article summary]
+\`\`\``);
+
+        expect(parsed).toEqual({
+          RESPONSE_CHOICE_EXPLANATION:
+            "No existing agent can search CNN for news articles about Trump within the last 24 hours; a new agent is needed.",
+          RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+          RESPONSE_CREATE_AGENT_CONFIG: {
+            agent_type: "cnn_trump_news_search",
+            tools: ["web_search"],
+            description:
+              "Searches CNN for articles about Trump published in the last 24 hours using web_search",
+            instructions: `Context: You are a news search agent. You are activated by an external task and receive the query "Trump", source "CNN", and timeframe "last 24 hours" as input. You have access to the web_search tool, which can query CNN for news articles.
+
+Objective: Find and return a list of CNN articles about Trump published in the last 24 hours. Use the web_search tool to execute the query and retrieve article titles, links, and brief summaries.
+
+Response format: Present the articles in a list format, each entry including the title, link, and a short summary. For example:
+
+- Title: [Article Title]
+  Link: [Article URL]
+  Summary: [Short article summary]
+\`\`\``,
+          },
+        });
+      });
+      it("Search historical site", () => {
+        const protocol = ProtocolBuilder.new()
+          .text({
+            name: "RESPONSE_CHOICE_EXPLANATION",
+            description:
+              "Brief explanation of *why* you selected the given RESPONSE_TYPE",
+          })
+          .constant({
+            name: "RESPONSE_TYPE",
+            values: [
+              "CREATE_AGENT_CONFIG",
+              "UPDATE_AGENT_CONFIG",
+              "SELECT_AGENT_CONFIG",
+              "AGENT_CONFIG_UNAVAILABLE",
+            ] as const,
+            description:
+              "Valid values: CREATE_AGENT_CONFIG | UPDATE_AGENT_CONFIG | SELECT_AGENT_CONFIG | AGENT_CONFIG_UNAVAILABLE",
+          })
+          .comment({
+            comment:
+              "Follow by one of the possible responses format based on the chosen response type",
+          })
+          .object({
+            name: "RESPONSE_CREATE_AGENT_CONFIG",
+            isOptional: true,
+            attributes: ProtocolBuilder.new()
+              .text({
+                name: "agent_type",
+                description: "Name of the new agent config type in snake_case",
+              })
+              .array({
+                name: "tools",
+                description:
+                  "list of selected tools identifiers that this agent type can utilize",
+                type: "text",
+              })
+              .text({
+                name: "description",
+                description:
+                  "Description of the agent's behavior and purpose of his existence",
+              })
+              .text({
+                name: "instructions",
+                description:
+                  "Natural language but structured text instructs on how agent should act",
+              }),
+          })
+          .build();
+
+        const parser = new Parser(protocol);
+        const parsed = parser.parse(`\`\`\`
+RESPONSE_CHOICE_EXPLANATION: No existing agent can identify historical sites; a new agent using historical_sites_search_api is needed.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: historical_sites_identifier
+  tools: historical_sites_search_api
+  instructions: Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
+
+Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
+
+Response format: List each site with its name and a brief description:
+
+Historical Sites in [Location]:
+1. Name: [Site Name 1] — Description: [Description 1]
+2. Name: [Site Name 2] — Description: [Description 2]
+  description: Identifies historical sites in a given location using the historical_sites_search_api tool.
+\`\`\``);
+
+        expect(parsed).toEqual({
+          RESPONSE_CHOICE_EXPLANATION:
+            "No existing agent can identify historical sites; a new agent using historical_sites_search_api is needed.",
+          RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+          RESPONSE_CREATE_AGENT_CONFIG: {
+            agent_type: "historical_sites_identifier",
+            tools: ["historical_sites_search_api"],
+            description:
+              "Identifies historical sites in a given location using the historical_sites_search_api tool.",
+            instructions: `Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
+
+Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
+
+Response format: List each site with its name and a brief description:
+
+Historical Sites in [Location]:
+1. Name: [Site Name 1] — Description: [Description 1]
+2. Name: [Site Name 2] — Description: [Description 2]`,
+          },
+        });
+      });
     });
   });
 });

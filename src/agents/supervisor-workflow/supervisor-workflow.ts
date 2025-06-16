@@ -31,7 +31,7 @@ export class SupervisorWorkflow extends Runnable<
       onUpdate,
     } satisfies Context;
 
-    const { output: requestHandlerOutput } = await this.requestHandler.run(
+    const requestHandlerRunOutput = await this.requestHandler.run(
       {
         data: { request: input },
         userMessage: input,
@@ -39,7 +39,12 @@ export class SupervisorWorkflow extends Runnable<
       ctx,
     );
 
-    if (requestHandlerOutput.type === "COMPOSE_WORKFLOW") {
+    if (requestHandlerRunOutput.type === "ERROR") {
+      throw new Error(`Request handler failed: ${requestHandlerRunOutput.explanation}`);
+    }
+
+    const output = requestHandlerRunOutput.result;
+    if (output.type === "COMPOSE_WORKFLOW") {
       const output = await this.workflowComposer.run({ input }, ctx);
 
       if (output.type === "ERROR") {
@@ -48,7 +53,7 @@ export class SupervisorWorkflow extends Runnable<
 
       return `I have prepared these tasks for you: \n${output.result.map((t, idx) => `${idx + 1}. ${t.taskType}`).join(`\n`)}`;
     } else {
-      return requestHandlerOutput.response;
+      return output.response;
     }
   }
 }

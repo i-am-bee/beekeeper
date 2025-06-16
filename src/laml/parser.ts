@@ -4,6 +4,19 @@ import { ParserOutput } from "./parser-output.js";
 import { DEFAULT_INDENT, FieldRef, Protocol } from "./protocol.js";
 import { pathStr, truncateText, unwrapString } from "./utils.js";
 
+export class ParseError extends Error {
+  constructor(
+    message: string,
+    public path: string[],
+  ) {
+    super(message);
+    this.name = "ParseError";
+  }
+  toString() {
+    return `ParseError: ${this.message} at path \`${pathStr(this.path)}\``;
+  }
+}
+
 // Bullet list
 const BULLET_SIGNS: string[] = [
   "•", // U+2022 Bullet
@@ -125,7 +138,7 @@ export class Parser<TResult> {
 
   parse(data: string) {
     if (!this._protocol) {
-      throw new Error(`Protocol is not defined`);
+      throw new ParseError(`Protocol is not defined`, []);
     }
 
     const output = new ParserOutput<TResult>();
@@ -137,7 +150,10 @@ export class Parser<TResult> {
       { skipCommentFields: true },
       (field, nextFields, path) => {
         if (field.kind === "comment") {
-          throw new Error(`Unparseable field kind \`${field.kind}\``);
+          throw new ParseError(
+            `Unparseable field kind \`${field.kind}\` at path \`${pathStr(path)}\``,
+            path,
+          );
         }
 
         const paramNameString = Parser.getParamNameString(
@@ -158,8 +174,9 @@ export class Parser<TResult> {
                 return "CONTINUE";
               }
             }
-            throw new Error(
+            throw new ParseError(
               `Data doesn't contain required parameter \`${paramNameString}\``,
+              path,
             );
           }
           rest = rest.substring(startIndex);
@@ -175,8 +192,9 @@ export class Parser<TResult> {
             }
 
             const truncated = truncateText(rest, 250);
-            throw new Error(
+            throw new ParseError(
               `Can't find field \`${pathStr(path.concat(field.name))}\`. It should start with \`${paramNameString}\` but actually starts with \`${truncated}\``,
+              path,
             );
           }
         }

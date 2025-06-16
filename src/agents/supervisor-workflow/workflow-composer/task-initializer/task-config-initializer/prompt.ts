@@ -1,10 +1,101 @@
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
 import * as laml from "@/laml/index.js";
-import { TaskConfigMinimal, TaskConfigInitializerInput } from "./dto.js";
+import { TaskStep } from "../../dto.js";
+import { TaskStepMapper } from "../../task-step-mapper.js";
+import { AgentConfigTiny } from "../agent-config-initializer/dto.js";
+import { TaskConfigInitializerInput, TaskConfigMinimal } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
-import { AgentConfigMinimal } from "../agent-config-initializer/dto.js";
+
+export const prompt = ({
+  existingTaskConfigs,
+  existingAgentConfigs,
+  previousSteps,
+}: Pick<
+  TaskConfigInitializerInput,
+  "existingAgentConfigs" | "existingTaskConfigs" | "previousSteps"
+>) =>
+  BodyTemplateBuilder.new()
+    .introduction(
+      `You are a **TaskConfigInitiator** — the action module in a multi-agent workflow.  
+Your mission is to process assignments in the format:  
+\`<Assignment for the agent> (input: <input parameters>, output: <output value>) [agent: <agent config type name>]\`  
+Based on the agent config type, you will either create, update, or select a task config to accomplish the task. Task config is a general template for tasks that will be executed at runtime.`,
+    )
+    .section({
+      title: {
+        text: "Context",
+        level: 2,
+      },
+      newLines: {
+        start: 1,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: {
+        start: true,
+        end: true,
+      },
+      content: ExistingResourcesBuilder.new()
+        .previousSteps(previousSteps.map(TaskStepMapper.format))
+        .taskConfigs(existingTaskConfigs)
+        .agentConfigs(existingAgentConfigs)
+        .build(),
+    })
+    .section({
+      title: {
+        text: "Response Format",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+      },
+      delimiter: { end: true },
+      content: protocol.printExplanation(),
+    })
+    .section({
+      title: {
+        text: "Decision Criteria",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: decisionCriteria,
+    })
+    .section({
+      title: {
+        text: "Response Guidelines",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: guidelines,
+    })
+    .section({
+      title: {
+        text: "Examples",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: examples,
+    })
+    .callToAction("This is the task")
+    .build();
 
 const guidelines = BodyTemplateBuilder.new()
   .section({
@@ -74,7 +165,7 @@ const decisionCriteria = BodyTemplateBuilder.new()
 **Guidelines for all branches**
 
 1. If more than one row seems to apply, pick the **top-most** matching row.  
-2. Perform the uniqueness check for \`task_type\` **before** emitting \`CREATE_TASK_CONFIG\`; if the name already exists, return \`SELECT_TASK_CONFIG\`.  
+2. Perform the uniqueness check for \`task_type\` **before** emitting \`CREATE_TASK_CONFIG\`; if the name already exists, return \`SELECT_TASK_CONFIG\` instead.  
 3. Agent config validation: agent type must appear in **Existing agents**; otherwise respond with \`TASK_CONFIG_UNAVAILABLE\`.  
 4. Arrays (e.g., \`tools\`) must be in **alphabetical order** for deterministic grading.`,
   })
@@ -85,8 +176,9 @@ interface ExampleInput {
   subtitle: string;
   user: string;
   context: {
+    previousSteps: TaskStep[];
     existingTaskConfigs: TaskConfigMinimal[];
-    existingAgentConfigs: AgentConfigMinimal[];
+    existingAgentConfigs: AgentConfigTiny[];
   };
   example: laml.ProtocolResult<typeof protocol>;
 }
@@ -103,6 +195,9 @@ const examples = ((inputs: ExampleInput[]) =>
         })
         .context(
           ExistingResourcesBuilder.new()
+            .previousSteps(
+              input.context.previousSteps.map(TaskStepMapper.format),
+            )
             .taskConfigs(input.context.existingTaskConfigs)
             .agentConfigs(input.context.existingAgentConfigs)
             .build(),
@@ -113,241 +208,726 @@ const examples = ((inputs: ExampleInput[]) =>
     )
     .join("\n"))([
   {
-    title: "Create task config",
-    subtitle: "Collect tweets",
+    title: "CREATE_TASK_CONFIG",
+    subtitle: "Identify historical sites",
     context: {
+      previousSteps: [],
       existingTaskConfigs: [],
       existingAgentConfigs: [
         {
-          agentType: "tweets_collector",
-          agentConfigId: "operator:tweets_collector[1]:1",
-          agentConfigVersion: 1,
+          agentType: "historical_sites_identifier",
+          tools: ["historical_sites_search_api"],
+          instructions: `Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
+
+Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
+
+Response format: List each site with its name and a brief description.`,
           description:
-            "Gathers tweets that match a user-supplied query or hashtag within a given time window (default = 24 h).",
-          instructions: `Context: You are a tweet collection agent specializing in gathering tweets containing specific hashtags. You have access to a web search tool that allows you to find tweets based on search queries. Users will provide you with a hashtag and a time frame for the tweets they want collected. 
-
-Objective: Collect tweets containing the specified hashtag from the specific time window. Use the web search tool to execute a search query for the hashtag and filter results to include only tweets from the specific time window. Provide a list of tweet URLs and their content.
-
-Response format: Begin with a summary of the search query and time frame. Then list each tweet with its URL and content. Ensure the list is clear and organized, with each tweet entry on a new line. For example:
-
-#AI Tweets from the past [time_window]:
-1. URL: [tweet_url_1] Content: [tweet_content_1]
-2. URL: [tweet_url_2] Content: [tweet_content_2]`,
-          tools: ["twitter_search"],
+            "Identifies historical sites in a given location using the historical_sites_search_api tool.",
         },
-      ],
-    },
-    user: "Collect tweets containing the hashtag #AI from the past 24 hours.",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "No existing agent can gather tweets on demand; a new config is required.",
-      RESPONSE_TYPE: "CREATE_TASK_CONFIG",
-      RESPONSE_CREATE_TASK_CONFIG: {
-        task_type: "collect_tweets",
-        agent_type: "tweets_collector",
-        task_config_input: `{"hashtag":"[hashtag_value]","timeFrame":"[time_frame_value]"}`,
-        description:
-          "Task to collect tweets containing a user-supplied specific hashtag and time frame.",
-      },
-    },
-  },
-  {
-    title: "Task config unavailable",
-    subtitle: "Collect tweets (No suitable existing agent config)",
-    context: {
-      existingTaskConfigs: [],
-      existingAgentConfigs: [
         {
-          agentType: "flight_price_tracker_weekly",
-          description: "Weekly flight-deal monitor.",
-          instructions:
-            "Once a week track round-trip fares on user-defined routes with flight_price_tracker and alert when the price drops below the user’s target threshold.",
-          tools: ["flight_price_tracker"],
-          agentConfigId: "operator:flight_price_tracker_weekly[1]:1",
-          agentConfigVersion: 1,
+          agentType: "game_searcher",
+          tools: ["sports_schedule_api"],
+          instructions: `Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
+
+Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
+
+Response format: List each game with its date, time, and teams.`,
+          description:
+            "Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.",
         },
-      ],
-    },
-    user: "Collect tweets containing the hashtag #AI from the past 24 hours.",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "No existing agent can gather tweets on demand; a new agent config is required.",
-      RESPONSE_TYPE: "TASK_CONFIG_UNAVAILABLE",
-      RESPONSE_TASK_CONFIG_UNAVAILABLE: {
-        explanation:
-          "Cannot create or update an task config because there is no suitable agent config to use.",
-      },
-    },
-  },
-  {
-    title: "Update task config",
-    subtitle: "Generalization of restaurants recommendation",
-    context: {
-      existingTaskConfigs: [
         {
           agentType: "restaurant_recommender",
-          taskType: "recommend_restaurant",
+          tools: ["google_search", "web_extract"],
+          instructions: `Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
+
+Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
+
+Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.`,
           description:
-            "Task to recommend restaurants in Boston based on cuisine preferences",
-          taskConfigInput:
-            '{"city":"Boston","cuisines":["Italian", "Chinese", "France"]}',
+            "Recommends restaurants based on user-defined preferences and location using web search tools.",
+        },
+        {
+          agentType: "itinerary_creator",
+          tools: ["itinerary_planner_api"],
+          instructions: `Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
+
+Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
+
+Response format: Present the itinerary day by day with activities and details.`,
+          description:
+            "Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.",
+        },
+      ],
+    },
+    user: "Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "No existing task config matches the request; a new task config is required.",
+      RESPONSE_TYPE: "CREATE_TASK_CONFIG",
+      RESPONSE_CREATE_TASK_CONFIG: {
+        task_type: "identify_historical_sites",
+        agent_type: "historical_sites_identifier",
+        task_config_input: `{"location":"<given location>"}`,
+        description: "Task to identify historical sites in a given location.",
+      },
+    },
+  },
+  {
+    title: "CREATE_TASK_CONFIG",
+    subtitle: "Find game schedules",
+    context: {
+      previousSteps: [
+        {
+          step: "Identify historical sites in Back Bay",
+          inputOutput: "input: location; output: list of sites",
+          resource: { type: "agent", agentType: "historical_sites_identifier" },
+        },
+      ],
+      existingTaskConfigs: [
+        {
+          taskType: "identify_historical_sites",
+          agentType: "historical_sites_identifier",
+          taskConfigInput: `{"location":"<given location>"}`,
+          description: "Task to identify historical sites in a given location.",
+        },
+      ],
+      existingAgentConfigs: [
+        {
+          agentType: "historical_sites_identifier",
+          tools: ["historical_sites_search_api"],
+          instructions: `Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
+
+Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
+
+Response format: List each site with its name and a brief description.`,
+          description:
+            "Identifies historical sites in a given location using the historical_sites_search_api tool.",
+        },
+        {
+          agentType: "game_searcher",
+          tools: ["sports_schedule_api"],
+          instructions: `Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
+
+Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
+
+Response format: List each game with its date, time, and teams.`,
+          description:
+            "Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.",
+        },
+        {
+          agentType: "restaurant_recommender",
+          tools: ["google_search", "web_extract"],
+          instructions: `Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
+
+Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
+
+Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.`,
+          description:
+            "Recommends restaurants based on user-defined preferences and location using web search tools.",
+        },
+        {
+          agentType: "itinerary_creator",
+          tools: ["itinerary_planner_api"],
+          instructions: `Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
+
+Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
+
+Response format: Present the itinerary day by day with activities and details.`,
+          description:
+            "Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.",
+        },
+      ],
+    },
+    user: "Find upcoming hockey/basketball game schedules in a given location (input: sport, location; output: game list) [agent: game_searcher]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "No existing task config matches the request; a new task config is required.",
+      RESPONSE_TYPE: "CREATE_TASK_CONFIG",
+      RESPONSE_CREATE_TASK_CONFIG: {
+        task_type: "find_game_schedules",
+        agent_type: "game_searcher",
+        task_config_input: `{"sport":"<choose sport: hockey | basketball>","location":"<given location>"}`,
+        description:
+          "Task to find upcoming hockey and basketball game schedules in a given location.",
+      },
+    },
+  },
+  {
+    title: "CREATE_TASK_CONFIG",
+    subtitle: "Recommend restaurants",
+    context: {
+      previousSteps: [
+        {
+          step: "Identify historical sites in Back Bay",
+          inputOutput: "input: location; output: list of sites",
+          resource: { type: "agent", agentType: "historical_sites_identifier" },
+        },
+        {
+          step: "Find upcoming hockey/basketball game schedules in a given location",
+          inputOutput: "input: sport, location; output: game list",
+          resource: { type: "agent", agentType: "game_searcher" },
+        },
+      ],
+      existingTaskConfigs: [
+        {
+          taskType: "identify_historical_sites",
+          agentType: "historical_sites_identifier",
+          taskConfigInput: `{"location":"<given location>"}`,
+          description: "Task to identify historical sites in a given location.",
+        },
+        {
+          taskType: "find_game_schedules",
+          agentType: "game_searcher",
+          taskConfigInput: `{"sport":"<choose sport: hockey | basketball>","location":"<given location>"}`,
+          description:
+            "Task to find upcoming hockey and basketball game schedules in a given location.",
+        },
+      ],
+      existingAgentConfigs: [
+        {
+          agentType: "historical_sites_identifier",
+          tools: ["historical_sites_search_api"],
+          instructions: `Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
+
+Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
+
+Response format: List each site with its name and a brief description.`,
+          description:
+            "Identifies historical sites in a given location using the historical_sites_search_api tool.",
+        },
+        {
+          agentType: "game_searcher",
+          tools: ["sports_schedule_api"],
+          instructions: `Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
+
+Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
+
+Response format: List each game with its date, time, and teams.`,
+          description:
+            "Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.",
+        },
+        {
+          agentType: "restaurant_recommender",
+          tools: ["google_search", "web_extract"],
+          instructions: `Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
+
+Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
+
+Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.`,
+          description:
+            "Recommends restaurants based on user-defined preferences and location using web search tools.",
+        },
+        {
+          agentType: "itinerary_creator",
+          tools: ["itinerary_planner_api"],
+          instructions: `Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
+
+Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
+
+Response format: Present the itinerary day by day with activities and details.`,
+          description:
+            "Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.",
+        },
+      ],
+    },
+    user: "Recommend Italian, Chinese, and French restaurants in Back Bay for each day (input: dining preferences, location, days; output: restaurant list) [agent: restaurant_recommender]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "No existing task config matches the request; a new task config is required.",
+      RESPONSE_TYPE: "CREATE_TASK_CONFIG",
+      RESPONSE_CREATE_TASK_CONFIG: {
+        task_type: "recommend_restaurants",
+        agent_type: "restaurant_recommender",
+        task_config_input: `{"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>", "days":"<list of days>"}`,
+        description:
+          "Task to recommend restaurants for each day based on user-defined preferences, location and list of the days.",
+      },
+    },
+  },
+  {
+    title: "CREATE_TASK_CONFIG",
+    subtitle: "Create a 3-day itinerary",
+    context: {
+      previousSteps: [
+        {
+          step: "Identify historical sites in Back Bay",
+          inputOutput: "input: location; output: list of sites",
+          resource: { type: "agent", agentType: "historical_sites_identifier" },
+        },
+        {
+          step: "Find upcoming hockey/basketball game schedules in a given location",
+          inputOutput: "input: sport, location; output: game list",
+          resource: { type: "agent", agentType: "game_searcher" },
+        },
+        {
+          step: "Recommend Italian, Chinese, and French restaurants in Back Bay for each day",
+          inputOutput:
+            "input: dining preferences, location; output: restaurant list",
+          resource: { type: "agent", agentType: "restaurant_recommender" },
+        },
+      ],
+      existingTaskConfigs: [
+        {
+          taskType: "identify_historical_sites",
+          agentType: "historical_sites_identifier",
+          taskConfigInput: `{"location":"<given location>"}`,
+          description: "Task to identify historical sites in a given location.",
+        },
+        {
+          taskType: "find_game_schedules",
+          agentType: "game_searcher",
+          taskConfigInput: `{"sport":"<choose sport: hockey | basketball>","location":"<given location>"}`,
+          description:
+            "Task to find upcoming hockey and basketball game schedules in a given location.",
+        },
+        {
+          taskType: "recommend_restaurants",
+          agentType: "restaurant_recommender",
+          taskConfigInput: `{"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>"}`,
+          description:
+            "Task to recommend restaurants based on user-defined preferences and location.",
+        },
+      ],
+      existingAgentConfigs: [
+        {
+          agentType: "historical_sites_identifier",
+          tools: ["historical_sites_search_api"],
+          instructions: `Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
+
+Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
+
+Response format: List each site with its name and a brief description.`,
+          description:
+            "Identifies historical sites in a given location using the historical_sites_search_api tool.",
+        },
+        {
+          agentType: "game_searcher",
+          tools: ["sports_schedule_api"],
+          instructions: `Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
+
+Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
+
+Response format: List each game with its date, time, and teams.`,
+          description:
+            "Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.",
+        },
+        {
+          agentType: "restaurant_recommender",
+          tools: ["google_search", "web_extract"],
+          instructions: `Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
+
+Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
+
+Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.`,
+          description:
+            "Recommends restaurants based on user-defined preferences and location using web search tools.",
+        },
+        {
+          agentType: "itinerary_creator",
+          tools: ["itinerary_planner_api"],
+          instructions: `Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
+
+Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
+
+Response format: Present the itinerary day by day with activities and details.`,
+          description:
+            "Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.",
+        },
+      ],
+    },
+    user: "Create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions (input: outputs from Steps 1–3; output: detailed itinerary) [agent: itinerary_creator]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "No existing task config matches the request; a new task config is required.",
+      RESPONSE_TYPE: "CREATE_TASK_CONFIG",
+      RESPONSE_CREATE_TASK_CONFIG: {
+        task_type: "create_3_day_itinerary",
+        agent_type: "itinerary_creator",
+        task_config_input: `{"historical_sites":"<list of historical sites>","games":"<list of games>","restaurants":"<list of restaurants>"}`,
+        description:
+          "Task to create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions.",
+      },
+    },
+  },
+  {
+    title: "UPDATE_TASK_CONFIG",
+    subtitle: "Generalize restaurant recommendations",
+    context: {
+      previousSteps: [
+        {
+          step: "Identify historical sites in Back Bay",
+          inputOutput: "input: location; output: list of sites",
+          resource: { type: "agent", agentType: "historical_sites_identifier" },
+        },
+        {
+          step: "Find upcoming hockey/basketball game schedules in a given location",
+          inputOutput: "input: sport, location; output: game list",
+          resource: { type: "agent", agentType: "game_searcher" },
+        },
+      ],
+      existingTaskConfigs: [
+        {
+          taskType: "recommend_restaurants",
+          agentType: "restaurant_recommender",
+          taskConfigInput: `{"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>"}`,
+          description:
+            "Task to recommend restaurants based on user-defined preferences and location.",
         },
       ],
       existingAgentConfigs: [
         {
           agentType: "restaurant_recommender",
           tools: ["google_search", "web_extract"],
-          instructions: `Context: You are an agent specialized in finding restaurants in a given city. You have access to web search tools to gather information about popular dining spots. Users will provide the city and any specific dining preferences they have.
+          instructions: `Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
 
-Objective: Provide a list of restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information.
+Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
 
-Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
-          description: `Agent for recommending restaurants in a city.`,
-          agentConfigVersion: 1,
-          agentConfigId: "operator:restaurant_recommender:1",
+Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.`,
+          description:
+            "Recommends restaurants based on user-defined preferences and location using web search tools.",
         },
       ],
     },
-    user: "I want to recommend just chinese restaurants.",
+    user: "Recommend restaurants in Back Bay based on any user-defined preferences (input: preferences, location; output: restaurant list) [agent: restaurant_recommender]",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "An existing task configuration covers restaurant recommendations in Boston, but the new task narrows the cuisine to only Chinese, requiring a refinement of the current config.",
-      RESPONSE_TYPE: "UPDATE_TASK_CONFIG",
-      RESPONSE_UPDATE_TASK_CONFIG: {
-        task_type: "restaurant_recommender",
-        task_config_input: '{"city":"Boston","cuisines":["Chinese"]}',
+        "The existing task config for recommending restaurants can be generalized to support any user-defined preferences.",
+      RESPONSE_TYPE: "CREATE_TASK_CONFIG",
+      RESPONSE_CREATE_TASK_CONFIG: {
+        task_type: "recommend_restaurants",
+        agent_type: "itinerary_creator",
+        task_config_input: `{"preferences":"<any user-defined preferences>","location":"<given location>"}`,
         description:
-          "Task to recommend restaurants in Boston serving exclusively Chinese cuisine",
+          "Task to recommend restaurants based on any user-defined preferences and location.",
       },
     },
   },
   {
-    title: "Select task config",
-    subtitle: "Weather information",
+    title: "UPDATE_TASK_CONFIG",
+    subtitle: "Add restrictions to fitness class recommendations",
     context: {
+      previousSteps: [
+        {
+          step: "Search for yoga studios in Cambridge",
+          inputOutput: "input: location; output: list of studios",
+          resource: { type: "agent", agentType: "yoga_studio_searcher" },
+        },
+        {
+          step: "Retrieve schedules for yoga classes in Cambridge",
+          inputOutput:
+            "input: studio list from Step 1; output: class schedules",
+          resource: { type: "agent", agentType: "class_schedule_retriever" },
+        },
+        {
+          step: "Filter yoga classes based on user preferences",
+          inputOutput:
+            "input: class schedules from Step 2, preferences; output: filtered classes",
+          resource: { type: "agent", agentType: "class_filter" },
+        },
+      ],
       existingTaskConfigs: [
         {
-          agentType: "weather_lookup",
-          taskType: "get_current_weather",
+          taskType: "recommend_fitness_classes",
+          agentType: "recommend_fitness_classes",
+          taskConfigInput: `{"preferences":"<preferences such as yoga, pilates, or other types>","location":"<given location>"}`,
           description:
-            "Task to retrieve current weather conditions for a specific location.",
-          taskConfigInput: '{"location":"New York"}',
+            "Task to recommend fitness classes based on user-defined preferences and location.",
         },
       ],
       existingAgentConfigs: [
         {
-          agentType: "weather_lookup",
+          agentType: "fitness_class_recommender",
+          tools: ["fitness_class_api", "web_extract"],
+          instructions: `Context: You are an agent specializing in recommending fitness classes. You are activated by an external task and receive preferences and location as input. You use APIs and web search tools to gather information about fitness classes.
+
+Objective: Provide a list of fitness classes based on user-defined preferences and location. Include details such as name, description, and schedule.
+
+Response format: Present the information in a structured list with each class having a name, description, and schedule.`,
           description:
-            "Provides current weather information for specified locations using weather condition tool.",
-          instructions: `Context: You are a weather lookup agent specializing in providing current weather information for specified locations. You have access to a weather condition tool that allows you to find weather data online. Users will provide you with a location for which they want the current weather.
-
-  Objective: Retrieve the current weather information for the specified location. Use the weather condition tool to execute a search query for the current weather in the given location. Provide details such as temperature, weather conditions, and any notable weather patterns.
-
-  Response format: Begin with a summary of the location and current date. Then provide the current temperature, weather conditions, and any notable weather patterns. Ensure the information is clear and organized. For example:
-
-  Current Weather in [Location] on [Date]:
-  - Temperature: [temperature]
-  - Conditions: [conditions]
-  - Notable Patterns: [patterns]`,
-          tools: ["weather_conditions"],
-          agentConfigVersion: 1,
-          agentConfigId: "operator:weather_lookup:1",
+            "Recommends fitness classes based on user-defined preferences and location using APIs and web search tools.",
         },
       ],
     },
-    user: "What’s the weather right now in Prague?",
+    user: "Recommend yoga classes in Back Bay that are beginner-friendly (input: preferences, restrictions, location; output: class list) [agent: fitness_class_recommender]",
     example: {
       RESPONSE_CHOICE_EXPLANATION:
-        "There is an existing agent configuration for getting actual weather situation that can satisfy the request without modification.",
+        "The existing task config for recommending fitness classes can be updated to include restrictions such as beginner-friendly options.",
+      RESPONSE_TYPE: "UPDATE_TASK_CONFIG",
+      RESPONSE_UPDATE_TASK_CONFIG: {
+        task_type: "recommend_fitness_classes",
+        agent_type: "itinerary_creator",
+        task_config_input: `{"preferences":"<preferences such as yoga>","restrictions": "<restrictions such as beginner-friendly, low-impact, or advanced>","location":"<given location>"}`,
+        description:
+          "Task to recommend fitness classes based on user-defined preferences, including restrictions, in a given location.",
+      },
+    },
+  },
+  {
+    title: "UPDATE_TASK_CONFIG",
+    subtitle: "Narrow movie recommendations to specific genres",
+    context: {
+      previousSteps: [],
+      existingTaskConfigs: [
+        {
+          taskType: "recommend_movies",
+          agentType: "movie_recommender",
+          taskConfigInput: `{"preferences":"<preferences such as genre, language, or other criteria>","year":"<given year>"}`,
+          description:
+            "Task to recommend movies based on user-defined preferences and year.",
+        },
+      ],
+      existingAgentConfigs: [
+        {
+          agentType: "movie_recommender",
+          tools: ["movie_search_api", "movie_info_api"],
+          instructions: `Context: You are an agent specializing in recommending movies. You are activated by an external task and receive preferences and year as input. You use the movie_search_api and movie_info_api tools to gather information about movies.
+
+Objective: Provide a list of movies based on user-defined preferences and year. Include details such as title, genre, language, and release year.
+
+Response format: Present the information in a structured list with each movie having a title, genre, language, and release year.`,
+          description:
+            "Recommends movies based on user-defined preferences and year using movie search and info APIs.",
+        },
+      ],
+    },
+    user: "Recommend action movies from 2023 (input: preferences, year; output: movie list) [agent: movie_recommender]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The existing task config for recommending movies can be narrowed to focus only on action movies.",
+      RESPONSE_TYPE: "UPDATE_TASK_CONFIG",
+      RESPONSE_UPDATE_TASK_CONFIG: {
+        task_type: "recommend_movies",
+        task_config_input: `{"preferences":"action","year":"2023"}`,
+        description:
+          "Task to recommend action movies from 2023 based on user-defined preferences.",
+      },
+    },
+  },
+  {
+    title: "UPDATE_TASK_CONFIG",
+    subtitle: "Expand F1 race strategy analysis inputs",
+    context: {
+      previousSteps: [
+        {
+          step: "Retrieve F1 race data for the 2023 season",
+          inputOutput: "input: season year; output: race data",
+          resource: { type: "agent", agentType: "f1_data_retriever" },
+        },
+        {
+          step: "Analyze pit stop strategies for each race",
+          inputOutput:
+            "input: race data from Step 1; output: pit stop analysis",
+          resource: { type: "agent", agentType: "pit_stop_analyzer" },
+        },
+      ],
+      existingTaskConfigs: [
+        {
+          taskType: "recommend_movies",
+          agentType: "movie_recommender",
+          taskConfigInput: `{"preferences":"<preferences such as genre, language, or other criteria>","year":"<given year>"}`,
+          description:
+            "Task to recommend movies based on user-defined preferences and year.",
+        },
+      ],
+      existingAgentConfigs: [
+        {
+          agentType: "movie_recommender",
+          tools: ["movie_search_api", "movie_info_api"],
+          instructions: `Context: You are an agent specializing in recommending movies. You are activated by an external task and receive preferences and year as input. You use the movie_search_api and movie_info_api tools to gather information about movies.
+
+Objective: Provide a list of movies based on user-defined preferences and year. Include details such as title, genre, language, and release year.
+
+Response format: Present the information in a structured list with each movie having a title, genre, language, and release year.`,
+          description:
+            "Recommends movies based on user-defined preferences and year using movie search and info APIs.",
+        },
+      ],
+    },
+    user: "Recommend action movies from 2023 (input: preferences, year; output: movie list) [agent: movie_recommender]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The existing task config for recommending movies can be narrowed to focus only on action movies.",
+      RESPONSE_TYPE: "UPDATE_TASK_CONFIG",
+      RESPONSE_UPDATE_TASK_CONFIG: {
+        task_type: "recommend_movies",
+        task_config_input: `{"preferences":"action","year":"2023"}`,
+        description:
+          "Task to recommend action movies from 2023 based on user-defined preferences.",
+      },
+    },
+  },
+  {
+    title: "SELECT_TASK_CONFIG",
+    subtitle: "Reuse farm task planning config",
+    context: {
+      previousSteps: [
+        {
+          step: "Analyze soil quality in the farm fields",
+          inputOutput: "input: soil samples; output: soil quality report",
+          resource: { type: "agent", agentType: "soil_analyzer" },
+        },
+        {
+          step: "Check the operational status of automated farm equipment",
+          inputOutput: "input: equipment list; output: equipment status report",
+          resource: { type: "agent", agentType: "equipment_checker" },
+        },
+        {
+          step: "Retrieve the weather forecast for the farm location",
+          inputOutput: "input: location; output: weather forecast",
+          resource: { type: "agent", agentType: "weather_forecaster" },
+        },
+      ],
+      existingTaskConfigs: [
+        {
+          taskType: "analyze_soil_quality",
+          agentType: "soil_analyzer",
+          taskConfigInput: `{"soil_samples":"<list of soil samples>"}`,
+          description:
+            "Task to analyze soil quality based on provided soil samples.",
+        },
+        {
+          taskType: "plan_farm_tasks",
+          agentType: "farm_task_planner",
+          taskConfigInput: `{"field_conditions":"<current field conditions>","equipment_status":"<status of automated equipment>","weather_forecast":"<weather forecast for the day>"}`,
+          description:
+            "Plan daily tasks on a fully automated farm based on field conditions, equipment status, and weather forecast.",
+        },
+        {
+          taskType: "check_equipment_status",
+          agentType: "equipment_checker",
+          taskConfigInput: `{"equipment_list":"<list of farm equipment>"}`,
+          description:
+            "Task to check the operational status of automated farm equipment.",
+        },
+        {
+          taskType: "retrieve_weather_forecast",
+          agentType: "weather_forecaster",
+          taskConfigInput: `{"location":"<farm location>"}`,
+          description:
+            "Task to retrieve the weather forecast for a given farm location.",
+        },
+      ],
+      existingAgentConfigs: [
+        {
+          agentType: "soil_analyzer",
+          tools: ["soil_analysis_api"],
+          instructions: `Context: You are an agent specializing in soil analysis. You are activated by an external task and receive soil samples as input. You use the soil_analysis_api tool to analyze the samples.
+Objective: Use the provided soil samples to analyze soil quality. Return the results in a structured format.
+Response format: List each sample with its quality metrics and recommendations.`,
+          description:
+            "Analyzes soil quality based on provided soil samples using the soil_analysis_api tool.",
+        },
+        {
+          agentType: "farm_task_planner",
+          tools: ["farm_task_planning_api"],
+          instructions: `Context: You are an agent specializing in farm task planning. You are activated by an external task and receive field conditions, equipment status, and weather forecast as input. You use the farm_task_planning_api tool to plan daily tasks.
+Objective: Use the provided field conditions, equipment status, and weather forecast to plan daily tasks on a fully automated farm. Return the results in a structured format.
+Response format: List each task with its description, priority, and estimated time.`,
+          description:
+            "Plans daily tasks on a fully automated farm based on field conditions, equipment status, and weather forecast using the farm_task_planning_api tool.",
+        },
+        {
+          agentType: "equipment_checker",
+          tools: ["equipment_status_api"],
+          instructions: `Context: You are an agent specializing in checking equipment status. You are activated by an external task and receive a list of equipment as input. You use the equipment_status_api tool to check the status.
+Objective: Use the provided equipment list to check the operational status of automated farm equipment. Return the results in a structured format.
+Response format: List each equipment with its status and any required maintenance.`,
+          description:
+            "Checks the operational status of automated farm equipment using the equipment_status_api tool.",
+        },
+        {
+          agentType: "weather_forecaster",
+          tools: ["weather_forecast_api"],
+          instructions: `Context: You are an agent specializing in weather forecasting. You are activated by an external task and receive a location as input. You use the weather_forecast_api tool to retrieve the forecast.
+Objective: Use the provided location to retrieve the weather forecast. Return the results in a structured format.
+Response format: Provide the weather forecast with details such as temperature, humidity, and precipitation.`,
+          description:
+            "Retrieves the weather forecast for a given location using the weather_forecast_api tool.",
+        },
+      ],
+    },
+    user: "Plan daily tasks for the farm based on current field conditions, equipment status, and weather forecast (input: field conditions, equipment status, weather forecast; output: task plan) [agent: farm_task_planner]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The existing task config for planning farm tasks already satisfies the user request without modifications.",
       RESPONSE_TYPE: "SELECT_TASK_CONFIG",
       RESPONSE_SELECT_TASK_CONFIG: {
-        task_type: "weather_lookup",
+        task_type: "plan_farm_tasks",
+      },
+    },
+  },
+  {
+    title: "SELECT_TASK_CONFIG",
+    subtitle: "Correct interplanetary probe trajectory",
+    context: {
+      previousSteps: [
+        {
+          step: "Calculate the initial trajectory for an interplanetary probe",
+          inputOutput: "input: launch parameters; output: trajectory data",
+          resource: { type: "agent", agentType: "trajectory_calculator" },
+        },
+        {
+          step: "Analyze gravitational assist opportunities",
+          inputOutput:
+            "input: trajectory data from Step 1; output: assist options",
+          resource: { type: "agent", agentType: "gravity_assist_analyzer" },
+        },
+      ],
+      existingTaskConfigs: [
+        {
+          taskType: "calculate_probe_trajectory",
+          agentType: "trajectory_calculator",
+          taskConfigInput: `{"launch_parameters":"<parameters such as launch angle, velocity, and time>"}`,
+          description:
+            "Task to calculate the initial trajectory for an interplanetary probe based on launch parameters.",
+        },
+        {
+          taskType: "correct_probe_trajectory",
+          agentType: "trajectory_corrector",
+          taskConfigInput: `{"trajectory_data":"<initial trajectory data>","assist_options":"<gravitational assist options>"}`,
+          description:
+            "Task to correct the trajectory of an interplanetary probe using gravitational assist opportunities.",
+        },
+      ],
+      existingAgentConfigs: [
+        {
+          agentType: "trajectory_calculator",
+          tools: ["trajectory_simulation_api"],
+          instructions: `Context: You are an agent specializing in calculating probe trajectories. You are activated by an external task and receive launch parameters as input. You use the trajectory_simulation_api tool to calculate the trajectory.
+Objective: Use the provided launch parameters to calculate the initial trajectory for an interplanetary probe. Return the results in a structured format.
+Response format: Provide the trajectory data with details such as velocity, angle, and time.`,
+          description:
+            "Calculates the initial trajectory for an interplanetary probe based on launch parameters using the trajectory_simulation_api tool.",
+        },
+        {
+          agentType: "gravity_assist_analyzer",
+          tools: ["gravity_assist_api"],
+          instructions: `Context: You are an agent specializing in analyzing gravitational assist opportunities. You are activated by an external task and receive trajectory data as input. You use the gravity_assist_api tool to identify assist options.
+Objective: Use the provided trajectory data to analyze gravitational assist opportunities. Return the results in a structured format.
+Response format: Provide a list of assist options with details such as planet, timing, and velocity change.`,
+          description:
+            "Analyzes gravitational assist opportunities based on trajectory data using the gravity_assist_api tool.",
+        },
+        {
+          agentType: "trajectory_corrector",
+          tools: ["trajectory_adjustment_api"],
+          instructions: `Context: You are an agent specializing in correcting probe trajectories. You are activated by an external task and receive trajectory data and assist options as input. You use the trajectory_adjustment_api tool to calculate corrections.
+Objective: Use the provided trajectory data and assist options to correct the trajectory of an interplanetary probe. Return the results in a structured format.
+Response format: Provide the corrected trajectory data with details such as velocity, angle, and time adjustments.`,
+          description:
+            "Corrects the trajectory of an interplanetary probe using gravitational assist opportunities and trajectory data with the trajectory_adjustment_api tool.",
+        },
+      ],
+    },
+    user: "Correct the trajectory of an interplanetary probe using gravitational assist opportunities (input: trajectory data from Step 1, assist options from Step 2; output: corrected trajectory) [agent: trajectory_corrector]",
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The existing task config for correcting probe trajectories already satisfies the user request without modifications.",
+      RESPONSE_TYPE: "SELECT_TASK_CONFIG",
+      RESPONSE_SELECT_TASK_CONFIG: {
+        task_type: "correct_probe_trajectory",
       },
     },
   },
 ]);
-
-export const prompt = ({
-  existingTaskConfigs,
-  existingAgentConfigs,
-}: Pick<
-  TaskConfigInitializerInput,
-  "existingAgentConfigs" | "existingTaskConfigs"
->) =>
-  BodyTemplateBuilder.new()
-    .introduction(
-      `You are an **TaskConfigInitiator** — the action module in a multi-agent workflow.  
-Your mission is to select, or—if none exists—create new task config to accomplish the task. You can also update an existing config as long as the update doesn’t change its purpose. Task config is a general template for task that will be actually proceed at the runtime.`,
-    )
-    .section({
-      title: {
-        text: "Existing resources",
-        level: 2,
-      },
-      newLines: {
-        start: 1,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: {
-        start: true,
-        end: true,
-      },
-      content: ExistingResourcesBuilder.new()
-        .taskConfigs(existingTaskConfigs)
-        .agentConfigs(existingAgentConfigs)
-        .build(),
-    })
-    .section({
-      title: {
-        text: "Response Format",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-      },
-      delimiter: { end: true },
-      content: protocol.printExplanation(),
-    })
-    .section({
-      title: {
-        text: "Decision Criteria",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: decisionCriteria,
-    })
-    .section({
-      title: {
-        text: "Response Guidelines",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: guidelines,
-    })
-    .section({
-      title: {
-        text: "Examples",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: examples,
-    })
-    .callToAction("This is the task")
-    .build();

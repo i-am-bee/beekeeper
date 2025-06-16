@@ -122,6 +122,16 @@ News headlines matching “<keywords>” from the [time_window]:
     agentConfigId: "operator:weather_tornado_immediate:1",
     agentConfigVersion: 1,
   },
+  {
+    agentType: "game_searcher",
+    description: "Instant tornado warnings.",
+    instructions:
+      "Continuously monitor weather_alert_feed for tornado watches or " +
+      "warnings within 50 km of the user’s coordinates and notify immediately.",
+    tools: ["sports_schedule_api"],
+    agentConfigId: "operator:weather_tornado_immediate:1",
+    agentConfigVersion: 1,
+  },
 ] as const satisfies AgentConfigMinimal[];
 
 export type AgentConfigType =

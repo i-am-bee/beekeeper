@@ -13,7 +13,7 @@ describe(`Chat Example Prompt Template`, () => {
       })
       .context(
         `### Existing agent configs
-There is no existing agent configs yet.
+There is no existing agent config yet.
 
 ### Available agent tools
 1. twitter_search:
@@ -45,7 +45,7 @@ Response format: Begin with a summary of the search query and time frame. Then l
 **Context:**
 ---
 ### Existing agent configs
-There is no existing agent configs yet.
+There is no existing agent config yet.
 
 ### Available agent tools
 1. twitter_search:

@@ -58,16 +58,23 @@ export function generateMatrixTests<
 
         it(testName, async () => {
           const input = mapCaseToInput(c);
-          const resp = await llmCall.run(
+          const { result } = await llmCall.callLLM(
             { data: input, userMessage: input.task },
             { llm, agentId: "supervisor:boss[1]:1", onUpdate: () => ({}) },
           );
 
+          if (result.type === "ERROR") {
+            throw new Error(`LLM call failed: ${result.explanation}`);
+          }
+
           // 1) structural / protocol-level matcher
-          assertParsed(resp.parsed as ParsedT, c.expected as CaseT["expected"]);
+          assertParsed(
+            result.result.parsed as ParsedT,
+            c.expected as CaseT["expected"],
+          );
 
           // 2) optional fine-grained assertions (PatternBuilder, etc.)
-          c.assert?.(resp.parsed, resp);
+          c.assert?.(result.result.parsed, result);
         });
       });
     });

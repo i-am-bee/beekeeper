@@ -1,7 +1,10 @@
+import { AgentIdValue } from "@/agents/registry/dto.js";
+import { Context } from "@/agents/supervisor-workflow/base/context.js";
 import {
   LLMCall,
   LLMCallInput,
 } from "@/agents/supervisor-workflow/base/llm-call.js";
+import { FnResult } from "@/agents/supervisor-workflow/base/retry/types.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import { clone } from "remeda";
@@ -12,8 +15,6 @@ import {
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { AgentConfigInitializerTool } from "./tool.js";
-import { AgentIdValue } from "@/agents/registry/dto.js";
-import { Context } from "@/agents/supervisor-workflow/base/context.js";
 
 /**
  * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
@@ -34,8 +35,25 @@ export class AgentConfigInitializer extends LLMCall<
     result: laml.ProtocolResult<typeof protocol>,
     input: LLMCallInput<AgentConfigInitializerInput>,
     ctx: Context,
-  ): Promise<AgentConfigInitializerOutput> {
+  ): Promise<FnResult<AgentConfigInitializerOutput>> {
     const { onUpdate } = ctx;
+    const {
+      data: { availableTools, existingAgentConfigs },
+    } = input;
+
+    const getMissingTools = (tools?: string[]) => {
+      return (tools || []).filter(
+        (tool) => !availableTools.find((t) => t.toolName === tool),
+      );
+    };
+    const getMissingAgentTypes = (agentTypes: string | string[]) => {
+      return (
+        typeof agentTypes === "string" ? [agentTypes] : agentTypes
+      ).filter(
+        (agentType) =>
+          !existingAgentConfigs.find((c) => c.agentType === agentType),
+      );
+    };
 
     try {
       let toolCallResult;
@@ -56,11 +74,24 @@ export class AgentConfigInitializer extends LLMCall<
           this.handleOnUpdate(onUpdate, {
             type: result.RESPONSE_TYPE,
             value: `I'm going to create a brand new agent config \`${config.agentType}\``,
+            payload: { toJson: config },
           });
-          this.handleOnUpdate(onUpdate, {
-            type: result.RESPONSE_TYPE,
-            value: JSON.stringify(config, null, " "),
-          });
+
+          const missingTools = getMissingTools(config.tools);
+          
+          if (missingTools.length > 0) {
+
+          const explanation = `The response contains the following issues:${laml.listFormatter("numbered")([`Can't create agent config \`${config.agentType}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\``], "")}
+\nAvailable resources that can be used:
+- Tools: ${availableTools.map((t) => t.toolName).join(", ")}
+
+Please address these issues and provide the corrected response:`;
+            return {
+              type: "ERROR",
+              explanation,  // `Can't create agent config \`${config.agentType}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\`. Available tools: \`${availableTools.map((t) => t.toolName).join(", ")}\`.`,
+              
+            };
+          }
 
           toolCallResult = await this.tool.run({
             method: "createAgentConfig",
@@ -94,11 +125,24 @@ export class AgentConfigInitializer extends LLMCall<
           this.handleOnUpdate(onUpdate, {
             type: result.RESPONSE_TYPE,
             value: `I'm going to update an existing agent config \`${response.agent_type}\``,
+            payload: { toJson: config },
           });
-          this.handleOnUpdate(onUpdate, {
-            type: result.RESPONSE_TYPE,
-            value: JSON.stringify(config, null, " "),
-          });
+
+          const missingAgentTypes = getMissingAgentTypes(response.agent_type);
+          if (missingAgentTypes.length > 0) {
+            return {
+              type: "ERROR",
+              explanation: `Can't update agent config \`${response.agent_type}\` because it is not available. Available agent types: \`${existingAgentConfigs.map((c) => c.agentType).join(", ")}\`.`,
+            };
+          }
+
+          const missingTools = getMissingTools(config.tools);
+          if (missingTools.length > 0) {
+            return {
+              type: "ERROR",
+              explanation: `Can't update agent config \`${response.agent_type}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\`. Available tools: \`${availableTools.map((t) => t.toolName).join(", ")}\`.`,
+            };
+          }
 
           toolCallResult = await this.tool.run({
             method: "updateAgentConfig",
@@ -128,6 +172,14 @@ export class AgentConfigInitializer extends LLMCall<
             type: result.RESPONSE_TYPE,
             value: `I'm going to pick an existing agent config \`${response.agent_type}\``,
           });
+
+          const missingAgentTypes = getMissingAgentTypes(response.agent_type);
+          if (missingAgentTypes.length > 0) {
+            return {
+              type: "ERROR",
+              explanation: `Can't select agent config \`${response.agent_type}\` because it is not available. Available agent types: \`${existingAgentConfigs.map((c) => c.agentType).join(", ")}\`.`,
+            };
+          }
 
           const selected = input.data.existingAgentConfigs.find(
             (c) => c.agentType === response.agent_type,
