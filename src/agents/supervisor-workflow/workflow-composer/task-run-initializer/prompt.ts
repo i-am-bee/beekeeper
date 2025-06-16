@@ -1,10 +1,16 @@
 import { examplesEnabled } from "@/agents/supervisor-workflow/helpers/env.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
-
+import medieval_charter_fixtures from "../../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
+import micro_grid_fixtures from "../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
+import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative-fusion/index.js";
+import smart_farm_fixtures from "../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { TaskConfigInitializerInput } from "../task-initializer/task-config-initializer/dto.js";
-import { ExampleInput } from "./__tests__/helpers/create-example-input.js";
+import {
+  createExampleInput,
+  ExampleInput,
+} from "./__tests__/helpers/create-example-input.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
 
@@ -171,29 +177,28 @@ const examples = ((inputs: ExampleInput[]) =>
         .build(),
     )
     .join("\n"))([
-  // createExampleInput(
-  //   "CREATE_TASK_CONFIG",
-  //   "Identify historical sites",
-  //   "Identify historical sites in Back Bay",
-  //   boston_trip_fixtures,
-  // ),
-  // createExampleInput(
-  //   "CREATE_TASK_CONFIG",
-  //   "Find game schedules",
-  //   "Find upcoming hockey/basketball game schedules in a given location",
-  //   boston_trip_fixtures,
-  // ),
-  // createExampleInput(
-  //   "CREATE_TASK_CONFIG",
-  //   "Restaurant recommendation",
-  //   "Recommend Italian, Chinese, and French restaurants in Back Bay for each day",
-  //   boston_trip_fixtures,
-  // ),
-  // createExampleInput(
-  //   "CREATE_TASK_CONFIG",
-  //   "Itinerary creation",
-  //   "Create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions",
-  //   boston_trip_fixtures,
-  // ),
-
+  // medieval_charter_fixtures
+  // micro_grid_fixtures
+  // smart_farm_fixtures
+  // narrative_fusion_fixtures
+  createExampleInput({
+    fixtures: medieval_charter_fixtures,
+    scenario: "CREATE_TASK_RUN",
+    step: "Load the verified text into the vector search system",
+  }),
+  createExampleInput({
+    fixtures: micro_grid_fixtures,
+    scenario: "CREATE_TASK_RUN",
+    step: "Send control vectors to implement the optimized dispatch schedule",
+  }),
+  createExampleInput({
+    fixtures: smart_farm_fixtures,
+    scenario: "CREATE_TASK_RUN",
+    step: "Produce a human-readable timeline with equipment assignments and rain contingency plans",
+  }),
+  createExampleInput({
+    fixtures: narrative_fusion_fixtures,
+    scenario: "CREATE_TASK_RUN",
+    step: "Write a short story based on the concept of ancient desert rituals",
+  }),
 ]);

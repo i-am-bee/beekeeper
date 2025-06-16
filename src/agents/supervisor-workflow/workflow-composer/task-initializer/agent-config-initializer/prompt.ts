@@ -1,15 +1,19 @@
-import boston_trip_fixtures from "@/agents/supervisor-workflow/fixtures/__test__/boston-trip/index.js";
+import { ExampleInput } from "@/agents/supervisor-workflow/fixtures/helpers/create-example.js";
+import { examplesEnabled } from "@/agents/supervisor-workflow/helpers/env.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
+import beekeeping_site_fixtures from "../../../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
+import medieval_charter_fixtures from "../../../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
+import micro_grid_fixtures from "../../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
+import narrative_fusion_fixtures from "../../../fixtures/prompt/showcases/narrative-fusion/index.js";
+import smart_farm_fixtures from "../../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
+import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import { TaskStepMapper } from "../../helpers/task-step/task-step-mapper.js";
-import {
-  createExampleInput,
-  ExampleInput,
-} from "./__tests__/helpers/create-example-input.js";
+import { createExampleInput } from "./__tests__/helpers/create-example-input.js";
 import { AgentConfigInitializerInput } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
-import { examplesEnabled } from "@/agents/supervisor-workflow/helpers/env.js";
+import { FixtureName } from "@/agents/supervisor-workflow/fixtures/base/fixtures.js";
 
 export const prompt = ({
   resources: { tools: availableTools, agents: existingAgentConfigs },
@@ -330,7 +334,7 @@ Never embed specific runtime values (specific names, dates, keywords etc.) insid
     .build();
 
 const examples = (selectOnly: boolean) =>
-  ((inputs: ExampleInput[]) =>
+  ((inputs: ExampleInput<typeof protocol>[]) =>
     inputs
       .filter(
         (input) =>
@@ -358,12 +362,86 @@ const examples = (selectOnly: boolean) =>
           .build(),
       )
       .join("\n"))([
-    createExampleInput(
-      "CREATE_AGENT_CONFIG",
-      "Find local parks",
-      "Identify historical sites in Back Bay",
-      boston_trip_fixtures,
-    ),
+    //       medieval_charter_fixtures
+    // micro_grid_fixtures
+    // smart_farm_fixtures
+    // narrative_fusion_fixtures
+    createExampleInput({
+      scenario: "CREATE_AGENT_CONFIG",
+      fixtures: medieval_charter_fixtures,
+      step: "Extract text from each scanned image using OCR tuned for Latin script",
+    }),
+    createExampleInput({
+      scenario: "CREATE_AGENT_CONFIG",
+      fixtures: micro_grid_fixtures,
+      step: "Generate an optimized dispatch schedule that meets forecasted demand using solar, battery, and EV resources, while staying within ±0.2 Hz frequency deviation",
+    }),
+    createExampleInput({
+      scenario: "CREATE_AGENT_CONFIG",
+      fixtures: smart_farm_fixtures,
+      step: "Produce a human-readable timeline with equipment assignments and rain contingency plans",
+    }),
+    createExampleInput({
+      scenario: "CREATE_AGENT_CONFIG",
+      fixtures: narrative_fusion_fixtures,
+      step: "Provide an analytical breakdown of how the narratives converge in the screenplay scene",
+    }),
+    createExampleInput({
+      scenario: "SELECT_AGENT_CONFIG",
+      fixtures: narrative_fusion_fixtures,
+      step: "Write a short story based on the concept of ancient desert rituals",
+      note: "Reuse the existing agent suitable for this task",
+    }),
+    createExampleInput({
+      scenario: "SELECT_AGENT_CONFIG",
+      step: "Analyze local flora at Sunnybrook Farm for nectar sources suitable for beekeeping",
+      note: "Reuse the existing agent suitable for this task",
+      fixtures: beekeeping_site_fixtures,
+    }),
+    createExampleInput({
+      scenario: "UPDATE_AGENT_CONFIG",
+      fixtures: beekeeping_site_fixtures,
+      step: "Analyze local flora at Sunnybrook Farm for nectar sources suitable for butterfly host plants",
+      note: "Update the existing agent to include butterfly host plants",
+      responseChoiceExplanation: `The existing agent config "flora_nectar_analysis" already supports the required tools and general workflow (analyzing local flora via satellite, ground survey, and species lookup). The requested task shifts the focus from nectar production to butterfly host compatibility, which is a supported lookup_type within the existing tools. This requires only a scope widening in the description and instructions.`,
+      update: {
+        description: `Analyzes local flora to identify and validate nectar sources or butterfly host plant compatibility using satellite and ground survey data.`,
+        instructions: `Context: The agent is designed to analyze local flora at a specified location to determine either nectar suitability for beekeeping or host compatibility for butterflies.
+Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production or suitability as butterfly host plants using relevant database lookups.
+Response format: The agent will output either nectar suitability data or butterfly host compatibility data depending on the input parameters.`,
+      },
+    }),
+    createExampleInput({
+      scenario: "UPDATE_AGENT_CONFIG",
+      fixtures: deep_sea_fixtures,
+      step: "Enhance sonar mapping by including marine life detection alongside terrain analysis at Mariana Trench",
+      note: "Update the existing agent to include new tool",
+      responseChoiceExplanation: `The task is a natural extension of the existing agent's purpose, which is underwater terrain mapping. The addition of marine life detection complements this scope without repurposing the agent. The required tool (biological_sonar_detector_api) is available, and the core structure remains unchanged, justifying an UPDATE rather than a new config.`,
+      update: {
+        tools: [
+          "biological_sonar_detector_api",
+          "terrain_sonar_mapping_api",
+        ] as const satisfies FixtureName<typeof deep_sea_fixtures.tools>[],
+        description: `This agent conducts sonar mapping to identify underwater terrain features and can optionally include marine life detection using available sonar APIs.`,
+        instructions: `Context: The agent is designed to perform sonar mapping of underwater zones. Its primary function is to identify terrain features, with optional inclusion of marine life detection for enriched zone understanding.
+Objective: Use the terrain_sonar_mapping_api to map underwater terrain features. When biological input parameters are present, also invoke the biological_sonar_detector_api to detect marine life.
+Response format: Return sonar data describing terrain features and, if applicable, biological entities detected during the scan.`,
+      },
+    }),
+    createExampleInput({
+      scenario: "AGENT_CONFIG_UNAVAILABLE",
+      fixtures: medieval_charter_fixtures,
+      step: "Verify the extracted text is in Latin",
+      note: "Missing tool causes unavailability",
+      responseChoiceExplanation: `The task requires language verification of extracted text using a tool like \`language_detect_api\`. However, this tool is not available in the current environment, and no existing agent or tool supports language detection.`,
+      explanation: "No tool supports language detection of extracted text.",
+      override: {
+        tools: (original) => {
+          // Remove necessary tools to simulate unavailability
+          return original.filter((t) => t.toolName !== "language_detect_api");
+        },
+      },
+    }),
     //     {
     //       title: "CREATE_AGENT_CONFIG",
     //       subtitle: "Find local parks",
@@ -629,4 +707,4 @@ const examples = (selectOnly: boolean) =>
     //         },
     //       },
     //     },
-  ] satisfies ExampleInput[]);
+  ]);

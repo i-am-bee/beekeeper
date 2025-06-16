@@ -21,7 +21,7 @@ export const protocol = laml.ProtocolBuilder.new()
     attributes: laml.ProtocolBuilder.new().list({
       name: "step_sequence",
       type: "numbered",
-      description: `Ordered list of high-level tasks that collectively achieve the user's goal, each written as "Imperative task description (input: …, output: …) [resource]" where [resource] is exactly one of [task: name], [agent: name], [tools: tool1, …], or [LLM], chosen by the priority Task > Agent > Tools > LLM and including any dependencies on earlier steps.`,
+      description: `Ordered list of high-level tasks that collectively achieve the user's goal, each written as "Imperative task description (input: …, output: …) [resource]" where [resource] is exactly one of [task: name], [agent: name], [tools: tool1, …], or [LLM]. If user provides an explicit set of subtasks, map each step 1:1 to those subtasks, combining multiple tools inside a single step if needed.`,
     }),
   })
   .object({

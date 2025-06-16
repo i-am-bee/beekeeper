@@ -121,9 +121,10 @@ Tasks that are already running. Each can be assigned tasks that fall within its 
   description: Task to recommend restaurants for each day based on user-defined preferences, location and list of the days.
 
 
-**IMPORTANT** – If at least one **suitable** task, agent *or* tool does **not** exist for every step you would otherwise propose, you **must** output  
-`RESPONSE_TYPE: UNSOLVABLE` and explicitly name the unattainable step(s).  
-If *no* agents or tools are provided at all, always answer `UNSOLVABLE`.
+**IMPORTANT** – If at least one **suitable** task, agent, tool, *or—when* all three are missing—a plausible LLM fallback does not exist for every required step, you must output
+`RESPONSE_TYPE: UNSOLVABLE`.
+Use llm as the resource only when the step involves reasoning, content generation, summarization, or other general capabilities of language models, and no task/agent/tool is available.
+If *no* agents or tools are provided at all, and only llm capabilities are not enough always answer `UNSOLVABLE`.
 
 **CRITICAL** – You **must not** generate results that reference tools not included in the "Available agent tools" list. Only use tools explicitly listed here.
 If a required tool is missing, the problem is **UNSOLVABLE**.
@@ -132,30 +133,29 @@ If a required tool is missing, the problem is **UNSOLVABLE**.
 
 ## Response Format
 
-All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
-<!required|optional; indent; type; human-readable hint>
-- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).
-- type - One of the following:
-  - text – single-line string
-  - number – floating-point value (e.g., 3.14)
-  - integer – whole number
-  - boolean - true / false
-  - constant – one literal chosen from the values listed in the protocol
-  - array – list of items of the specified item-type (comma-separated or JSON-style)
-  - list - human readable list of items numbered or with bullet points
-  - object – nested attributes, each described by its own metadata tag
-- indent – integer; the key’s left-margin offset in spaces (0 = column 0)
-- human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
+All your responses **MUST** strictly adhere to the following template. Each line describes exactly what you must provide:
 
-The format:
+* Each attribute has a **metadata tag** (`<!required|optional; indent; type; human-readable hint>`).
+* **IMPORTANT:** These metadata tags are **guidelines only**—do **not** include them literally in your final response. They exist solely to guide you on what information is expected.
+
+### Metadata Tag Explanation (for your internal reference only)
+
+* `required | optional` – Indicates if the attribute **must** be included.
+* `type` – Defines the attribute's data type (text, number, integer, boolean, constant, array, numbered-list, bullets-list, object).
+* `indent` – Specifies indentation level (spaces).
+* `human-readable hint` – Brief guidance explaining the attribute's content.
+
+**When composing your response, use the format below exactly:**
 ```
 RESPONSE_CHOICE_EXPLANATION: <!required;text;0;Brief explanation of *why* you selected the given RESPONSE_TYPE>
-RESPONSE_TYPE: <!required;constant;0;Valid values: STEP_SEQUENCE | UNSOLVABLE>
+RESPONSE_TYPE: <!required;constant;0;Valid values: STEP_SEQUENCE | UNSOLVABLE | MISSING_INPUTS>
 <Follow by one of the possible responses format based on the chosen response type>
 RESPONSE_STEP_SEQUENCE: <!optional;object;0>
-  step_sequence: <!required;list;2;Ordered list of high-level tasks that collectively achieve the user's goal, each written as "Imperative task description (input: …, output: …) [resource]" where [resource] is exactly one of [task: name], [agent: name], [tools: tool1, …], or [LLM], chosen by the priority Task > Agent > Tools > LLM and including any dependencies on earlier steps.>
+  step_sequence: <!required;numbered-list;2;Ordered list of high-level tasks that collectively achieve the user's goal, each written as "Imperative task description (input: …, output: …) [resource]" where [resource] is exactly one of [task: name], [agent: name], [tools: tool1, …], or [LLM], chosen by the priority Task > Agent > Tools > LLM and including any dependencies on earlier steps.>
 RESPONSE_UNSOLVABLE: <!optional;object;0>
-  explanation: <!required;text;2;Brief reason why you are unable to create a step sequence>
+  explanation: <!required;text;2;User-facing explanation of why the request cannot be solved.>
+RESPONSE_MISSING_INPUTS: <!optional;object;0>
+  explanation: <!required;text;2;User-facing explanation of clearly identifying missing inputs and suggesting what the user could provide to make it solvable. Include examples where possible.>
 ```<STOP HERE>
 
 ---
@@ -165,8 +165,16 @@ RESPONSE_UNSOLVABLE: <!optional;object;0>
 ### DECISION CRITERIA — Quick-reference matrix 
 | If **ALL** these are true → | …then choose **RESPONSE_TYPE** | Short rationale |
 | --- | --- | --- |
-| • The problem statement is logically consistent (no internal contradictions).<br>• The desired goal is realistically achievable with ordinary human knowledge, tools, well-defined agent capabilities or well-defined task descriptions with suitable input.<br>• **For every step you would plan, at least one existing task, agent *or* available tool can plausibly carry it out.**<br>• Any non-essential missing details can be filled by safe, explicitly stated assumptions that do not change the user’s intent. | **STEP_SEQUENCE** | Decompose the solvable problem into an ordered, generic plan. |
-| • The problem contains irreconcilable contradictions (e.g., mutually exclusive outcomes).<br>• Achieving the goal would require resources, knowledge, or abilities outside the system’s scope.<br>• **At least one intended step lacks a suitable task/agent/tool**, or no resources are provided at all.<br>• Essential information is missing and cannot be responsibly inferred. | **UNSOLVABLE** | Explain clearly why no workable plan can be created. |
+| • The problem statement is logically consistent (no internal contradictions).
+• The desired goal is realistically achievable with ordinary human knowledge, tools, well-defined agent capabilities or well-defined task descriptions with suitable input.
+• **For every step you would plan, at least one existing task, agent *or* available tool can plausibly carry it out.**
+• **Every required input field for each tool (e.g., blockIds, siteIds) is either explicitly provided, produced by a previous step, or justified by a minimal assumption.**
+• Any non-essential missing details can be filled by safe, explicitly stated assumptions that do not change the user’s intent. | **STEP_SEQUENCE** | Decompose the solvable problem into an ordered, generic plan. |
+| • The problem contains irreconcilable contradictions (e.g., mutually exclusive outcomes).
+• Achieving the goal would require resources, knowledge, or abilities outside the system’s scope.
+• **At least one intended step lacks a suitable task/agent/tool**, or no resources are provided at all.
+| • The goal is achievable in theory, but **essential user input is missing** and cannot be inferred or produced.
+• Essential information is missing and cannot be responsibly inferred. | **MISSING_INPUTS** | Ask the user to supply key inputs before proceeding. |
 
 **Guidelines for all branches**
 
@@ -204,24 +212,38 @@ RESPONSE_UNSOLVABLE: <!optional;object;0>
 
 ### Fidelity to Input
 1. **Do not ask the user for information they did not request.**
-2. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to UNSOLVABLE.
+2. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to `MISSING_INPUTS`.
    a. You must not introduce new parameters unless:
       - They were directly present in userParameters, or
       - They were produced by an earlier step, or
-      - You make a safe, minimal assumption (e.g., "next meeting" = soonest meeting in calendar), which you must explicitly state in the step description.
+      - You make a safe, minimal assumption (e.g., "next meeting" = soonest meeting in calendar).
 3. If a parameter is helpful but not essential (e.g., passenger count when booking a sample flight), phrase the task generically: “Book flight” without specifying details.
 
 ### STEP_SEQUENCE - Rules
 1. Use plain imperatives (e.g., “Book flight Prague → Rome”).
 2. Each step must define its **inputs and outputs** explicitly.
-3. Each step’s input must be explicitly justified. You may only use as input:
-   - Parameters from the original user message,
-   - Outputs of earlier steps (explicitly referenced as “from Step N”),
-   - Or minimal assumptions clearly stated in the step description.
-     Inputs that are undefined or vague (with no prior step to provide it) are not allowed. If required inputs cannot be grounded, the problem is UNSOLVABLE.
+3. Each step’s input must be explicitly justified. Each input must be traceable to a valid source:
+   - Either explicitly provided in user message,
+   - Produced by a previous step (with [from Step X]),
+   - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
+   If any input cannot be traced in this way, the step — and the whole problem — must be marked **MISSING_INPUTS**. Do not invent values (e.g., blockIds, siteIds) without justification.
+   **Examples**: 
+   - INCORRECT: "Query database (input: customer records; output: analysis)" ← Missing source, vague
+   - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history)"
+   - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report)"
+   - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report)"
+3. Each step’s input must be explicitly justified and traceable. Every input must meet one of the following conditions:
+   - It is explicitly stated in the user message;
+   - It is produced by a previous step (clearly marked with [from Step X]);
+   - It is introduced through a minimal assumption, which must be labeled with [source: assumed] inside the input field.
+     No assumed input may appear without this tag. For example: payloadKg: 1000.
+   If any required input lacks such traceability or labeling, the response must not proceed with STEP_SEQUENCE and must instead return **MISSING_INPUTS**.
 4. Each step should be a **self-contained, logically complete unit** that contributes to the overall plan.
 5. Clearly indicate whether the step uses a **task**, an **agent**, a **tool**, or is handled by general **LLM capabilities**.
-6. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”). 
+6. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”).
+   - If a step requires multiple inputs from previous steps, list each input separately and explicitly indicate the originating step number. Do not group multiple inputs into a single vague description.
+   - **Example**: Compose a summary report (input: market analysis [from Step 1], customer feedback [from Step 2], competitive review [from Step 3]; output: comprehensive report) [LLM]
+   - All traceable input references (e.g., tag [from Step 1]) must be placed inside quotation marks to form valid string values (e.g., "tag [from Step 1]") in JSON-style input structures. Do not use <...> placeholders.
 7. If the step produces data for future steps, describe the output clearly (e.g., "produces list of top 5 destinations").
 8. Avoid vague phrasing. Prefer specific tasks with clear outputs and actionable parameters.
 9. **Exactly one resource category per step.**  
@@ -240,13 +262,13 @@ RESPONSE_UNSOLVABLE: <!optional;object;0>
 12. Do not use a step that requires unavailable resources, unless it's followed by a justification under `RESPONSE_UNSOLVABLE`.
 13. Format each step as a single line including:
     - the **imperative description** of the task,
-    - followed by `(input: ..., output: ...)`,
+    - followed by `(input: input 1, input 2 [source: assumed] ... ; output: output 1, output 2 ...)`,
     - followed by a resource in square brackets: `[tools: tool_name_1, tool_name_2...]`, `[agent: agent_name]`, `[task: task_name]`, or `[LLM]`.
-14. Final validation pass: For each step, verify that all inputs are either:
-    - Provided by the user directly,
-    - Derived from earlier steps (using [from Step X]),
-    - Or clearly justified by an explicit assumption. 
-    Any input that fails this traceability check makes the plan invalid.
+14. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
+    - Is directly present in user message, OR
+    - Is produced by a prior step (explicitly using [from Step X]), OR
+    - Is justified with a clearly written default assumption in the step itself (explicitly using [source: assumed]).
+    If any required field is missing and cannot be sourced or assumed, you MUST respond with **MISSING_INPUTS**.
 
 **Example:**
 ```
@@ -254,15 +276,37 @@ Generate directions from the user’s current location to the nearest shelter (i
 ```
 
 ### UNSOLVABLE - Rules
-1. The explanation must be written in free-text form, not as a bullet list.
-2. Clearly describe which required steps or capabilities are infeasible with the current resources.
-3. Include a concise justification for the limitation (e.g., a missing tool, lack of real-time data, or unavailable agent type).
-4. If the problem could be made solvable with a specific change, mention that condition explicitly.
-5. Avoid proposing new steps unless doing so helps clarify why the problem is unsolvable.
-2. Keep the explanation concise but actionable — avoid vague statements.
-3. If the problem could be made solvable by changing a specific detail, mention it as a suggestion (e.g., "If live price tracking were available, step 2 could proceed").
-4. Avoid proposing new steps or assumptions unless explicitly required to explain infeasibility.
-5. Do not declare UNSOLVABLE if the missing information can be obtained by a reasonable sequence that combines available tools (e.g., web_search → web_page_extract). Explain why such a sequence wouldn’t work if you still choose UNSOLVABLE.
+1. The explanation must be a self-contained, human-readable paragraph written for the user — not referencing internal steps, resource priorities, or system-specific reasoning steps.
+2. Clearly state which required information is missing, **in plain terms**, and why it is essential to completing the task.
+3. Whenever possible, include **a brief example** of what a valid value would look like for each missing input (e.g., block ID "block-101").
+4. If the missing input could be supplied by the user, make that recommendation explicit.
+5. Avoid vague or overly technical language. Assume the user is not familiar with internal step structure or execution flow.
+6. Do not declare UNSOLVABLE if the missing input could be created using a valid tool-chain. Explain why that is not possible if you still choose UNSOLVABLE.
+
+### MISSING_INPUTS - Rules
+1. You **must** select `RESPONSE_TYPE: MISSING_INPUTS` when:
+   - A required input for at least one step is not present in user message,
+   - It is not produced by an earlier step,
+   - It cannot be resolved through a minimal, explicit assumption,
+   - And no existing tool/agent/task can plausibly generate it as a substep.
+2. The missing input must be **essential** to achieving the stated goal. Do not trigger **MISSING_INPUTS** for optional, cosmetic, or secondary attributes.
+3. Your explanation **must clearly identify**:
+   - What the missing input(s) are,
+   - Why they are required,
+   - How they could be phrased or structured (example format or value),
+   - What the user can do to supply them.
+4. **Examples are required.** If the input must be a `blockId`, `siteId`, `startISO`, or other structured value, include a concrete example of a valid one in the explanation.
+5. Avoid system-specific or internal terms. Do not mention "steps", "tools", "agents", or "input traceability". Write as if addressing a non-technical user.
+6. Only request information that is directly needed to resolve the task as described. Never ask for inputs unrelated to the user’s goal or implied deliverables.
+7. Use the MISSING_INPUTS response instead of UNSOLVABLE if:
+   - The problem can be solved with the right inputs,
+   - The missing values can be reasonably supplied by the user,
+   - And the execution chain is otherwise valid.
+8. **Do not invent placeholder values** to proceed with the task. If you must invent any parameter that is not (a) safe, (b) minimal, and (c) explicitly stated in the output, the correct response is MISSING_INPUTS.
+9. When in doubt between UNSOLVABLE and MISSING_INPUTS:
+   - Choose **MISSING_INPUTS** if the user can fix the problem by supplying a clear, specific value.
+   - Choose **UNSOLVABLE** only when a required capability, resource, or tool is entirely unavailable and no workaround exists.
+10. If multiple inputs are missing, list each one clearly in the explanation with a short description and example.
 
 ---
 
@@ -270,100 +314,7 @@ Generate directions from the user’s current location to the nearest shelter (i
 
 Examples are illustrative only. Do **not** copy their tool names or agent/task types unless those tools / agents / tasks reappear in the runtime “Available agent tools” / ”Existing agents” / ”Existing tasks” list.
       
-### Example[1]: STEP_SEQUENCE - Disaster Relief Supply Drop Coordination
-
-**Context:**
----
-
-### Available agent tools
-1. satellite_imagery_api:
-  description: Returns recent cloud-free imagery and detects potential landing zones.
-  toolInput: {"areaBoundingBox":{"latMin":<number>,"latMax":<number>,"lonMin":<number>,"lonMax":<number>},"maxCloudPercent":<integer>}
-2. runway_checker_api:
-  description: Evaluates strips against aircraft requirements; returns usable flag.
-  toolInput: {"stripIds":["<string>"],"aircraftType":"<string>"}
-3. cargo_route_planner_api:
-  description: Optimises multi-stop air route; returns waypoint list & ETAs.
-  toolInput: {"origin":{"lat":<number>,"lon":<number>},"destinations":[{"lat":<number>,"lon":<number>}],"payloadKg":<number>,"aircraft":"<string>"}
-4. supply_manifest_optimizer_api:
-  description: Allocates relief goods within payload limit.
-  toolInput: {"needs":[{"villageId":"<string>","items":[{"name":"<string>","qty":<number>}]}],"maxPayloadKg":<number>}
-5. weather_forecast_api:
-  description: Provides aviation-grade METAR/TAF and gridded forecasts for winds, visibility, and cloud bases.
-  toolInput: {"areaBoundingBox":{"latMin":<number>,"latMax":<number>,"lonMin":<number>,"lonMax":<number>},"timeWindowHours":<integer>}
-6. notam_fetcher_api:
-  description: Retrieves current NOTAMs for specified FIRs and airports.
-  toolInput: {"firCodes":["<string>"],"airportIcaos":["<string>"]}
-7. flight_clearance_manager_api:
-  description: Submits and tracks over-flight, landing, or drop-zone permits with aviation authorities.
-  toolInput: {"countryCodes":["<string>"],"purpose":"<string>","flightPlan":{"route":"<string>","altitudes":[<number>],"times":["<ISO-datetime>"]}}
-8. aircraft_asset_locator_api:
-  description: Finds available fixed-wing or rotary aircraft matching payload, range, and runway/helipad constraints.
-  toolInput: {"payloadKg":<number>,"runwayRequirementMeters":<number>,"helicopterCapable":<boolean>,"earliestStart":"<ISO-datetime>","durationHours":<number>}
-9. crew_scheduler_api:
-  description: Books pilots, loadmasters, and maintenance teams while observing duty-time limits.
-  toolInput: {"aircraftId":"<string>","missionDays":["<YYYY-MM-DD>"]}
-10. fuel_and_support_planner_api:
-  description: Calculates fuel uplift, identifies refuel points, and generates ground-support logistics.
-  toolInput: {"routeWaypoints":[{"lat":<number>,"lon":<number>}],"aircraftType":"<string>","reservePolicy":"<string>"}
-11. aeronautical_route_validator_api:
-  description: Checks terrain clearance, obstacles, and runway suitability, returning safety flags and mitigation notes.
-  toolInput: {"plannedRoute":{"points":[{"lat":<number>,"lon":<number>}]},"aircraftPerformance":{"type":"<string>","weightKg":<number>},"stripIds":["<string>"]}
-12. contingency_matrix_builder_api:
-  description: Generates branch plans to switch delivery method based on triggers such as weather or strip flooding.
-  toolInput: {"primaryPlanId":"<string>","triggers":["<string>"]}
-
-### Existing agents
-There are no existing agents yet.
-
-### Existing tasks
-There are no existing tasks yet.
-
----
-**User:**
-{
-  "requestType": "disaster_relief_coordination",
-  "primaryGoal": "Deliver food and medicine to three flooded islands using the safest available air or helicopter method",
-  "userParameters": {
-    "numberOfIslands": 3,
-    "cargo": ["food", "medicine"],
-    "transportPreference": "fixed-wing air-drop if safe landing/drop strips exist; otherwise helicopters"
-  },
-  "requiredComponents": [
-    "Acquire and analyze the latest high-resolution satellite or aerial imagery for each island",
-    "Identify and evaluate potential landing or drop strips for fixed-wing aircraft (length, surface, obstacles, flood status)",
-    "Determine viability of air-drops versus helicopter insertion per island and compile a decision matrix",
-    "Plan safe flight routes, approach patterns, drop zones or landing zones, including altitude and timing windows",
-    "Prepare detailed cargo manifest with packaging suited to selected delivery method (parachute-rigged bundles or sling loads)",
-    "Secure appropriate aircraft/helicopter assets, crews, fuel logistics, and maintenance support",
-    "Obtain weather forecasts, NOTAMs, and flight clearances; establish communication protocols with ground teams",
-    "Draft contingency and safety plans for rapid method switch or abort criteria"
-  ],
-  "expectedDeliverables": [
-    "Imagery assessment report with annotated maps of viable strips or landing zones",
-    "Recommended delivery method for each island with justification",
-    "Detailed flight/air-drop plans and schedules",
-    "Cargo loading and rigging instructions",
-    "Comprehensive operations brief with contingency procedures"
-  ]
-}
-**Assistant:**
-```
-RESPONSE_CHOICE_EXPLANATION: The user’s disaster relief coordination request is logically consistent and all requested components are achievable using the available tools. Each required step—such as imagery analysis, landing strip evaluation, route planning, manifest preparation, asset scheduling, and contingency planning—has tool support. Therefore, a complete, solvable step sequence can be generated.
-RESPONSE_TYPE: STEP_SEQUENCE
-RESPONSE_STEP_SEQUENCE:
-  step_sequence:
-    1. Acquire and analyze the latest high-resolution satellite imagery for each island to identify potential landing or drop strips (input: areaBoundingBox for each island, maxCloudPercent; output: imagery assessment report with annotated maps) [tools: satellite_imagery_api]
-    2. Evaluate potential landing or drop strips for fixed-wing aircraft, considering length, surface, obstacles, and flood status (input: imagery assessment report [from Step 1], aircraftType; output: evaluation report of viable strips) [tools: runway_checker_api]
-    3. Determine the viability of air-drops versus helicopter insertion for each island and compile a decision matrix (input: evaluation report [from Step 2]; output: decision matrix with recommended delivery method) [tools: aeronautical_route_validator_api]
-    4. Plan safe flight routes, approach patterns, drop zones or landing zones, including altitude and timing windows (input: decision matrix [from Step 3]; output: detailed flight/air-drop plans and schedules) [tools: cargo_route_planner_api]
-    5. Prepare a detailed cargo manifest with packaging suited to the selected delivery method (input: cargo list [from user parameters], delivery method [from Step 3]; output: cargo loading and rigging instructions) [tools: supply_manifest_optimizer_api]
-    6. Secure appropriate aircraft/helicopter assets, crews, fuel logistics, and maintenance support (input: delivery method [from Step 3], flight plans [from Step 4]; output: aircraft assignments, crew schedule, refueling and support logistics) [tools: aircraft_asset_locator_api,crew_scheduler_api,fuel_and_support_planner_api]
-    7. Obtain weather forecasts, NOTAMs, and flight clearances; establish communication protocols with ground teams (input: flight plans [from Step 4]; output: weather forecasts, NOTAMs, flight clearances, communication protocols) [tools: weather_forecast_api,notam_fetcher_api,flight_clearance_manager_api]
-    8. Compile all mission components into a comprehensive operations brief with contingency procedures (input: outputs from Steps 1–7; output: final operations brief with all attachments and contingency procedures) [tools: contingency_matrix_builder_api]
-```
-
-### Example[2]: STEP_SEQUENCE - Medieval Charter Digitisation and Ingestion
+### Example[1]: STEP_SEQUENCE - Medieval Charter Digitisation and Ingestion
 
 **Context:**
 ---
@@ -391,40 +342,36 @@ There are no existing tasks yet.
 ---
 **User:**
 {
-  "requestType": "document_ingestion",
-  "primaryGoal": "Digitize Latin charters and make them searchable via the organization’s vector database",
-  "userParameters": {
-    "documentSet": "User-supplied Latin charters",
-    "expectedLanguage": "Latin",
-    "destinationIndex": "research_vector_index"
+  "requestType": "Document Processing and Integration",
+  "primaryGoal": "Process Latin charters for research query integration",
+  "parameters": {
+    "documents": ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"],
+    "language": "Latin"
   },
-  "requiredComponents": [
-    "scan or ingest provided charter images/PDFs",
-    "perform OCR to extract machine-readable text",
-    "detect and verify language for each text chunk",
-    "clean/normalize text (encoding, noise removal)",
-    "generate vector embeddings with chosen model",
-    "ingest embeddings and metadata into target vector DB",
-    "run sample queries to validate ingestion"
+  "subTasks": [
+    "Scan each document to extract text",
+    "Verify the extracted text is in Latin",
+    "Load the verified text into the vector search system"
   ],
-  "expectedDeliverables": "OCR text files, verified language report, populated vector index, and brief ingestion/validation summary"
+  "expectedDeliverables": [
+    "Text extracted from each document",
+    "Confirmation of language verification",
+    "Documents loaded into the vector search system for querying"
+  ]
 }
 **Assistant:**
 ```
-RESPONSE_CHOICE_EXPLANATION: All required steps to digitize, OCR, verify, normalize, embed, and ingest Latin charters are achievable using the provided tools. Each task can be mapped to a tool with valid input/output parameters, and no step is blocked by missing resources.
+RESPONSE_CHOICE_EXPLANATION: The problem is logically consistent and can be solved using the available tools. Each step in the process of scanning, verifying, and loading the documents into the vector search system can be accomplished with the provided tools.
 RESPONSE_TYPE: STEP_SEQUENCE
 RESPONSE_STEP_SEQUENCE:
   step_sequence:
-    1. Scan the provided Latin charters to produce high-resolution images (input: documentSet; output: scanned image URLs and document metadata) [tools: hires_scan_api]
-    2. Perform OCR on the scanned images to extract machine-readable text (input: scanned image URLs [from Step 1], expectedLanguage; output: OCR text with confidence scores) [tools: ocr_latin_script_api]
-    3. Detect and verify the language of each OCR’d text chunk to confirm it is Latin (input: OCR text [from Step 2]; output: language verification report) [tools: language_detect_api]
-    4. Clean and normalize the OCR text by removing encoding issues, noise, and OCR artifacts (input: OCR text [from Step 2], language verification report [from Step 3]; output: cleaned and normalized text) [LLM]
-    5. Generate vector embeddings from the cleaned text for semantic search (input: cleaned and normalized text [from Step 4]; output: vector embeddings) [LLM]
-    6. Ingest the vector embeddings and associated document metadata into the target vector database (input: vector embeddings [from Step 5], document metadata [from Step 1], destinationIndex; output: populated vector index) [tools: vector_store_ingest_api]
-    7. Run sample semantic queries to validate indexing and verify document retrievability (input: populated vector index [from Step 6], document metadata [from Step 1]; output: ingestion validation report) [LLM]
+    1. Scan each document to produce high-resolution images (input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"]; output: URLs of scanned images) [tools: hires_scan_api]
+    2. Extract text from each scanned image using OCR tuned for Latin script (input: image URLs [from Step 1], language hint "lat"; output: extracted text with confidence scores) [tools: ocr_latin_script_api]
+    3. Verify the extracted text is in Latin (input: extracted text [from Step 2]; output: language verification results) [tools: language_detect_api]
+    4. Load the verified text into the vector search system (input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"], verified text [from Step 3], chunk size  default 1000; output: confirmation of successful loading) [tools: vector_store_ingest_api]
 ```
 
-### Example[3]: STEP_SEQUENCE - Micro-grid Dispatch Planning Workflow
+### Example[2]: STEP_SEQUENCE - Micro-grid Dispatch Planning Workflow
 
 **Context:**
 ---
@@ -457,7 +404,9 @@ There are no existing tasks yet.
   "userParameters": {
     "timeWindow": "2025-06-05T18:00Z to 2025-06-05T21:00Z",
     "resources": ["solar", "battery", "EV fleets"],
-    "frequencyThresholdHz": 0.2
+    "frequencyThresholdHz": 0.2,
+    "blocks": ["block-central-2", "block-north-7"],
+    "sites": ["site-solar-01", "site-battery-02", "site-ev-fleet-03"]
   },
   "requiredComponents": [
     "forecast evening load profile for each city block",
@@ -473,13 +422,13 @@ RESPONSE_CHOICE_EXPLANATION: All required subtasks are explicitly listed and eac
 RESPONSE_TYPE: STEP_SEQUENCE
 RESPONSE_STEP_SEQUENCE:
   step_sequence:
-    1. Forecast electricity demand for each city block between 18:00 and 21:00 on 2025-06-05 (input: blockIds, start time 2025-06-05T18:00Z, periods: 12; output: demand forecast in 15-min intervals) [tools: demand_forecast_api]
-    2. Forecast solar generation and battery state-of-charge for each site between 18:00 and 21:00 on 2025-06-05 (input: siteIds, start time 2025-06-05T18:00Z, periods: 12; output: solar and battery forecasts) [tools: solar_battery_forecast_api]
+    1. Forecast electricity demand for each city block between 18:00 and 21:00 on 2025-06-05 (input: blockIds ["block-central-2", "block-north-7"], start time 2025-06-05T18:00Z, periods: 12; output: demand forecast in 15-min intervals) [tools: demand_forecast_api]
+    2. Forecast solar generation and battery state-of-charge for each site between 18:00 and 21:00 on 2025-06-05 (input: siteIds ["site-solar-01", "site-battery-02"], start time 2025-06-05T18:00Z, periods: 12; output: solar and battery forecasts) [tools: solar_battery_forecast_api]
     3. Generate an optimized dispatch schedule that meets forecasted demand using solar, battery, and EV resources, while staying within ±0.2 Hz frequency deviation (input: demand forecast [from Step 1], solar and battery forecasts [from Step 2], constraint: freqDeviationHz 0.2; output: control vectors and KPI report) [tools: grid_load_optimizer_api]
     4. Send control vectors to implement the optimized dispatch schedule (input: control vectors [from Step 3]; output: acknowledgement of dispatch) [tools: dispatch_command_api]
 ```
 
-### Example[4]: STEP_SEQUENCE - Smart-Farm “Rain-Contingency” Harvest Planner
+### Example[3]: STEP_SEQUENCE - Smart-Farm “Rain-Contingency” Harvest Planner
 
 **Context:**
 ---
@@ -541,6 +490,86 @@ RESPONSE_STEP_SEQUENCE:
     4. Check the operational readiness of harvesters, drones, and grain dryers (input: equipment IDs [from Step 2]; output: equipment status) [tools: equipment_status_api]
     5. Generate a harvest or drying schedule that meets moisture limits, considering weather and equipment status (input: field details [from Step 1], weather forecast [from Step 3], equipment status [from Step 4]; output: harvest schedule) [tools: harvest_scheduler_api]
     6. Produce a human-readable timeline with equipment assignments and rain contingency plans (input: harvest schedule [from Step 5], weather forecast [from Step 3]; output: final harvest-day plan) [LLM]
+```
+
+### Example[4]: STEP_SEQUENCE - Poetry and Hip-Hop Song Analysis
+
+**Context:**
+---
+
+### Available agent tools
+There is no available agent tools.
+
+### Existing agents
+There are no existing agents yet.
+
+### Existing tasks
+There are no existing tasks yet.
+
+---
+**User:**
+{
+  "requestType": "creative_writing",
+  "primaryGoal": "Generate four short stories and a screenplay scene merging them",
+  "userParameters": {
+    "storyConcepts": ["time travel", "bioluminescent fungi", "ancient desert rituals", "urban foxes"]
+  },
+  "requiredComponents": [
+    "write short story on time travel",
+    "write short story on bioluminescent fungi",
+    "write short story on ancient desert rituals",
+    "write short story on urban foxes",
+    "create screenplay scene merging all stories",
+    "analytical breakdown of narrative convergence"
+  ],
+  "expectedDeliverables": "Four short stories, one screenplay scene, and an analytical breakdown"
+}
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The problem involves creative writing tasks that can be handled by general LLM capabilities. Each component, such as writing short stories and creating a screenplay scene, can be achieved using LLM. Therefore, a STEP_SEQUENCE can be generated.
+RESPONSE_TYPE: STEP_SEQUENCE
+RESPONSE_STEP_SEQUENCE:
+  step_sequence:
+    1. Write a short story based on the concept of time travel (input: story concept "time travel"; output: short story) [LLM]
+    2. Write a short story based on the concept of bioluminescent fungi (input: story concept "bioluminescent fungi"; output: short story) [LLM]
+    3. Write a short story based on the concept of ancient desert rituals (input: story concept "ancient desert rituals"; output: short story) [LLM]
+    4. Write a short story based on the concept of urban foxes (input: story concept "urban foxes"; output: short story) [LLM]
+    5. Create a screenplay scene that merges all four stories (input: short story [from Steps 1], short story [from Steps 2], short story [from Steps 3], short story [from Steps 4]; output: screenplay scene) [LLM]
+    6. Provide an analytical breakdown of how the narratives converge in the screenplay scene (input: screenplay scene [from Step 5]; output: analytical breakdown) [LLM]
+```
+
+### Example[5]: MISSING_INPUTS - Route optimization for delivery planning
+
+**Context:**
+---
+
+### Available agent tools
+1. route_optimizer_api:
+  description: Calculates the fastest delivery route based on a list of destination addresses and start time.
+  toolInput: {"destinationAddresses":["<string>"],"departureTime":"<YYYY-MM-DDThh:mmZ>"}
+
+### Existing agents
+There are no existing agents yet.
+
+### Existing tasks
+There are no existing tasks yet.
+
+---
+**User:**
+{
+  "requestType": "delivery_route_planning",
+  "primaryGoal": "Plan the fastest delivery route for our afternoon shipment",
+  "userParameters": {
+    "departureTime": "2025-06-10T13:00:00Z"
+  },
+  "expectedDeliverables": "A step-by-step delivery route plan including time estimates"
+}
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The request matches the system’s capabilities but is missing critical inputs that cannot be generated.
+RESPONSE_TYPE: MISSING_INPUTS
+RESPONSE_UNSOLVABLE:
+  explanation: The system can plan and optimize a delivery route, but it needs at least one valid destination address to proceed. Since no address or delivery point was included in the request, and there is no available tool to look it up, the task cannot continue. For example, providing an address like "Main Street 42, Springfield" would enable route planning.
 ```
 
 ---

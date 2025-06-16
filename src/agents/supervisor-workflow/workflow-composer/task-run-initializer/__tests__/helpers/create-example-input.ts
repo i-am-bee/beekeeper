@@ -1,8 +1,6 @@
 import { WorkflowComposeFixture } from "@/agents/supervisor-workflow/fixtures/base/workflow-compose-fixtures.js";
-import {
-  unwrapTaskStepWithAgent,
-  unwrapTaskStepWithTask,
-} from "@/agents/supervisor-workflow/fixtures/helpers/unwrap-task-step.js";
+import { prepareDataForWorkflowStep } from "@/agents/supervisor-workflow/fixtures/helpers/prepare-resources.js";
+import { unwrapTaskStepWithTaskRun } from "@/agents/supervisor-workflow/fixtures/helpers/unwrap-task-step.js";
 import { Resources } from "@/agents/supervisor-workflow/workflow-composer/helpers/resources/dto.js";
 import { TaskStep } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/dto.js";
 import { TaskStepMapper } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/task-step-mapper.js";
@@ -20,63 +18,55 @@ export interface ExampleInput {
   example: laml.ProtocolResult<typeof protocol>;
 }
 
-export function createExampleInput<
-  F extends WorkflowComposeFixture,
->(
-  scenario: "CREATE_TASK_RUN",
-  subtitle: string,
-  step: Parameters<F["taskSteps"]["get"]>[0],
-  fixtures: F,
-) {
+export function createExampleInput<F extends WorkflowComposeFixture>({
+  scenario,
+  step,
+  responseChoiceExplanation,
+  fixtures,
+  subtitle,
+  note,
+}: {
+  scenario: "CREATE_TASK_RUN";
+  step: Parameters<F["taskSteps"]["get"]>[0];
+  fixtures: F;
+  responseChoiceExplanation?: string;
+  subtitle?: string;
+  note?: string;
+}) {
+  const fullSubtitle = `${subtitle ?? fixtures.title}${note ? ` (${note})` : ""}`;
+
+  const stepNo = fixtures.taskSteps.stepNo(step);
+
+  const { resources, previousSteps, taskStep } = prepareDataForWorkflowStep(
+    fixtures,
+    "taskRunInitializer",
+    stepNo,
+  );
+
   switch (scenario) {
     case "CREATE_TASK_RUN": {
-      const currentStep = unwrapTaskStepWithAgent(fixtures.taskSteps.get(step));
-
-      // All tools are already available regardless of whether they are used by any agent
-      const tools = fixtures.tools.values;
-
-      // All previous steps already have assigned tasks
-      const previousSteps = fixtures.taskSteps.values
-        .filter((p) => p.no < currentStep.no)
-        .map((p) => unwrapTaskStepWithTask(p)); // Previous steps have tasks
-
-      // Agents from the previous steps and the current step are already available
-      const agents = fixtures.taskSteps.values
-        .filter((p) => p.no <= currentStep.no)
-        .map((p) => unwrapTaskStepWithAgent(p).resource.agent); // Previous steps have tasks
-
-      // Tasks from previous steps are already available
-      const tasks = previousSteps.map((p) => p.resource.task);
-
       const {
-        resource: { task },
-      } = unwrapTaskStepWithTask(fixtures.taskSteps.get(step));
+        resource: { taskRun },
+      } = unwrapTaskStepWithTaskRun(fixtures.taskSteps.get(step));
 
       return {
         title: scenario,
-        subtitle,
-        user: TaskStepMapper.format(currentStep),
+        subtitle: fullSubtitle,
+        user: TaskStepMapper.format(taskStep),
         context: {
           previousSteps,
-          resources: {
-            tools,
-            agents,
-            tasks,
-            taskRuns: [], // Not provided in task initialization
-          },
+          resources,
         },
         example: {
           RESPONSE_CHOICE_EXPLANATION:
-            "No existing task config matches the request; a new task config is required.",
+            responseChoiceExplanation ??
+            fixtures.getChoiceExplanation(stepNo, "taskRun"),
           RESPONSE_TYPE: scenario,
-          RESPONSE_CREATE_TASK_CONFIG: {
-            task_type: task.taskType,
-            agent_type: task.agentType,
-            task_config_input: task.taskConfigInput,
-            description: task.description,
+          RESPONSE_CREATE_TASK_RUN: {
+            task_run_input: taskRun.taskRunInput,
           },
         },
-      };
+      } satisfies ExampleInput;
     }
   }
 }

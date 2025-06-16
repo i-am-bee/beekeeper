@@ -1,9 +1,15 @@
 ☐ Problem decomposer
 - It doesn't connect inputs/outputs between steps correctly. 
-- It should be rewrite to produce well defined inputs/outputs. Inputs should has a type user/generated all well connected to the specific attribute in request or output from previous step.
+- Sometimes missing mark [source: assumed] - It should be rewrite to produce well defined inputs/outputs. Inputs should has a type user/generated all well connected to the specific attribute in request or output from previous step.
 
 ☐ Logic fixer
 - Add step after the problem decomposer to fix the logic of the generated code. E.g. cyclic graph, missing conditional logic, unused outputs, missing deliverables etc..
 
 ☐ Input negotiator
 - User request should be handle by a negotiator that will ask user for more details if needed (when request handler need clarification, or problemDecomposer creates step with grounded inputs).
+
+☐ Disaster relive showcase
+- It is too massive and uncompleted
+
+☐ Boston trip
+- Request handler and problem decomposer should failed due to missing date

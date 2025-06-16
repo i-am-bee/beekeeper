@@ -10,48 +10,41 @@ import {
 
 const title = "Disaster Relief Supply Drop Coordination";
 const prompt =
-  "Coordinate an air drop of food and medicine to our three flooded islands. Use the latest imagery to find strips; if none are safe, switch to helicopters.";
+  "Coordinate an air drop of food and medicine to the flooded islands of Vavaʻu in Tonga. Use the latest imagery to find strips; if none are safe, switch to helicopters.";
 
 const choiceExplanations = {
   requestHandler:
-    "Request involves multi-step humanitarian logistics (imagery analysis, air-strip assessment, flight planning, contingency switch to helicopters) that must be delegated to a planner.",
-  problemDecomposer:
-    "The user’s disaster relief coordination request is logically consistent and all requested components are achievable using the available tools. Each required step—such as imagery analysis, landing strip evaluation, route planning, manifest preparation, asset scheduling, and contingency planning—has tool support. Therefore, a complete, solvable step sequence can be generated.",
+    "The request involves a complex, multi-step operation that requires coordination, planning, and potentially the use of various resources and tools. It is not a simple question that can be answered directly, nor is it a request that can be clarified with a simple question.",
+  problemDecomposer: "The problem is logically consistent and can be solved using the available tools and resources. Each step required to achieve the primary goal has a corresponding tool or can be handled by LLM capabilities.",
   steps: [
     {
-      stepNo: 1,
-      agentConfig:
-        "The task requires acquiring and analyzing satellite imagery to assess landing zones. No existing agent config is present, and the required tool `satellite_imagery_api` is available. This is a suitable case for creating a new agent config.",
-      taskConfig:
-        "No existing task config matches yet, and this request aligns with the agent's capabilities but introduces a new reusable mission template requiring satellite analysis over island areas.",
+      no: 1,
+      agentConfig: `TBD`,
+      taskConfig: `TBD`,
     },
   ],
 } satisfies ChoiceExplanations;
 
 const requestHandlerOutput = `{
-  "requestType": "disaster_relief_coordination",
-  "primaryGoal": "Deliver food and medicine to three flooded islands using the safest available air or helicopter method",
-  "userParameters": {
-    "numberOfIslands": 3,
-    "cargo": ["food", "medicine"],
-    "transportPreference": "fixed-wing air-drop if safe landing/drop strips exist; otherwise helicopters"
+  "requestType": "Humanitarian Aid Coordination",
+  "primaryGoal": "Deliver food and medicine to the flooded islands of Vavaʻu in Tonga.",
+  "parameters": {
+    "location": "Vavaʻu, Tonga",
+    "resources": ["food", "medicine"],
+    "transportationOptions": ["air drop", "helicopters"],
+    "imagerySource": "latest satellite imagery"
   },
-  "requiredComponents": [
-    "Acquire and analyze the latest high-resolution satellite or aerial imagery for each island",
-    "Identify and evaluate potential landing or drop strips for fixed-wing aircraft (length, surface, obstacles, flood status)",
-    "Determine viability of air-drops versus helicopter insertion per island and compile a decision matrix",
-    "Plan safe flight routes, approach patterns, drop zones or landing zones, including altitude and timing windows",
-    "Prepare detailed cargo manifest with packaging suited to selected delivery method (parachute-rigged bundles or sling loads)",
-    "Secure appropriate aircraft/helicopter assets, crews, fuel logistics, and maintenance support",
-    "Obtain weather forecasts, NOTAMs, and flight clearances; establish communication protocols with ground teams",
-    "Draft contingency and safety plans for rapid method switch or abort criteria"
+  "subTasks": [
+    "Analyze latest satellite imagery to identify safe landing strips.",
+    "Plan air drop routes if landing strips are available.",
+    "Switch to helicopter delivery if no safe landing strips are found.",
+    "Coordinate with local authorities for distribution logistics.",
+    "Ensure compliance with international aid and aviation regulations."
   ],
   "expectedDeliverables": [
-    "Imagery assessment report with annotated maps of viable strips or landing zones",
-    "Recommended delivery method for each island with justification",
-    "Detailed flight/air-drop plans and schedules",
-    "Cargo loading and rigging instructions",
-    "Comprehensive operations brief with contingency procedures"
+    "Safe and efficient delivery plan for food and medicine.",
+    "Contingency plan for helicopter use if necessary.",
+    "Coordination report with local authorities."
   ]
 }`;
 

@@ -7,84 +7,48 @@ type ToolName = FixtureName<typeof toolsFixtures>;
 
 const ENTRIES = [
   {
-    agentType: "game_scheduler",
-    tools: ["tavily_search_api"],
-    instructions: `Context: You are a game scheduler agent. You are activated by an external task and receive sport type and location as input. You use the tavily_search_api tool to retrieve game schedules.
-  
-  Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
-  
-  Response format: List each game with its date, time, and teams:
-  
-  Upcoming [Sport] Games in Boston:
-  1. Date: [Date 1] — Time: [Time 1] — Teams: [Team A vs. Team B]
-  2. Date: [Date 2] — Time: [Time 2] — Teams: [Team C vs. Team D]`,
-    description:
-      "Schedules upcoming hockey and basketball games in Boston using tavily_search_api.",
-  },
-  {
-    agentType: "historical_sites_identifier",
-    description:
-      "Identifies historical sites in a given location using the historical_sites_search_api tool.",
-    instructions: `Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
- 
- Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
- 
- Response format: List each site with its name and a brief description:
- 
- Historical Sites in Back Bay:
- 1. Name: [Site Name 1] — Description: [Description 1]
- 2. Name: [Site Name 2] — Description: [Description 2]`,
+    agentType: "historical_sites_finder",
     tools: ["historical_sites_search_api"] as const satisfies ToolName[],
+    instructions: `Context: The agent receives a location as input and searches for historical sites within that area.
+Objective: Use the historical_sites_search_api to find and list historical sites in the specified location.
+Response format: Return a list of historical sites, including their names, significance, and any available coordinates or jurisdiction details.`,
+    description:
+      "This agent identifies historical sites in a specified location using the historical_sites_search_api.",
   },
   {
-    agentType: "restaurant_recommender",
+    agentType: "sports_events_searcher",
     tools: ["tavily_search_api"] as const satisfies ToolName[],
-    instructions: `Context: You are an agent specializing in recommending diverse cuisine restaurants. You are activated by an external task and receive dining preferences and location as input. You use the tavily_search_api tool to retrieve a list of restaurants.
-
-Objective: Use the provided dining preferences and location to fetch a list of restaurants. Return the results in a structured format, listing one restaurant per cuisine type per day.
-
-Response format: Present the recommendations day by day with cuisine type and details:
-
-Back Bay Restaurant Recommendations:
-Day 1:
-- Italian: [Restaurant Name 1] — Description: [Description 1]
-- Chinese: [Restaurant Name 2] — Description: [Description 2]
-- French: [Restaurant Name 3] — Description: [Description 3]
-Day 2:
-- Italian: [Restaurant Name 4] — Description: [Description 4]
-- Chinese: [Restaurant Name 5] — Description: [Description 5]
-- French: [Restaurant Name 6] — Description: [Description 6]`,
+    instructions: `Context: The agent receives a location and duration as input and searches for sports events happening during that time.
+Objective: Use the tavily_search_api to find and list sports events, including their schedule and ticket information, in the specified location and duration.
+Response format: Return a list of sports events, including event names, dates, venues, and ticket purchasing details.`,
     description:
-      "Recommends restaurants of multiple cuisines in a given location using tavily_search_api.",
+      "This agent searches for sports events happening in a specified location and duration using the tavily_search_api.",
   },
   {
-    agentType: "itinerary_creator",
-    tools: [],
-    instructions: `Context: You are an agent specializing in creating customized itineraries. You are activated by an external task and receive list of as input. You use the itinerary_creator tool to generate a detailed itinerary.
-
-Objective: Use the provided historical sites, game schedules, and dining suggestions to create a balanced 3-day itinerary. Ensure each day includes a mix of activities, and provide specific times for games and dining.
-
-Response format: Present the itinerary day by day with activities, times, and details:
-
-3-Day Customized Itinerary:
-Day 1:
-- Morning: Visit [Historical Site 1] (from Step 1)
-- Lunch: Dine at [Italian Restaurant 1] (from Step 2)
-- Afternoon: Attend [Hockey Game] (from Step 1)
-- Evening: Dinner at [Chinese Restaurant 1] (from Step 2)
-Day 2:
-- Morning: Explore [Historical Site 2] (from Step 1)
-- Lunch: Enjoy a meal at [French Restaurant 1] (from Step 2)
-- Afternoon: Watch [Basketball Game] (from Step 1)
-- Evening: Dine at [Italian Restaurant 2] (from Step 2)
-Day 3:
-- Morning: Discover [Historical Site 3] (from Step 1)
-- Lunch: Lunch at [Chinese Restaurant 2] (from Step 2)
-- Afternoon: Free time for personal interests or additional exploration
-- Evening: Farewell dinner at [French Restaurant 2] (from Step 2)`,
+    agentType: "dining_recommendations_searcher",
+    tools: ["tavily_search_api"] as const satisfies ToolName[],
+    instructions: `Context: The agent receives a location and a list of dining preferences as input and searches for dining recommendations that match these criteria.
+Objective: Use the tavily_search_api to find and list dining options, including restaurant names, cuisine types, and any available ratings or reviews, in the specified location.
+Response format: Return a list of dining recommendations, including restaurant names, cuisine types, and any available ratings or reviews.`,
     description:
-      "Creates a balanced 3-day itinerary incorporating historical sites, game schedules, and dining suggestions based on user-provided outputs from Steps 1–3.",
+      "This agent searches for dining recommendations based on specified location and cuisine preferences using the tavily_search_api.",
   },
+  {
+    agentType: "itinerary_compiler",
+    tools: [] as const satisfies ToolName[],
+    instructions: `Context: The agent receives lists of historical sites, sports events, and dining recommendations as input.
+Objective: Organize the provided information into a structured itinerary for a specified number of days.
+Response format: Return a day-by-day itinerary, including suggested times for visits, events, and meals, ensuring a balanced and enjoyable schedule.`,
+    description:
+      "This agent compiles a multi-day itinerary based on provided historical sites, sports events, and dining recommendations.",
+  },
+  // {
+  //   agentType: `TBD`,
+  //   tools: [`TBD`] as const satisfies ToolName[],
+  //   instructions: `TBD`,
+  //   description:
+  //     `TBD`,
+  // },
 ] as const satisfies AgentConfigTiny[];
 
 export default createFixtures(

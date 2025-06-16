@@ -13,7 +13,7 @@ const prompt =
   "I want to predict the outcome of the next Formula 1 Grand Prix. Use all relevant data such as historical driver performance on that circuit, recent qualifying and race results, weather forecasts, team pit stop reliability, and any trends in driver form or strategy. Combine these to produce a confidence-based prediction of the top 3 finishers, along with the reasoning behind the forecast.";
 
 const choiceExplanations = {
-  requestHandler: "TBD",
+  requestHandler: `TBD`,
   problemDecomposer:
     "All required subtasks are explicitly listed and each has a matching tool available. The problem is logically sound, fully specified, and solvable using the provided tools. A clear and ordered sequence of steps can achieve the user's stated goal of balancing microgrid load using solar, battery, and EV fleets within a defined time window.",
   steps: [

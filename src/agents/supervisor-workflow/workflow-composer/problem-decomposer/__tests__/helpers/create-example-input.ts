@@ -35,7 +35,7 @@ export function createExampleInput<F extends WorkflowComposeFixture>({
       const step_sequence = fixtures.taskSteps.values
         .map(unwrapTaskStepWithToolsOrLLM)
         .map(TaskStepMapper.format);
-      const fullSubtitle = `${subtitle ?? fixtures.title}${note ? `(${note})` : ""}`;
+      const fullSubtitle = `${subtitle ?? fixtures.title}${note ? ` (${note})` : ""}`;
       return {
         title: scenario,
         subtitle: fullSubtitle,

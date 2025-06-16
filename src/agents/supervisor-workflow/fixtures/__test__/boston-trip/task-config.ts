@@ -7,32 +7,40 @@ type AgentType = FixtureName<typeof agentConfigFixtures>;
 
 const ENTRIES = [
   {
-    taskType: "create_3_day_itinerary",
-    agentType: "itinerary_creator" as const satisfies AgentType,
-    taskConfigInput: `{"historical_sites":"<list of historical sites>","games":"<list of games>","restaurants":"<list of restaurants>"}`,
+    taskType: "find_historical_sites",
+    agentType: "historical_sites_finder" as const satisfies AgentType,
+    taskConfigInput: `{ "location": "<specified location>" }`,
     description:
-      "Task to create a balanced 3-day itinerary incorporating historical sites, game schedules, and dining suggestions.",
+      "Find historical sites in the given <specified location> using the historical_sites_search_api and return a list of historical sites, including their names, significance, and any available coordinates or jurisdiction details.",
   },
   {
-    taskType: "find_sports_game_schedules",
-    agentType: "game_scheduler" as const satisfies AgentType,
-    taskConfigInput: `{"sport":"<choose sport: hockey | basketball>","location":"<given location>"}`,
+    taskType: "search_sports_events",
+    agentType: "sports_events_searcher" as const satisfies AgentType,
+    taskConfigInput: `{ "location": "<specified location>", "duration": "<specified duration>" }`,
     description:
-      "Task to find upcoming hockey and basketball game schedules in a given location.",
+      "Search for sports events happening in the given <specified location> during the specified <duration> using the tavily_search_api and return a list of sports events, including their schedule and ticket purchasing details.`",
   },
   {
-    taskType: "identify_historical_sites",
-    agentType: "historical_sites_identifier" as const satisfies AgentType,
-    taskConfigInput: `{"location":"<given location>"}`,
-    description: "Task to identify historical sites in a given location.",
+    taskType: "search_dining_recommendations",
+    agentType: "dining_recommendations_searcher" as const satisfies AgentType,
+    taskConfigInput: `{ "location": "<specified location>", "dining_preferences": ["<cuisine type>", "..."] }`,
+    description:
+      "Search for dining recommendations in the given <specified location> based on the provided <dining preferences> using the tavily_search_api and return a list of dining options, including restaurant names, cuisine types, and any available ratings or reviews.`",
   },
   {
-    taskType: "recommend_restaurants",
-    agentType: "restaurant_recommender" as const satisfies AgentType,
-    taskConfigInput: `{"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>", "days":"<list of days>"}`,
+    taskType: "compile_itinerary",
+    agentType: "itinerary_compiler" as const satisfies AgentType,
+    taskConfigInput: `{ "historical_sites": ["<site>", "..."], "sports_events": ["<event>", "..."], "dining_recommendations": ["<recommendation>", "..."] }`,
     description:
-      "Task to recommend restaurants for each day based on user-defined preferences, location and list of the days.",
+      "Compile a 3-day itinerary including visits to historical sites, attendance at sports events, and dining at recommended restaurants. Organize the information into a structured schedule, ensuring a balanced and enjoyable experience.`",
   },
+  // {
+  //   taskType: `TBD`,
+  //   agentType: `TBD` as const satisfies AgentType,
+  //   taskConfigInput: `TBD`,
+  //   description:
+  //     `TBD`,
+  // },
 ] as const satisfies TaskConfigMinimal[];
 
 export default createFixtures(

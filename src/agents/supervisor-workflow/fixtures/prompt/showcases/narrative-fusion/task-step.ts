@@ -18,7 +18,10 @@ const ENTRIES = [
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
       { type: "task", task: tasksFixtures.get("generate_short_story") },
-      { type: "task_run", taskRun: taskRunsFixtures.get("generate_short_story_1") },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("generate_short_story_1"),
+      },
     ),
   },
   {
@@ -30,7 +33,10 @@ const ENTRIES = [
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
       { type: "task", task: tasksFixtures.get("generate_short_story") },
-      { type: "task_run", taskRun: taskRunsFixtures.get("generate_short_story_2") },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("generate_short_story_2"),
+      },
     ),
   },
   {
@@ -42,7 +48,10 @@ const ENTRIES = [
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
       { type: "task", task: tasksFixtures.get("generate_short_story") },
-      { type: "task_run", taskRun: taskRunsFixtures.get("generate_short_story_3") },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("generate_short_story_3"),
+      },
     ),
   },
   {
@@ -53,7 +62,10 @@ const ENTRIES = [
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
       { type: "task", task: tasksFixtures.get("generate_short_story") },
-      { type: "task_run", taskRun: taskRunsFixtures.get("generate_short_story_4") },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("generate_short_story_4"),
+      },
     ),
   },
   {
@@ -69,7 +81,12 @@ const ENTRIES = [
         type: "task",
         task: tasksFixtures.get("merge_short_stories_into_screenplay_scene"),
       },
-      { type: "task_run", taskRun: taskRunsFixtures.get("merge_short_stories_into_screenplay_scene_1") },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get(
+          "merge_short_stories_into_screenplay_scene_1",
+        ),
+      },
     ),
   },
   {
@@ -85,7 +102,10 @@ const ENTRIES = [
         type: "task",
         task: tasksFixtures.get("analyze_screenplay_scene_convergence"),
       },
-      { type: "task_run", taskRun: taskRunsFixtures.get("analyze_screenplay_scene_convergence_1") },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("analyze_screenplay_scene_convergence_1"),
+      },
     ),
   },
 ] as const satisfies TaskStepWithVariousResource[];

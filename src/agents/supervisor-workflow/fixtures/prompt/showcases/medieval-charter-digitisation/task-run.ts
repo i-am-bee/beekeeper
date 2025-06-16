@@ -6,11 +6,26 @@ import taskConfigFixtures from "./task-config.js";
 type TaskType = FixtureName<typeof taskConfigFixtures>;
 
 const ENTRIES = [
-  // {
-  //   taskType: "retrieve_field_metadata" satisfies TaskType,
-  //   taskRunInput: `{ "field_identifier": "South Field" }`,
-  //   taskRunNum: 1,
-  // },
+  {
+    taskType: "scan_documents_high_res" satisfies TaskType,
+    taskRunInput: `{"document_ids": ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"]}`,
+    taskRunNum: 1,
+  },
+  {
+    taskType: "extract_text_from_images_latin_script" satisfies TaskType,
+    taskRunInput: `{"language_hint": "lat"}`,
+    taskRunNum: 1,
+  },
+  {
+    taskType: "verify_language_of_extracted_text" satisfies TaskType,
+    taskRunInput: ``,
+    taskRunNum: 1,
+  },
+  {
+    taskType: "load_verified_text_into_vector_search" satisfies TaskType,
+    taskRunInput: `{ "document_ids": ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"], "chunk_size": 1000  }`,
+    taskRunNum: 1,
+  },
 ] as const satisfies TaskRunMinimal[];
 
 export default createFixtures(

@@ -4,6 +4,7 @@ import {
   TaskStepWithVariousResource,
 } from "../../../base/resource-fixtures.js";
 import toolsFixtures from "./tools.js";
+import agentsFixtures from "./agent-config.js";
 import tasksFixtures from "./task-config.js";
 import taskRunsFixtures from "./task-run.js";
 
@@ -12,76 +13,103 @@ type ToolName = FixtureName<typeof toolsFixtures>;
 const ENTRIES = [
   {
     no: 1,
-    step: "Scan the provided Latin charters to produce high-resolution images",
-    inputOutput:
-      "input: documentSet; output: scanned image URLs and document metadata",
-    resource: createResourceFixtures({
-      tools: ["hires_scan_api"] as const satisfies ToolName[],
-      type: "tools",
-    }),
+    step: "Scan each document to produce high-resolution images",
+    inputOutput: `input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"]; output: URLs of scanned images`,
+    resource: createResourceFixtures(
+      {
+        type: "tools",
+        tools: ["hires_scan_api"] as const satisfies ToolName[],
+      },
+      {
+        type: "agent",
+        agent: agentsFixtures.get("document_scanner"),
+      },
+      {
+        type: "task",
+        task: tasksFixtures.get("scan_documents_high_res"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("scan_documents_high_res_1"),
+      },
+    ),
   },
   {
     no: 2,
-    step: "Perform OCR on the scanned images to extract machine-readable text",
+    step: "Extract text from each scanned image using OCR tuned for Latin script",
     dependencies: [1],
-    inputOutput:
-      "input: scanned image URLs [from Step 1], expectedLanguage; output: OCR text with confidence scores",
-    resource: createResourceFixtures({
-      tools: ["ocr_latin_script_api"] as const satisfies ToolName[],
-      type: "tools",
-    }),
+    inputOutput: `input: image URLs [from Step 1], language hint "lat"; output: extracted text with confidence scores`,
+    resource: createResourceFixtures(
+      {
+        type: "tools",
+        tools: ["ocr_latin_script_api"] as const satisfies ToolName[],
+      },
+      {
+        type: "agent",
+        agent: agentsFixtures.get("ocr_latin_text_extractor"),
+      },
+      {
+        type: "task",
+        task: tasksFixtures.get("extract_text_from_images_latin_script"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get(
+          "extract_text_from_images_latin_script_1",
+        ),
+      },
+    ),
   },
   {
     no: 3,
-    step: "Detect and verify the language of each OCR’d text chunk to confirm it is Latin",
+    step: "Verify the extracted text is in Latin",
     dependencies: [2],
     inputOutput:
-      "input: OCR text [from Step 2]; output: language verification report",
-    resource: createResourceFixtures({
-      tools: ["language_detect_api"] as const satisfies ToolName[],
-      type: "tools",
-    }),
+      "input: extracted text [from Step 2]; output: language verification results",
+    resource: createResourceFixtures(
+      {
+        type: "tools",
+        tools: ["language_detect_api"] as const satisfies ToolName[],
+      },
+      {
+        type: "agent",
+        agent: agentsFixtures.get("language_verification"),
+      },
+      {
+        type: "task",
+        task: tasksFixtures.get("verify_language_of_extracted_text"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("verify_language_of_extracted_text_1"),
+      },
+    ),
   },
   {
     no: 4,
-    step: "Clean and normalize the OCR text by removing encoding issues, noise, and OCR artifacts",
-    dependencies: [2, 3],
-    inputOutput:
-      "input: OCR text [from Step 2], language verification report [from Step 3]; output: cleaned and normalized text",
-    resource: createResourceFixtures({
-      type: "llm",
-    }),
-  },
-  {
-    no: 5,
-    step: "Generate vector embeddings from the cleaned text for semantic search",
-    dependencies: [4],
-    inputOutput:
-      "input: cleaned and normalized text [from Step 4]; output: vector embeddings",
-    resource: createResourceFixtures({
-      type: "llm",
-    }),
-  },
-  {
-    no: 6,
-    step: "Ingest the vector embeddings and associated document metadata into the target vector database",
-    dependencies: [1, 5],
-    inputOutput:
-      "input: vector embeddings [from Step 5], document metadata [from Step 1], destinationIndex; output: populated vector index",
-    resource: createResourceFixtures({
-      tools: ["vector_store_ingest_api"] as const satisfies ToolName[],
-      type: "tools",
-    }),
-  },
-  {
-    no: 7,
-    step: "Run sample semantic queries to validate indexing and verify document retrievability",
-    dependencies: [1, 6],
-    inputOutput:
-      "input: populated vector index [from Step 6], document metadata [from Step 1]; output: ingestion validation report",
-    resource: createResourceFixtures({
-      type: "llm",
-    }),
+    step: "Load the verified text into the vector search system",
+    dependencies: [3],
+    inputOutput: `input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"], verified text [from Step 3], chunk size  default 1000; output: confirmation of successful loading`,
+    resource: createResourceFixtures(
+      {
+        type: "tools",
+        tools: ["vector_store_ingest_api"] as const satisfies ToolName[],
+      },
+      {
+        type: "agent",
+        agent: agentsFixtures.get("vector_text_ingestor"),
+      },
+      {
+        type: "task",
+        task: tasksFixtures.get("load_verified_text_into_vector_search"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get(
+          "load_verified_text_into_vector_search_1",
+        ),
+      },
+    ),
   },
 ] as const satisfies TaskStepWithVariousResource[];
 

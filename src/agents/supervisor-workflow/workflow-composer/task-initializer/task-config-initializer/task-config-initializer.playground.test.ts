@@ -7,10 +7,14 @@ import {
 import { getChatLLM } from "@/helpers/llm.js";
 import { Logger } from "beeai-framework";
 import { describe, expect, it } from "vitest";
+import boston_trip_fixtures from "@agents/supervisor-workflow/fixtures/__test__/boston-trip/index.js";
 import disaster_relief_supply_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/disaster-relief-supply-drop/index.js";
 import narrative_fusion_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/narrative-fusion/index.js";
 import smart_farm_harvest_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import micro_grid_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
+import medieval_charter_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
+import beekeeping_site_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
+import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import { Resources } from "../../helpers/resources/dto.js";
 import { TaskStepMapper } from "../../helpers/task-step/task-step-mapper.js";
 import { getTaskConfigInitializerTool } from "./__tests__/helpers/mocks.js";
@@ -28,10 +32,10 @@ const onUpdate = () => ({});
  * All tests should be marked as `.fails()`.
  */
 describe("TaskConfigInitializer (Playground)", () => {
-  it.fails(`play`, async () => {
+  it(`play`, async () => {
     // Setup playground
-    const fixtures = micro_grid_fixtures; // Chose fixture
-    const stepNo = 1; // Chose step number (first is 1)
+    const fixtures = deep_sea_fixtures; // Chose fixture
+    const stepNo = 5; // Chose step number (first is 1)
 
     const taskConfigInitializer = getTaskConfigInitializerTool(logger, agentId);
 
@@ -56,6 +60,6 @@ describe("TaskConfigInitializer (Playground)", () => {
       { llm, actingAgentId: agentId, onUpdate },
     );
 
-    expect(resp).toBe({});
+    expect(resp.type).toEqual('SUCCESS');
   });
 });

@@ -10,7 +10,9 @@ import medieval_charter_fixtures from "../fixtures/prompt/showcases/medieval-cha
 import micro_grid_fixtures from "../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
 import smart_farm_fixtures from "../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import narrative_fusion_fixtures from "../fixtures/prompt/showcases/narrative-fusion/index.js";
+import beekeeping_site_fixtures from "../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
 import boston_trip_fixtures from "../fixtures/__test__/boston-trip/index.js";
+import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
 const llm = getChatLLM("supervisor");
@@ -24,13 +26,13 @@ const onUpdate = () => ({});
  * All tests should be marked as `.fails()`.
  */
 describe(`Request Handler (Playground)`, () => {
-  it.fails(`play`, async () => {
+  it(`play`, async () => {
     const requestHandler = new RequestHandler(logger, agentId);
 
-    const fixtures = micro_grid_fixtures;
+    const fixtures = deep_sea_fixtures;
 
     const request = fixtures.request;
-    const runOutput = await requestHandler.run(
+    const response = await requestHandler.run(
       {
         data: { request },
         userMessage: request,
@@ -38,10 +40,6 @@ describe(`Request Handler (Playground)`, () => {
       { llm, actingAgentId: agentId, onUpdate },
     );
 
-    if (runOutput.type === "ERROR") {
-      throw new Error(`Request handler failed: ${runOutput.explanation}`);
-    }
-
-    expect(runOutput).toBe({});
+    expect(response.type).toBe('SUCCESS');
   });
 });

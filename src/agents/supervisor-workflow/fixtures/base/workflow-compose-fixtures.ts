@@ -4,12 +4,12 @@ import { Fixtures } from "./fixtures.js";
 export interface ChoiceExplanations {
   requestHandler: string;
   problemDecomposer: string;
-  steps?: { // TODO make this required
-    stepNo: number,
-    agentConfig: string
-    taskConfig: string
-    taskRun?: string
-  }[]
+  steps: {
+    no: number;
+    agentConfig: string;
+    taskConfig: string;
+    taskRun: string;
+  }[];
 }
 
 export class WorkflowComposeFixture<
@@ -30,4 +30,21 @@ export class WorkflowComposeFixture<
     public readonly tasks: TTasks,
     public readonly taskRuns: TTaskRuns,
   ) {}
+
+  getChoiceExplanation(
+    stepNo: number,
+    type: "agentConfig" | "taskConfig" | "taskRun",
+  ) {
+    const explanation = this.choiceExplanations.steps.find(
+      (step) => step.no === stepNo,
+    )?.[type];
+
+    if (!explanation) {
+      throw new Error(
+        `No explanation found for step ${stepNo} and type ${type}`,
+      );
+    }
+
+    return explanation;
+  }
 }

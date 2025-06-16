@@ -6,7 +6,7 @@ import { TaskStepSchema } from "../../helpers/task-step/dto.js";
 export const AgentAvailableToolSchema = z.object({
   toolName: z.string(),
   description: z.string(),
-  toolInput: z.string().optional(),
+  toolInput: z.string(),
 });
 export type AgentAvailableTool = z.infer<typeof AgentAvailableToolSchema>;
 

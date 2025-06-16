@@ -1,15 +1,18 @@
-import boston_trip_fixtures from "@/agents/supervisor-workflow/fixtures/__test__/boston-trip/index.js";
+import { ExampleInput } from "@/agents/supervisor-workflow/fixtures/helpers/create-example.js";
+import { examplesEnabled } from "@/agents/supervisor-workflow/helpers/env.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
+import medieval_charter_fixtures from "../../../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
+import micro_grid_fixtures from "../../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
+import narrative_fusion_fixtures from "../../../fixtures/prompt/showcases/narrative-fusion/index.js";
+import smart_farm_fixtures from "../../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
+import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
+import beekeeping_site_fixtures from "../../../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
 import { TaskStepMapper } from "../../helpers/task-step/task-step-mapper.js";
+import { createExampleInput } from "./__tests__/helpers/create-example-input.js";
 import { TaskConfigInitializerInput } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
-import {
-  createExampleInput,
-  ExampleInput,
-} from "./__tests__/helpers/create-example-input.js";
-import { examplesEnabled } from "@/agents/supervisor-workflow/helpers/env.js";
 
 export const prompt = ({
   resources: { tasks: existingTaskConfigs, agents: existingAgentConfigs },
@@ -57,19 +60,6 @@ Do **not** infer or invent task configs based on agent config names or similarit
       },
       delimiter: { end: true },
       content: protocol.printExplanation(),
-    })
-    .section({
-      title: {
-        text: "Decision Criteria",
-        level: 2,
-      },
-      newLines: {
-        start: 2,
-        contentStart: 1,
-        contentEnd: 0,
-      },
-      delimiter: { end: true },
-      content: decisionCriteria,
     })
     .section({
       title: {
@@ -174,6 +164,19 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
    • The requested outcome is within the task’s stated **objective**.
    • The task’s **config input** matches all necessary information to complete the task.`,
   })
+  .section({
+    title: {
+      text: "TASK_CONFIG_UNAVAILABLE — Rules",
+      level: 3,
+    },
+    content: `1. **When to use** – Use this response **only** if the task cannot proceed due to one of the following:
+   a. When neither \`CREATE_TASK_CONFIG\`, \`UPDATE_TASK_CONFIG\`, nor \`SELECT_TASK_CONFIG\` is valid.
+   b. **Missing agent config**
+      • The specified \`agent_type\` is not listed under **Existing agent configs**.
+2. Field requirements:
+   * Keep the explanation concise and diagnostic (e.g., "Agent type 'X' not found in existing agent configs.").
+   * Do not suggest alternatives, invent configs, or output other fields.`,
+  })
   .build();
 
 const decisionCriteria = BodyTemplateBuilder.new()
@@ -187,19 +190,22 @@ const decisionCriteria = BodyTemplateBuilder.new()
 | • An existing task’s purpose **and** config input already satisfy the user need.<br>• No structural changes are required. <br>• ⚠️ The task config must be listed under "Existing task configs". | **SELECT_TASK_CONFIG** | Re-use as-is. |
 | • The task’s core mission stays the same **but** you must fix clarity, widen/narrow scope a bit, edit task config input a little bit.<br>• No repurposing to a new domain. | **UPDATE_TASK_CONFIG** | Light touch edit. |
 | • No current task fits.<br>• Creating a fresh task will not duplicate an existing \`task_type\`. | **CREATE_TASK_CONFIG** | Brand-new task config. |
+| • Agent config is missing. | **TASK_CONFIG_UNAVAILABLE** | Configuration not possible. |
 
 **Guidelines for all branches**
 
 1. If more than one row seems to apply, pick the **top-most** matching row.  
 2. Perform the uniqueness check for \`task_type\` **before** emitting \`CREATE_TASK_CONFIG\`; if the name already exists, return \`SELECT_TASK_CONFIG\` instead.  
-3. Agent config validation: agent type must appear in **Existing agents**; otherwise respond with \`TASK_CONFIG_UNAVAILABLE\`.  
-4. Task config validation: You may only reference a \`task_type\` if it is explicitly listed in the **Existing task configs**.  
-   Do not infer or assume the existence of a task config based on agent configs alone.
+3. Agent config validation: 
+   - agent type must appear in **Existing agents**; otherwise respond with \`TASK_CONFIG_UNAVAILABLE\`.  
+4. Task config validation: 
+   - You may only reference a \`task_type\` if it is explicitly listed in the **Existing task configs**.
+   - Do not infer or assume the existence of a task config based on agent configs alone.
 5. Arrays (e.g., \`tools\`) must be in **alphabetical order** for deterministic grading.`,
   })
   .build();
 
-const examples = ((inputs: ExampleInput[]) =>
+const examples = ((inputs: ExampleInput<typeof protocol>[]) =>
   inputs
     .map((input, idx) =>
       ChatExampleTemplateBuilder.new()
@@ -223,31 +229,93 @@ const examples = ((inputs: ExampleInput[]) =>
         .build(),
     )
     .join("\n"))([
-  createExampleInput(
-    "CREATE_TASK_CONFIG",
-    "Identify historical sites",
-    "Identify historical sites in Back Bay",
-    boston_trip_fixtures,
-  ),
-  createExampleInput(
-    "CREATE_TASK_CONFIG",
-    "Find game schedules",
-    "Find upcoming hockey/basketball game schedules in a given location",
-    boston_trip_fixtures,
-  ),
-  createExampleInput(
-    "CREATE_TASK_CONFIG",
-    "Restaurant recommendation",
-    "Recommend Italian, Chinese, and French restaurants in Back Bay for each day",
-    boston_trip_fixtures,
-  ),
-  createExampleInput(
-    "CREATE_TASK_CONFIG",
-    "Itinerary creation",
-    "Create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions",
-    boston_trip_fixtures,
-  ),
-
+  // medieval_charter_fixtures
+  // micro_grid_fixtures
+  // smart_farm_fixtures
+  // narrative_fusion_fixtures
+  createExampleInput({
+    scenario: "CREATE_TASK_CONFIG",
+    fixtures: medieval_charter_fixtures,
+    step: "Extract text from each scanned image using OCR tuned for Latin script",
+  }),
+  createExampleInput({
+    scenario: "CREATE_TASK_CONFIG",
+    fixtures: micro_grid_fixtures,
+    step: "Generate an optimized dispatch schedule that meets forecasted demand using solar, battery, and EV resources, while staying within ±0.2 Hz frequency deviation",
+  }),
+  createExampleInput({
+    scenario: "CREATE_TASK_CONFIG",
+    fixtures: smart_farm_fixtures,
+    step: "Check the operational readiness of harvesters, drones, and grain dryers",
+  }),
+  createExampleInput({
+    scenario: "CREATE_TASK_CONFIG",
+    fixtures: narrative_fusion_fixtures,
+    step: "Write a short story based on the concept of bioluminescent fungi",
+  }),
+  createExampleInput({
+    fixtures: deep_sea_fixtures,
+    scenario: "UPDATE_TASK_CONFIG",
+    step: "Enhance sonar mapping by including marine life detection alongside terrain analysis at Mariana Trench",
+    responseChoiceExplanation: `The original task config focused on underwater terrain mapping. Since the agent already supports marine life detection and this new task merely extends the input and description to reflect that optional feature, an update is appropriate.`,
+    override: {
+      agents: () => {
+        return [
+          {
+            ...deep_sea_fixtures.agents.get("underwater_terrain_mapper"),
+            description: `Analyzes local flora to identify and validate nectar sources or butterfly host plant compatibility using satellite and ground survey data.`,
+            instructions: `Context: The agent is designed to analyze local flora at a specified location to determine either nectar suitability for beekeeping or host compatibility for butterflies.
+Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production or suitability as butterfly host plants using relevant database lookups.
+Response format: The agent will output either nectar suitability data or butterfly host compatibility data depending on the input parameters.`,
+          },
+        ] as any; // FIXME any
+      },
+      step: (step) => {
+        return {
+          ...step,
+          resource: {
+            type: "task",
+            task: deep_sea_fixtures.tasks.get(
+              "sonar_mapping_underwater_terrain",
+            ),
+          },
+        };
+      },
+    },
+    update: {
+      taskConfigInput: `{ "zone_name": "<zone_name>", "scan_resolution": "<scan_resolution>", "depth_range": "<depth_range>", "bio_frequency_range": "<bio_frequency_range>", "organism_filter": "<organism_filter>" }`,
+      description: `Conduct sonar mapping to identify underwater terrain features in the specified <zone_name> using the given <scan_resolution> and <depth_range>. When biological input parameters are provided, also detect marine life using <bio_frequency_range> and <organism_filter>. Return integrated terrain and biological sonar data as output.`,
+    },
+  }),
+  createExampleInput({
+    scenario: "SELECT_TASK_CONFIG",
+    fixtures: beekeeping_site_fixtures,
+    step: "Analyze local flora at Meadowland Reserve for nectar sources suitable for beekeeping",
+  }),
+  createExampleInput({
+    scenario: "SELECT_TASK_CONFIG",
+    fixtures: deep_sea_fixtures,
+    step: "Conduct basic sonar mapping to identify underwater terrain features in the Puerto Rico Trench",
+  }),
+  createExampleInput({
+    scenario: "SELECT_TASK_CONFIG",
+    fixtures: narrative_fusion_fixtures,
+    step: "Write a short story based on the concept of ancient desert rituals",
+  }),
+  createExampleInput({
+    scenario: "TASK_CONFIG_UNAVAILABLE",
+    fixtures: beekeeping_site_fixtures,
+    step: "Analyze local flora at Sunnybrook Farm for nectar sources suitable for butterfly host plants",
+    override: {
+      agents: (original) => {
+        // Remove last agent config to trigger TASK_CONFIG_UNAVAILABLE
+        return original.slice(0, -1);
+      },
+    },
+    note: 'Missing related agent config',
+    responseChoiceExplanation: "The specified agent type 'flora_butterfly_host_analysis' does not appear in the list of existing agent configs. Therefore, the task configuration cannot proceed.",
+    explanation: "Agent type 'flora_butterfly_host_analysis' not found in existing agent configs.",
+  }),
   //   {
   //     title: "UPDATE_TASK_CONFIG",
   //     subtitle: "Generalize restaurant recommendations",

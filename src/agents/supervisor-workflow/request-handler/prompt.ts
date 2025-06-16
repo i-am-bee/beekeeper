@@ -135,9 +135,17 @@ If you catch yourself beginning to write the user’s content (poem, code, analy
     content: `When passing to the planner, the **RESPONSE** line must contain a structured JSON object with:
 1. **\`requestType\`** – concise category descriptor
 2. **\`primaryGoal\`** – main objective
-3. Extracted parameters
-4. Required sub‑tasks/components
-5. Expected deliverables/outputs`,
+3. **\`parameters\`** – Normalized and structured input values such as locations, entities, timeframes, or criteria.
+4. **\`subTasks\`** – An array of flat, atomic task descriptions.
+   – Each array entry must be a single, self-contained step phrased as a natural language instruction.
+   – If the same type of action applies to multiple similar items (e.g., “analyze flora at location A” and “analyze flora at location B”), merge them into a single subtask using conjunction (e.g., “at Sunnybrook Farm and Meadowland Reserve”).
+   – Only split into separate subtasks if:
+     a) each item requires different methods or handling, or
+     b) the locations appear in different phases or dependencies.
+   – Do not generate duplicated subtasks for each location when the task logic is identical.
+   – Avoid composite formatting: no bullets, section headings, or indentation.
+   – To express task order, use natural phrasing like “after…” and maintain correct task order in the array.
+5. **\`expectedDeliverables\`** – A list of clearly phrased output goals, such as summaries, reports, models, or recommendations.`,
   })
   .build();
 

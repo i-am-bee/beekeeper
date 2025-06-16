@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { SUPERVISOR_AGENT_ID } from "@/agents/supervisor-workflow/__test__/defaults.js";
 import { getChatLLM } from "@/helpers/llm.js";
+import boston_trip_fixtures from "@agents/supervisor-workflow/fixtures/__test__/boston-trip/index.js";
 import narrative_fusion_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/narrative-fusion/index.js";
 import smart_farm_harvest_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import micro_grid_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
+import medieval_charter_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
+import beekeeping_site_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
+import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import { Logger } from "beeai-framework";
 import { describe, expect, it } from "vitest";
 
@@ -23,10 +27,10 @@ const onUpdate = () => ({});
  * All tests should be marked as `.fails()`.
  */
 describe("TaskRunInitializer (Playground)", () => {
-  it.fails(`play`, async () => {
+  it(`play`, async () => {
     // Setup playground
-    const fixtures = micro_grid_fixtures; // Chose fixture
-    const stepNo = 1; // Chose step number (first is 1)
+    const fixtures = deep_sea_fixtures; // Chose fixture
+    const stepNo = 5; // Chose step number (first is 1)
 
     const taskRunInitializer = getTaskRunInitializerTool(logger, agentId);
 
@@ -45,13 +49,13 @@ describe("TaskRunInitializer (Playground)", () => {
           previousSteps,
           taskStep,
           actingAgentId: agentId,
-          originTaskRunId: 'not-set', // Example value, adjust as needed
+          originTaskRunId: "not-set", // Example value, adjust as needed
         },
         userMessage,
       },
       { llm, actingAgentId: agentId, onUpdate },
     );
 
-    expect(resp).toBe({});
+    expect(resp.type).toBe("SUCCESS");
   });
 });

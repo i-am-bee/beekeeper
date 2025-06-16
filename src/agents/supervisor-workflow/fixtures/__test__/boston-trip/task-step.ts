@@ -13,80 +13,93 @@ type ToolName = FixtureName<typeof toolsFixtures>;
 const ENTRIES = [
   {
     no: 1,
-    step: "Identify historical sites in Back Bay",
-    inputOutput: "input: location; output: list of sites",
+    step: "Find historical sites in Boston, specifically in the Back Bay area",
+    inputOutput: `input: location "Back Bay"; output: list of historical sites`,
     resource: createResourceFixtures(
       {
-        tools: ["historical_sites_search_api"] as const satisfies ToolName[],
         type: "tools",
+        tools: ["historical_sites_search_api"] as const satisfies ToolName[],
       },
       {
-        agent: agentsFixtures.get("historical_sites_identifier"),
         type: "agent",
+        agent: agentsFixtures.get("historical_sites_finder"),
       },
       {
-        task: tasksFixtures.get("identify_historical_sites"),
         type: "task",
+        task: tasksFixtures.get("find_historical_sites"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("find_historical_sites_1"),
       },
     ),
   },
   {
     no: 2,
-    step: "Find upcoming hockey/basketball game schedules in a given location",
-    inputOutput: "input: sport, location; output: game list",
+    step: "Search for sports events happening in Boston during the user's stay",
+    inputOutput: `input: location "Boston", duration "3 days"; output: sports event schedule and ticket information`,
     resource: createResourceFixtures(
       {
-        tools: ["tavily_search_api"] as const satisfies ToolName[],
         type: "tools",
+        tools: ["tavily_search_api"] as const satisfies ToolName[],
       },
       {
-        agent: agentsFixtures.get("game_scheduler"),
         type: "agent",
+        agent: agentsFixtures.get("sports_events_searcher"),
       },
       {
-        task: tasksFixtures.get("find_sports_game_schedules"),
         type: "task",
+        task: tasksFixtures.get("search_sports_events"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("search_sports_events_1"),
       },
     ),
   },
   {
     no: 3,
-    step: "Recommend Italian, Chinese, and French restaurants in Back Bay for each day",
-    inputOutput:
-      "input: dining preferences, location, days; output: restaurant list",
+    step: `Search for dining recommendations for Italian, Chinese, and French cuisine in Boston`,
+    inputOutput: `input: location "Boston", dining preferences ["Italian", "Chinese", "French"]; output: dining recommendations`,
     resource: createResourceFixtures(
       {
-        tools: ["tavily_search_api"] as const satisfies ToolName[],
         type: "tools",
+        tools: ["tavily_search_api"] as const satisfies ToolName[],
       },
       {
-        agent: agentsFixtures.get("restaurant_recommender"),
         type: "agent",
+        agent: agentsFixtures.get("dining_recommendations_searcher"),
       },
       {
-        task: tasksFixtures.get("recommend_restaurants"),
         type: "task",
+        task: tasksFixtures.get("search_dining_recommendations"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("search_dining_recommendations_1"),
       },
     ),
   },
   {
     no: 4,
-    dependencies: [1, 2, 3],
-    step: "Create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions",
-    inputOutput:
-      "input: historical sites [from Step 1], games [from Step 2], restaurants [from Step 3]; output: detailed itinerary",
+    step: `Compile a 3-day itinerary including historical site visits, sports events, and dining recommendations`,
+    inputOutput: `input: historical sites [from Step 1], sports events [from Step 2], dining recommendations [from Step 3]; output: complete 3-day itinerary`,
     resource: createResourceFixtures(
       {
-        tools: [],
         type: "tools",
+        tools: [] as const satisfies ToolName[],
       },
       {
-        agent: agentsFixtures.get("itinerary_creator"),
         type: "agent",
+        agent: agentsFixtures.get("itinerary_compiler"),
       },
       {
-        task: tasksFixtures.get("create_3_day_itinerary"),
         type: "task",
+        task: tasksFixtures.get("compile_itinerary"),
+      },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get("compile_itinerary_1"),
       },
     ),
   },

@@ -11,6 +11,8 @@ import medieval_charter_fixtures from "../../fixtures/prompt/showcases/medieval-
 import micro_grid_fixtures from "../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
 import smart_farm_fixtures from "../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative-fusion/index.js";
+import beekeeping_site_fixtures from "../../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
+import deep_sea_fixtures from "../../fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import { ProblemDecomposer } from "./problem-decomposer.js";
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
@@ -25,8 +27,8 @@ const onUpdate = () => ({});
  * All tests should be marked as `.fails()`.
  */
 describe(`Problem Decomposer (Playground)`, () => {
-  it.fails(`pick fixture`, async () => {
-    const fixtures = narrative_fusion_fixtures; // Choose fixture
+  it(`play`, async () => {
+    const fixtures = deep_sea_fixtures; // Choose fixture
 
     const problemDecomposer = new ProblemDecomposer(
       logger,
@@ -50,10 +52,6 @@ describe(`Problem Decomposer (Playground)`, () => {
       { llm, actingAgentId: agentId, onUpdate },
     );
 
-    if (resp.type !== "SUCCESS") {
-      throw new Error(`Problem Decomposer failed: ${resp.explanation}`);
-    }
-
-    expect(resp.result).toBe({});
+    expect(resp.type).toEqual('SUCCESS');
   });
 });

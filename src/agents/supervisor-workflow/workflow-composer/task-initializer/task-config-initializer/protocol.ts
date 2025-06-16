@@ -83,7 +83,7 @@ export const protocol = laml.ProtocolBuilder.new()
     attributes: laml.ProtocolBuilder.new().text({
       name: "explanation",
       description:
-        "Brief reason why you are unable to create, update, or select an existing task config",
+        "Clear, objective reason why config cannot be selected, updated, or created",
     }),
   })
   .build();

@@ -45,7 +45,7 @@ export class TaskStepMapper {
     taskStep: string,
     taskNo: number,
     resources: Resources,
-  ): TaskStep {
+  ): TaskStep | TaskStepResourceAssignError {
     const parsedTaskStep = textSplitter(taskStep, ["(", ")", "[", "]"], true);
     const assignmentPart = parsedTaskStep[0].trim();
     const inputOutputPart = parsedTaskStep[1].trim();
@@ -67,7 +67,7 @@ export class TaskStepMapper {
       );
 
       if (missingTools.length > 0) {
-        throw new TaskStepResourceAssignError(
+        return new TaskStepResourceAssignError(
           `Step ${taskNo} references a non-existent tool(s): \`${missingTools.join(", ")}\``,
           "tool",
           missingTools,
@@ -88,7 +88,7 @@ export class TaskStepMapper {
         (agent) => agent.agentType === agentType,
       );
       if (!foundAgent) {
-        throw new TaskStepResourceAssignError(
+        return new TaskStepResourceAssignError(
           `Step ${taskNo} has assigned non-existing agent: \`${agentType}\``,
           "agent",
           agentType,
@@ -105,7 +105,7 @@ export class TaskStepMapper {
         (task) => task.taskType === taskType,
       );
       if (!foundTask) {
-        throw new TaskStepResourceAssignError(
+        return new TaskStepResourceAssignError(
           `Step ${taskNo} has assigned non-existing task: \`${taskType}\``,
           "task",
           taskType,
@@ -121,7 +121,7 @@ export class TaskStepMapper {
         (run) => run.taskRunId === taskRunId,
       );
       if (!foundTaskRun) {
-        throw new TaskStepResourceAssignError(
+        return new TaskStepResourceAssignError(
           `Step ${taskNo} has assigned non-existing task run: \`${taskRunId}\``,
           "task_run",
           taskRunId,

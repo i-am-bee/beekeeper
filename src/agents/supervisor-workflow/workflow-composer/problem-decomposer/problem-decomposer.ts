@@ -7,6 +7,10 @@ import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { ProblemDecomposerInput, ProblemDecomposerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
+import {
+  assertTaskStepResourceType,
+  assertTaskSteps,
+} from "../helpers/task-step/helpers/assert.js";
 
 export class ProblemDecomposer extends LLMCall<
   typeof protocol,
@@ -49,11 +53,11 @@ export class ProblemDecomposer extends LLMCall<
           });
 
           const counts = countBy(
-            stepsErrors.map((e) => e.resource.type),
+            stepsErrors.map((e) => e.resourceType),
             (type) => type,
           );
           const missingAnyAgent = (counts.agent ?? 0) > 0;
-          const missingAnyTool = (counts.tools ?? 0) > 0;
+          const missingAnyTool = (counts.tool ?? 0) > 0;
           const missingAnyTask = (counts.task ?? 0) > 0;
 
           const {
@@ -89,6 +93,7 @@ Please address these issues and provide the corrected response:`;
             explanation,
           };
         }
+        assertTaskSteps(steps);
 
         // Invented parameters
         const stepsWithInventedParams = steps.filter(

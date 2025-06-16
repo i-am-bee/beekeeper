@@ -2,10 +2,17 @@ import * as laml from "@/laml/index.js";
 import { examplesEnabled } from "../../helpers/env.js";
 import { BodyTemplateBuilder } from "../../templates/body.js";
 import { ChatExampleTemplateBuilder } from "../../templates/chat-example.js";
-import { ExampleInput } from "./__tests__/helpers/create-example-input.js";
+import {
+  createExampleInput,
+  ExampleInput,
+} from "./__tests__/helpers/create-example-input.js";
 import { ProblemDecomposerInput } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
+import medieval_charter_fixtures from "../../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
+import micro_grid_fixtures from "../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
+import smart_farm_fixtures from "../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
+import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative-fusion/index.js";
 
 export const prompt = ({
   resources: {
@@ -145,7 +152,7 @@ const decisionCriteria = BodyTemplateBuilder.new()
 1. **Favor solvability, but be rigorous.** Attempt the plan only if every step has a matching resource.  
 2. **Assumptions must be minimal and explicit.** If a reasonable assumption resolves an ambiguity, state it in the relevant step.
   a. Examples of acceptable defaults: interpreting “last 24 hours” as now minus 24 h → now; treating the absence of sentiment filters as “no sentiment filtering”.  
-3. **Granularity.** A STEP_SEQUENCE should contain 3–10 high‑level, generic actions, but choose the set of resources that most completely fulfils the requested deliverables — even if this requires additional tools or extra steps beyond the bare minimum. 
+3. **Granularity.** A STEP_SEQUENCE should contain 3–10 high‑level, generic actions. Prefer resource combinations that yield complete, multi-dimensional outcomes — not merely the shortest path. Choose the richest available set of resources (even across multiple tools) that collectively fulfill the user's deliverables.
 4. **Resource check.** Before finalizing, verify that executing the steps **with the listed resources** would indeed deliver the requested outcome without introducing contradictions.  
 5. **Chain of tool calls.** If the deliverables require information that no single tool returns, decompose the task into multiple tool calls.
 6. **Consistency check.** Ensure the ordered steps flow logically toward the goal.
@@ -167,8 +174,9 @@ const decisionCriteria = BodyTemplateBuilder.new()
 
 1. When referencing a tool in any \`[tools: tool1_name, tool2_name ...]\` square brackets, you **MUST** pick **one or more** tools **only if no task or agent is chosen for that step** that appears in the current “Available agent tools” list.  
 2. **Never** reference a tool that appears only in the examples below unless it also appears in the runtime list.  
-3. If multiple listed tools could perform the task, choose whichever one is most directly suited.`,
-  })
+3. When a single tool offers only partial coverage of a conceptual task (e.g., analysis), include additional tools that cover other essential perspectives (e.g., structure, behavior, distribution, interaction). Do this even if the user does not explicitly request those dimensions, as long as they align with the goal.`,
+// 3. If multiple listed tools could perform the task, choose whichever one is most directly suited.
+})
   .build();
 
 const guidelines = BodyTemplateBuilder.new()
@@ -196,34 +204,58 @@ const guidelines = BodyTemplateBuilder.new()
    - Either explicitly provided in user message,
    - Produced by a previous step (with [from Step X]),
    - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
-   If any input cannot be traced in this way, the step — and the whole problem — must be marked \`MISSING_INPUTS\`. Do not invent values (e.g., blockIds, siteIds) without justification.
+   If any input cannot be traced in this way, the step — and the whole problem — must be marked **MISSING_INPUTS**. Do not invent values (e.g., blockIds, siteIds) without justification.
+   **Examples**: 
+   - INCORRECT: "Query database (input: customer records; output: analysis)" ← Missing source, vague
+   - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history)"
+   - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report)"
+   - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report)"
 4. Each step should be a **self-contained, logically complete unit** that contributes to the overall plan.
+   a. If a task involves analysis, evaluation, assessment, or suitability scoring, treat it as requiring multi-dimensional coverage (e.g., species identification, nectar analysis, environmental context).
+      However, you must encapsulate the full analysis into a single step if the user describes it as one coherent goal (e.g., "Analyze flora for beekeeping suitability").
+      Use multiple tools inside that step to achieve complete coverage.
 5. Clearly indicate whether the step uses a **task**, an **agent**, a **tool**, or is handled by general **LLM capabilities**.
-6. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”).
+6. **Step mapping to subTasks.** If the user provides a structured set of subtasks or high-level expectations (e.g., "subTasks", "goalSteps", "expectedSteps"), you must align your step_sequence 1:1 with those user-defined steps.
+   - Each step in step_sequence should map to exactly one user-provided subtask.
+   - Within each step, multiple tools may be composed if needed to fulfill the subtask completely.
+   - This enables high-level reasoning while preserving internal resource chaining.
+   - You must not fragment subtasks into separate lower-level steps unless the user omitted a breakdown or the goal cannot be completed otherwise.
+7. Step compactness enforcement when user-defined steps are present
+   If the user provides a structured list of subtasks, goals, or expected deliverables (e.g., under fields like "subTasks", "steps", or "objectives"), you must not break those down into lower-level tool-specific steps.
+   Instead, treat each user-defined step as the unit of decomposition, and compose multiple tools inside that step as needed to fulfill it.
+   - Example: Do not generate one step per API/tool invocation if the user's subtask describes a single cohesive analysis or operation.
+   - It is acceptable to combine several tool calls (e.g., for identification, validation, enrichment, scoring, etc.) into one step, as long as they all contribute to a single user-defined subtask.
+   - Only decompose further when no user-provided subtasks exist, or when it is necessary to surface unresolvable dependencies or execution gaps.
+   - You must ensure that the number of step_sequence items exactly matches the number of user-defined subtasks (unless a subtask is genuinely unsolvable or requires branching).
+
+   * If the user provides \`subTasks\`, you **must output exactly one step per subtask**. Do **not** fragment a subtask into multiple steps unless the subtask itself implies branching or internal contradiction.
+   * This alignment is **mandatory**. If tool chaining is required to fulfill a subtask, perform it inside a **single composed step**.
+
+8. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”).
    - If a step requires multiple inputs from previous steps, list each input separately and explicitly indicate the originating step number. Do not group multiple inputs into a single vague description.
    - **Example**: Compose a summary report (input: market analysis [from Step 1], customer feedback [from Step 2], competitive review [from Step 3]; output: comprehensive report) [LLM]
    - All traceable input references (e.g., tag [from Step 1]) must be placed inside quotation marks to form valid string values (e.g., "tag [from Step 1]") in JSON-style input structures. Do not use <...> placeholders.
-7. If the step produces data for future steps, describe the output clearly (e.g., "produces list of top 5 destinations").
-8. Avoid vague phrasing. Prefer specific tasks with clear outputs and actionable parameters.
-9. **Exactly one resource category per step.**  
+9. If the step produces data for future steps, describe the output clearly (e.g., "produces list of top 5 destinations").
+10. Avoid vague phrasing. Prefer specific tasks with clear outputs and actionable parameters.
+11. **Exactly one resource category per step.**  
    Each step must declare **one resource *type*** (\`task\`, \`agent\`, or \`tools/LLM\`):   
    - If the type is \`tools\`, you may list **one or more tool names** inside the same brackets.  
    - If the type is \`agent\`, you may implicitly rely on that agent’s internal tool calls *and* LLM reasoning.  
    - \`LLM\` means no external tools are required. 
    Do not mix resource *types* in a single step (e.g. avoid “[agent: …, tools: …]”), but multiple tool names are fine within a single \`[tools: …]\` list.
-10. **Priority order when choosing a resource:**  
+12. **Priority order when choosing a resource:**  
    1) existing **task**  
    2) existing **agent**  
    3) appropriate **tool(s)**  
    4) **LLM** (only if none of the above exist).  
    If two categories are possible, pick the higher-priority one and *do not* list the others.
-11. If no suitable resource exists for a required step, mark the entire problem **UNSOLVABLE**.
-12. Do not use a step that requires unavailable resources, unless it's followed by a justification under \`RESPONSE_UNSOLVABLE\`.
-13. Format each step as a single line including:
+13. If no suitable resource exists for a required step, mark the entire problem **UNSOLVABLE**.
+14. Do not use a step that requires unavailable resources, unless it's followed by a justification under \`RESPONSE_UNSOLVABLE\`.
+15. Format each step as a single line including:
     - the **imperative description** of the task,
     - followed by \`(input: input 1, input 2 [source: assumed] ... ; output: output 1, output 2 ...)\`,
     - followed by a resource in square brackets: \`[tools: tool_name_1, tool_name_2...]\`, \`[agent: agent_name]\`, \`[task: task_name]\`, or \`[LLM]\`.
-14. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
+16. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
     - Is directly present in user message, OR
     - Is produced by a prior step (explicitly using [from Step X]), OR
     - Is justified with a clearly written default assumption in the step itself (explicitly using [source: assumed]).
@@ -259,7 +291,7 @@ Generate directions from the user’s current location to the nearest shelter (i
    - It is not produced by an earlier step,
    - It cannot be resolved through a minimal, explicit assumption,
    - And no existing tool/agent/task can plausibly generate it as a substep.
-2. The missing input must be **essential** to achieving the stated goal. Do not trigger \`MISSING_INPUTS\` for optional, cosmetic, or secondary attributes.
+2. The missing input must be **essential** to achieving the stated goal. Do not trigger **MISSING_INPUTS** for optional, cosmetic, or secondary attributes.
 3. Your explanation **must clearly identify**:
    - What the missing input(s) are,
    - Why they are required,
@@ -313,18 +345,22 @@ const examples = ((inputs: ExampleInput[]) =>
   //   scenario: "STEP_SEQUENCE",
   //   fixtures: disaster_relief_fixtures,
   // }),
-  // createExampleInput({
-  //   scenario: "STEP_SEQUENCE",
-  //   fixtures: medieval_charter_digitisation_fixtures,
-  // }),
-  // createExampleInput({
-  //   scenario: "STEP_SEQUENCE",
-  //   fixtures: micro_grid_fixtures,
-  // }),
-  // createExampleInput({
-  //   scenario: "STEP_SEQUENCE",
-  //   fixtures: smart_farm_fixtures,
-  // }),
+  createExampleInput({
+    scenario: "STEP_SEQUENCE",
+    fixtures: medieval_charter_fixtures,
+  }),
+  createExampleInput({
+    scenario: "STEP_SEQUENCE",
+    fixtures: micro_grid_fixtures,
+  }),
+  createExampleInput({
+    scenario: "STEP_SEQUENCE",
+    fixtures: smart_farm_fixtures,
+  }),
+  createExampleInput({
+    scenario: "STEP_SEQUENCE",
+    fixtures: narrative_fusion_fixtures,
+  }),
   // TODO Original examples can be removed once the new ones are OK
   //   {
   //     title: "STEP_SEQUENCE",
@@ -902,7 +938,8 @@ const examples = ((inputs: ExampleInput[]) =>
   //     },
   //   },
   {
-    title: "UNSOLVABLE",
+    // DONE
+    title: "MISSING_INPUTS",
     subtitle: "Route optimization for delivery planning",
     context: {
       resources: {
@@ -932,7 +969,7 @@ const examples = ((inputs: ExampleInput[]) =>
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "The request matches the system’s capabilities but is missing critical inputs that cannot be generated.",
-      RESPONSE_TYPE: "UNSOLVABLE",
+      RESPONSE_TYPE: "MISSING_INPUTS",
       RESPONSE_UNSOLVABLE: {
         explanation: `The system can plan and optimize a delivery route, but it needs at least one valid destination address to proceed. Since no address or delivery point was included in the request, and there is no available tool to look it up, the task cannot continue. For example, providing an address like "Main Street 42, Springfield" would enable route planning.`,
       },
