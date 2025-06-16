@@ -1,8 +1,8 @@
-// 1. Receive request
+// 1. Receive request (Request handler)
 // -> Direct answer
 // -> Clarification
 // -> Pass to planner
-// 2. Create a plan
+// 2. Create a plan (Problem decomposer)
 // -> Return it is unsolvable
 // -> Pass to execution
 // 3. Execution

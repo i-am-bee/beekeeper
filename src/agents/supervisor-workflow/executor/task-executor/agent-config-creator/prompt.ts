@@ -1,41 +1,121 @@
 import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
-import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
-import * as laml from "@/laml/index.js";
-import { AgentConfigCreatorInput, ExistingAgentConfig } from "./dto.js";
+import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
+import { ExistingAgentConfig } from "./dto.js";
+import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
+import { ExistingResourcesBuilder } from "./templates.js";
 import { protocol } from "./protocol.js";
+import * as laml from "@/laml/index.js";
 
+const guidelines = BodyTemplateBuilder.new()
+  .section({
+    title: {
+      text: "Response header",
+      level: 3,
+    },
+    content: `1. \`RESPONSE_CHOICE_EXPLANATION\` – justifying your choice.  
+2. \`RESPONSE_TYPE\` – exactly one of: \`CREATE_AGENT_CONFIG\`, \`UPDATE_AGENT_CONFIG\`, \`SELECT_AGENT_CONFIG\`, \`AGENT_CONFIG_UNAVAILABLE\` without extra white spaces or new lines.
+These two lines are **mandatory** and must appear first, each on its own line.`,
+  })
+  .section({
+    title: {
+      text: "CREATE_AGENT_CONFIG",
+      level: 3,
+    },
+    content: `Use only when a fresh agent is required.  
+- \`agent_type\`: a unique, descriptive snake_case name (lowercase, no spaces).  
+- \`description\`: 1-2 sentences on the agent’s mission and scope.  
+- \`instructions\`: multi-line, structured prose. Recommended subsections: **Context**, **Objective**, **Response format**. Keep it concise yet complete.  
+- \`tools\`: *only* canonical tool identifiers drawn from the **Available agent tools** list, comma-separated. Never invent tools.  
+- Do **not** duplicate information found in the global task description; focus on what the new agent must know.`,
+  })
+  .section({
+    title: {
+      text: "UPDATE_AGENT_CONFIG",
+      level: 3,
+    },
+    content: `Choose when the existing agent’s purpose stays the same but small tweaks are needed.  
+- Repeat \`agent_type\` **unchanged**.  
+- Include only the fields you are changing; omit untouched fields.  
+- When altering \`tools\`, ensure every added tool exists in **Available agent tools** and every removed tool is truly unnecessary.  
+- Keep edits minimal: fix clarity, widen scope slightly, or prune excess—never repurpose.`,
+  })
+  .section({
+    title: {
+      text: "SELECT_AGENT_CONFIG",
+      level: 3,
+    },
+    content: `Pick this when an existing agent covers the task “as-is.”  
+- Provide just the \`agent_type\`.  
+- Do not append any other keys or explanatory text.`,
+  })
+  .section({
+    title: {
+      text: "AGENT_CONFIG_UNAVAILABLE",
+      level: 3,
+    },
+    newLines: {
+      contentEnd: 0,
+    },
+    content: `Return when no viable creation or update path exists.  
+- Provide an \`explanation\` that plainly cites the blocking gap (missing tool, policy limit, out-of-scope request, etc.).  
+- Keep it brief and factual—no speculation, apologies, or alternative brainstorming.`,
+  })
+  .build();
 
+const decisionCriteria = BodyTemplateBuilder.new()
+  .section({
+    title: {
+      text: "AGENT_CONFIG_UNAVAILABLE",
+      level: 3,
+    },
+    content: `Use **always** when:
+- There is no suitable available agent tool or existing agent config.
+- The task requires **capabilities none of the available tools provide**.
+- Neither selecting, updating, nor creating an agent can achieve the goal due to **tool limitations or policy constraints**.
+- The request is **out of platform scope** or would violate usage guidelines.
+- Any viable solution would demand **external resources** beyond the current environment.`,
+  })
+  .section({
+    title: {
+      text: "SELECT_AGENT_CONFIG",
+      level: 3,
+    },
+    content: `Use **always** when:
+- An existing agent’s mission and capabilities **already cover the task needs** (e.g., agent specialized to recommend vegan restaurants can't be selected to recommend chinese restaurants).
+- The agent’s current **tool set is sufficient**; no additions or removals are needed.
+- Only **runtime inputs** (keywords, location, dates, etc.) change—**no structural edits** to the config.
+- The agent’s **response format and scope** fully satisfy the user request without modification.
+- The agent capabilities are more general then the requested.`,
+  })
+  .section({
+    title: {
+      text: "UPDATE_AGENT_CONFIG",
+      level: 3,
+    },
+    content: `Use **always** when:
+- The agent’s **core purpose remains unchanged**, but tweaks are required for the new task.
+- You need to **add or remove tools** while keeping the same overarching mission.
+- The task demands a **broader or narrower scope** (e.g., more cuisines, shorter time window) still within the original domain.
+- Minor **instruction, formatting, or clarity improvements** (tone, extra fields, typo fixes) will make the agent compliant.
+- You are **refreshing outdated details** or eliminating redundancies without repurposing the agent.`,
+  })
+  .section({
+    title: {
+      text: "CREATE_AGENT_CONFIG",
+      level: 3,
+    },
+    content: `Use **always** when:
+- **No existing agent** meaningfully aligns with the task’s objective.
+- Meeting the request would **fundamentally repurpose** any current agent.
+- The task needs a **new combination of tools, domain knowledge, or output format** not present in any config.
+- A fresh config can be built with the **available tool set** to fulfill the request cleanly.
+Use **NEVER** when:
+- There is no suitable available tool critical for agent assignment.
+- There is existing a less specialized agent config that can complete the task.`,
+  })
+  .build();
 
-const printExistingAgentConfigs = (configs?: ExistingAgentConfig[]) =>
-  !configs?.length
-    ? "There is no existing agent configs yet."
-    : laml.printLAMLObject(
-        configs.reduce((acc, curr, idx) => {
-          Object.assign(acc, {
-            [`${idx + 1}. ${curr.agentType}`]: {
-              agent_type: curr.agentType,
-              instructions: curr.instructions,
-              description: curr.description,
-              tools: curr.tools,
-            },
-          } satisfies laml.dto.LAMLObject);
-          return acc;
-        }, {}),
-      );
-
-const printAvailableTools = (tools?: AgentAvailableTool[]) =>
-  !tools?.length
-    ? "There is no available agent tools."
-    : laml.printLAMLObject(
-        tools.reduce((acc, curr, idx) => {
-          Object.assign(acc, {
-            [`${idx + 1}. ${curr.name}`]: { description: curr.description },
-          } satisfies laml.dto.LAMLObject);
-          return acc;
-        }, {}),
-      );
-
-interface PrintExampleInput {
+interface ExampleInput {
   title: string;
   subtitle: string;
   user: string;
@@ -46,138 +126,27 @@ interface PrintExampleInput {
   example: laml.ProtocolResult<typeof protocol>;
 }
 
-const printExample = ({
-  position,
-  title,
-  subtitle,
-  user,
-  context,
-  example,
-}: PrintExampleInput & {
-  position: number;
-}) => `### Example[${position}]: ${title} - ${subtitle}
-
-**Context:**
----
-${printExistingResources(context.existingAgentConfigs, context.availableTools)}
----
-**User:** ${user}
-**Assistant:**
-${protocol.printExample(example)}
-
-`;
-
-const printExamples = (examples: PrintExampleInput[]) =>
-  examples
-    .map((ex, idx) => printExample({ ...ex, position: idx + 1 }))
-    .join("");
-
-const printExistingResources = (
-  configs: ExistingAgentConfig[],
-  tools: AgentAvailableTool[],
-) => `### Existing agent configs
-${printExistingAgentConfigs(configs)}
-
-### Available agent tools
-${printAvailableTools(tools)}`;
-
-const systemPrompt = ({
-  existingConfigs,
-  availableTools,
-}: AgentConfigCreatorInput) => {
-  return `You are an **AgentConfigCreator** — the action module in a multi-agent workflow.  
-Your mission is to select, or—if none exists—create new agent configs to accomplish the task. You can also update an existing config as long as the update doesn’t change its purpose.
-
----
-
-## Existing resources
-These are the assets already at your disposal. Review them before deciding whether to create something new or update what’s there.
-
-${printExistingResources(existingConfigs, availableTools)}
-
----
-
-## Response Format
-
-${protocol.printExplanation()}
-
----
-
-## Response Guidelines
-
-### Response header  
-1. \`RESPONSE_CHOICE_EXPLANATION\` – justifying your choice.  
-2. \`RESPONSE_TYPE\` – exactly one of: \`CREATE_AGENT_CONFIG\`, \`UPDATE_AGENT_CONFIG\`, \`SELECT_AGENT_CONFIG\`, \`AGENT_CONFIG_UNAVAILABLE\` without extra white spaces or new lines.
-These two lines are **mandatory** and must appear first, each on its own line.
-
-### CREATE_AGENT_CONFIG
-Use only when a fresh agent is required.  
-- \`agent_type\`: a unique, descriptive snake_case name (lowercase, no spaces).  
-- \`description\`: 1-2 sentences on the agent’s mission and scope.  
-- \`instructions\`: multi-line, structured prose. Recommended subsections: **Context**, **Objective**, **Response format**. Keep it concise yet complete.  
-- \`tools\`: *only* canonical tool identifiers drawn from the **Available agent tools** list, comma-separated. Never invent tools.  
-- Do **not** duplicate information found in the global task description; focus on what the new agent must know.
-
-### UPDATE_AGENT_CONFIG
-Choose when the existing agent’s purpose stays the same but small tweaks are needed.  
-- Repeat \`agent_type\` **unchanged**.  
-- Include only the fields you are changing; omit untouched fields.  
-- When altering \`tools\`, ensure every added tool exists in **Available agent tools** and every removed tool is truly unnecessary.  
-- Keep edits minimal: fix clarity, widen scope slightly, or prune excess—never repurpose.
-
-### SELECT_AGENT_CONFIG
-Pick this when an existing agent covers the task “as-is.”  
-- Provide just the \`agent_type\`.  
-- Do not append any other keys or explanatory text.
-
-### AGENT_CONFIG_UNAVAILABLE
-Return when no viable creation or update path exists.  
-- Provide an \`explanation\` that plainly cites the blocking gap (missing tool, policy limit, out-of-scope request, etc.).  
-- Keep it brief and factual—no speculation, apologies, or alternative brainstorming.
-
----
-
-## Decision Criteria
-
-### AGENT_CONFIG_UNAVAILABLE
-Use **always** when:
-- There is no suitable available agent tool or existing agent config
-- The task requires **capabilities none of the available tools provide**.  
-- Neither selecting, updating, nor creating an agent can achieve the goal due to **tool limitations or policy constraints**.  
-- The request is **out of platform scope** or would violate usage guidelines.  
-- Any viable solution would demand **external resources** beyond the current environment.  
-
-### SELECT_AGENT_CONFIG
-Use **always** when:
-- An existing agent’s mission and capabilities **already cover the task needs** (e.g., agent specialized to recommend vegan restaurants can't be selected to recommend chinese restaurants).
-- The agent’s current **tool set is sufficient**; no additions or removals are needed.  
-- Only **runtime inputs** (keywords, location, dates, etc.) change—**no structural edits** to the config.  
-- The agent’s **response format and scope** fully satisfy the user request without modification.  
-- The agent capabilities are more general then the requested. 
-
-### UPDATE_AGENT_CONFIG
-Use **always** when:
-- The agent’s **core purpose remains unchanged**, but tweaks are required for the new task.  
-- You need to **add or remove tools** while keeping the same overarching mission.  
-- The task demands a **broader or narrower scope** (e.g., more cuisines, shorter time window) still within the original domain.  
-- Minor **instruction, formatting, or clarity improvements** (tone, extra fields, typo fixes) will make the agent compliant.  
-- You are **refreshing outdated details** or eliminating redundancies without repurposing the agent.  
-
-### CREATE_AGENT_CONFIG
-Use **always** when:
-- **No existing agent** meaningfully aligns with the task’s objective.  
-- Meeting the request would **fundamentally repurpose** any current agent.  
-- The task needs a **new combination of tools, domain knowledge, or output format** not present in any config.  
-- A fresh config can be built with the **available tool set** to fulfill the request cleanly.  
-Use **NEVER** when:
-- There is no suitable available tool critical for agent assignment.
-- There is existing a less specialized agent config that can complete the task.
-
----
-
-## Examples
-
-${printExamples([
+const examples = ((inputs: ExampleInput[]) =>
+  inputs
+    .map((input, idx) =>
+      ChatExampleTemplateBuilder.new()
+        .title({
+          position: idx + 1,
+          text: input.title,
+          level: 3,
+          subtitle: input.subtitle,
+        })
+        .context(
+          ExistingResourcesBuilder.new()
+            .agentConfigs(input.context.existingAgentConfigs)
+            .availableTools(input.context.availableTools)
+            .build(),
+        )
+        .user(input.user)
+        .assistant(protocol.printExample(input.example))
+        .build(),
+    )
+    .join("\n"))([
   {
     title: "Create agent config",
     subtitle:
@@ -248,10 +217,10 @@ Response format: Begin with a summary of the search query and time frame. Then l
           agentType: "restaurant_recommendations",
           description: "Agent for recommending vegan restaurants in a city.",
           instructions: `Context: You are an agent specialized in finding vegan restaurants in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
-          
-      Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
-          
-      Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
+
+Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
+
+Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
           tools: ["google_search", "web_extract"],
         },
       ],
@@ -277,10 +246,10 @@ Response format: Begin with a summary of the search query and time frame. Then l
         agent_type: "restaurant_recommendations",
         description: "Agent for recommending restaurants in a city.",
         instructions: `Context: You are an agent specialized in finding restaurants that satisfy user-defined criteria—such as cuisine (e.g., Italian, Thai), dietary needs (e.g., vegan, gluten-free), budget, or vibe—in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
-    
-    Objective: Return a curated list of restaurants that fit the user’s parameters, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
-        
-    Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
+
+Objective: Return a curated list of restaurants that fit the user’s parameters, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
+
+Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
         tools: ["google_search", "web_extract"],
       },
     },
@@ -295,15 +264,15 @@ Response format: Begin with a summary of the search query and time frame. Then l
           description:
             "Provides current weather information for specified locations using weather condition tool.",
           instructions: `Context: You are a weather lookup agent specializing in providing current weather information for specified locations. You have access to a weather condition tool that allows you to find weather data online. Users will provide you with a location for which they want the current weather.
-        
-        Objective: Retrieve the current weather information for the specified location. Use the weather condition tool to execute a search query for the current weather in the given location. Provide details such as temperature, weather conditions, and any notable weather patterns.
-        
-        Response format: Begin with a summary of the location and current date. Then provide the current temperature, weather conditions, and any notable weather patterns. Ensure the information is clear and organized. For example:
-        
-        Current Weather in [Location] on [Date]:
-        - Temperature: [temperature]
-        - Conditions: [conditions]
-        - Notable Patterns: [patterns]`,
+
+Objective: Retrieve the current weather information for the specified location. Use the weather condition tool to execute a search query for the current weather in the given location. Provide details such as temperature, weather conditions, and any notable weather patterns.
+
+Response format: Begin with a summary of the location and current date. Then provide the current temperature, weather conditions, and any notable weather patterns. Ensure the information is clear and organized. For example:
+
+Current Weather in [Location] on [Date]:
+- Temperature: [temperature]
+- Conditions: [conditions]
+- Notable Patterns: [patterns]`,
           tools: ["weather_conditions"],
         },
       ],
@@ -344,10 +313,10 @@ Response format: Begin with a summary of the search query and time frame. Then l
           agentType: "restaurant_recommendations",
           description: "Agent for recommending restaurants in a city.",
           instructions: `Context: You are an agent specialized in recommending restaurants in a given city. You have access to web search tools to gather information about popular dining spots, including Italian, Chinese, and French cuisines. Users will provide the city and any specific dining preferences they have. 
-      
-      Objective: Provide a list of recommended restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
-      
-      Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
+
+Objective: Provide a list of recommended restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
+
+Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
           tools: ["tavily_search"],
         },
       ],
@@ -397,22 +366,86 @@ Response format: Begin with a summary of the search query and time frame. Then l
       },
     },
   },
-])}
+]);
 
----
-
-This is the task:`;
-};
-
-export class AgentConfigCreator extends LLMCall<
-  typeof protocol,
-  AgentConfigCreatorInput
-> {
-  get protocol() {
-    return protocol;
-  }
-
-  protected systemPrompt(input: AgentConfigCreatorInput) {
-    return systemPrompt(input);
-  }
-}
+export const prompt = (
+  configs: ExistingAgentConfig[],
+  tools: AgentAvailableTool[],
+) =>
+  BodyTemplateBuilder.new()
+    .introduction(
+      `You are an **AgentConfigCreator** — the action module in a multi-agent workflow.  
+Your mission is to select, or—if none exists—create new agent configs to accomplish the task. You can also update an existing config as long as the update doesn’t change its purpose.`,
+    )
+    .section({
+      title: {
+        text: "Existing resources",
+        level: 2,
+      },
+      newLines: {
+        start: 1,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: {
+        start: true,
+        end: true,
+      },
+      content: ExistingResourcesBuilder.new()
+        .agentConfigs(configs)
+        .availableTools(tools)
+        .build(),
+    })
+    .section({
+      title: {
+        text: "Response Format",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+      },
+      delimiter: { end: true },
+      content: protocol.printExplanation(),
+    })
+    .section({
+      title: {
+        text: "Response Guidelines",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: guidelines,
+    })
+    .section({
+      title: {
+        text: "Decision Criteria",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: decisionCriteria,
+    })
+    .section({
+      title: {
+        text: "Examples",
+        level: 2,
+      },
+      newLines: {
+        start: 2,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: { end: true },
+      content: examples,
+    })
+    .callToAction("This is the task")
+    .build();

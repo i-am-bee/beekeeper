@@ -2,12 +2,31 @@ import { clone, isNonNullish, omit, reverse } from "remeda";
 import * as dto from "./dto.js";
 import { protocolToSchema } from "./dto.js";
 import { Parser } from "./parser.js";
+import { printLAMLObject } from "./utils.js";
 
 export const DEFAULT_INDENT = "  ";
 export const DESCRIPTION = ``;
 
-export type ResultOfProtocol<PB> =
-  PB extends ProtocolBuilder<infer R> ? R : never;
+export type ProtocolBuilderResult<TProtocolBuilder> =
+  TProtocolBuilder extends ProtocolBuilder<infer R> ? R : never;
+
+export type ProtocolResult<TProtocol> =
+  TProtocol extends Protocol<infer R> ? R : never;
+
+type AddProp<
+  K extends string,
+  V,
+  Opt extends boolean | undefined,
+> = Opt extends true ? Partial<Record<K, V>> : Record<K, V>;
+
+/**
+ * Evaluate to `never` if the literal elements got widened.
+ * - If `V[number]` is exactly `string`, the check fails.
+ * - Otherwise the type passes through unchanged.
+ */
+type LiteralArray<V extends readonly string[]> = string extends V[number]
+  ? never
+  : V;
 
 export class ProtocolBuilder<TResult> {
   private _fields: dto.AnyField[];
@@ -20,39 +39,59 @@ export class ProtocolBuilder<TResult> {
     return new ProtocolBuilder();
   }
 
-  text<K extends string>(field: { name: K } & Omit<dto.TextField, "kind">) {
+  text<K extends string, Opt extends boolean | undefined = undefined>(
+    field: {
+      name: K;
+      isOptional?: Opt;
+    } & Omit<dto.TextField, "kind" | "name" | "isOptional">,
+  ) {
     this._fields.push({ kind: "text", ...clone(field) });
-    type Added = Record<K, string>;
+
+    type Added = AddProp<K, string, Opt>;
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  number<K extends string>(field: { name: K } & Omit<dto.NumberField, "kind">) {
+  number<K extends string, Opt extends boolean | undefined = undefined>(
+    field: { name: K } & Omit<dto.NumberField, "kind">,
+  ) {
     this._fields.push({ kind: "number", ...clone(field) });
-    type Added = Record<K, number>;
+    type Added = AddProp<K, number, Opt>;
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  integer<K extends string>(
+  integer<K extends string, Opt extends boolean | undefined = undefined>(
     field: { name: K } & Omit<dto.IntegerField, "kind">,
   ) {
     this._fields.push({ kind: "integer", ...clone(field) });
-    type Added = Record<K, number>;
+    type Added = AddProp<K, number, Opt>;
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  boolean<K extends string>(
+  boolean<K extends string, Opt extends boolean | undefined = undefined>(
     field: { name: K } & Omit<dto.BooleanField, "kind">,
   ) {
     this._fields.push({ kind: "boolean", ...clone(field) });
-    type Added = Record<K, boolean>;
+    type Added = AddProp<K, boolean, Opt>;
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  constant<K extends string>(
-    field: { name: K } & Omit<dto.ConstantField, "kind">,
-  ) {
-    this._fields.push({ kind: "constant", ...clone(field) });
-    type Added = Record<K, string>;
+  constant<
+    K extends string,
+    V extends readonly string[],
+    Opt extends boolean | undefined = undefined,
+  >(field: {
+    name: K;
+    values: LiteralArray<V>;
+    isOptional?: Opt;
+    description?: string;
+  }) {
+    this._fields.push({
+      kind: "constant",
+      ...clone(field),
+      values: [...field.values] as string[], // mutable for runtime DTO
+    });
+
+    type Added = AddProp<K, V[number], Opt>;
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
@@ -61,11 +100,16 @@ export class ProtocolBuilder<TResult> {
     return this;
   }
 
-  object<K extends string, PB extends ProtocolBuilder<any>>(
+  object<
+    K extends string,
+    PB extends ProtocolBuilder<any>,
+    Opt extends boolean | undefined = undefined,
+  >(
     args: {
       name: K;
       attributes: PB;
-    } & Omit<dto.ObjectField, "kind" | "name" | "attributes">,
+      isOptional?: Opt;
+    } & Omit<dto.ObjectField, "kind" | "name" | "attributes" | "isOptional">,
   ) {
     const { name, attributes } = args;
     this._fields.push({
@@ -74,13 +118,20 @@ export class ProtocolBuilder<TResult> {
       attributes: attributes.buildFields(),
       ...clone(omit(args, ["name", "attributes"])),
     });
-    type Added = Record<K, ResultOfProtocol<PB>>;
+
+    type Added = AddProp<K, ProtocolBuilderResult<PB>, Opt>;
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  array<K extends string>(field: { name: K } & Omit<dto.ArrayField, "kind">) {
+  array<K extends string, Opt extends boolean | undefined = undefined>(
+    field: {
+      name: K;
+      isOptional?: Opt;
+    } & Omit<dto.ArrayField, "kind" | "name" | "isOptional">,
+  ) {
     this._fields.push({ kind: "array", ...clone(field) });
-    type Added = Record<K, string>;
+
+    type Added = AddProp<K, string[], Opt>; // adjust element-type if needed
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
@@ -277,5 +328,11 @@ The format:
 \`\`\`
 ${this.toString()}
 \`\`\`<STOP HERE>`;
+  }
+
+  printExample(input: ProtocolResult<typeof this>) {
+    return `\`\`\`
+${printLAMLObject(input as dto.LAMLObject)}
+\`\`\``;
   }
 }

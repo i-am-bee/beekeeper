@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ProtocolBuilder } from "./protocol.js";
 import { Parser } from "./parser.js";
+import { ProtocolBuilder } from "./protocol.js";
 
 describe("LAML Protocol", () => {
   const protocol = ProtocolBuilder.new()
@@ -16,7 +16,7 @@ describe("LAML Protocol", () => {
         "UPDATE_AGENT_CONFIG",
         "SELECT_AGENT_CONFIG",
         "AGENT_CONFIG_UNAVAILABLE",
-      ],
+      ] as const,
       description:
         "CREATE_AGENT_CONFIG | UPDATE_AGENT_CONFIG | SELECT_AGENT_CONFIG | AGENT_CONFIG_UNAVAILABLE",
     })
@@ -115,6 +115,26 @@ RESPONSE_SELECT_AGENT_CONFIG: <!optional;object>
   agent_type: <!required;text;Name of the selected agent config type>
 RESPONSE_AGENT_CONFIG_UNAVAILABLE: <!optional;object>
   explanation: <!required;text;Detail explanation why your are not able to create, update or select existing agent config>`);
+  });
+
+  it(`Print example`, () => {
+    const example = protocol.printExample({
+      RESPONSE_CHOICE_EXPLANATION:
+        "No existing agent can gather tweets on demand; a new config is required but there is no suitable tool.",
+      RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
+      RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
+        explanation:
+          "Cannot create or update an agent because there is no tool for collect tweets.",
+      },
+    });
+
+    expect(example)
+      .toEqual(`\`\`\`
+RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a new config is required but there is no suitable tool.
+RESPONSE_TYPE: AGENT_CONFIG_UNAVAILABLE
+RESPONSE_AGENT_CONFIG_UNAVAILABLE:
+  explanation: Cannot create or update an agent because there is no tool for collect tweets.
+\`\`\``);
   });
 
   it("Missing first required field cause error", () => {
@@ -225,5 +245,32 @@ News headlines matching “<keywords>” from the past 24 hours:
 2. URL: [headline_url_2] — Summary: [headline_summary_2]`,
       },
     });
+  });
+  it("Wrong indent raises error", () => {
+    const parser = new Parser(protocol);
+    expect(() =>
+      parser.parse(`\`\`\`
+RESPONSE_CHOICE_EXPLANATION: No existing agent can gather stock split announcements on demand; a new config is required.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: stock_split_announcements
+  description: Gathers and summarizes upcoming stock split announcements for any S&P 500 company.
+  instructions: Context: You are a financial news aggregation agent. Your role is to monitor announcements related to stock splits for companies listed in the S&P 500 index. You have access to a tool that allows you to search recent SEC filings (8-K, 10-K, etc.) by company ticker. Your primary task is to identify and summarize key details of upcoming stock splits.
+
+    Objective: Search for recent SEC filings (8-K, 10-K) for S&P 500 companies that mention stock splits. Extract and summarize the critical details such as the company name, split ratio, ex-dividend date, and effective date.
+
+    Response format: Begin with a summary of the search query and the number of results found. Then, for each relevant filing, provide a concise summary of the stock split announcement, including the company name, split ratio, ex-dividend date, and effective date. Ensure the information is clear and organized, with each announcement on a new line. For example:
+
+    Stock Split Announcements:
+    1. Company: [Company Name]
+       Split Ratio: [Ratio]
+       Ex-Dividend Date: [Date]
+       Effective Date: [Date]
+
+tools: sec_filings_search
+\`\`\``),
+    )
+      .toThrowError(`Can't find field \`RESPONSE_CREATE_AGENT_CONFIG.tools\`. It should start with \`
+  tools:\` but actually starts with \`\``);
   });
 });

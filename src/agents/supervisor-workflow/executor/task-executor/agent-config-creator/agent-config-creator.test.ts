@@ -3,12 +3,14 @@ import {
   WorkflowMessage,
 } from "@/agents/supervisor-workflow/dto.js";
 import { getChatLLM } from "@/helpers/llm.js";
+import { ProtocolResult } from "@/laml/index.js";
 import { describe, expect, it } from "vitest";
-import * as agentConfigCreator from "./agent-config-creator-laml.js";
+import { AgentConfigCreator } from "./agent-config-creator.js";
 import {
   AgentConfigCreatorOutputTypeEnumSchema,
   ExistingAgentConfig,
 } from "./dto.js";
+import { protocol } from "./protocol.js";
 
 interface TestDataItem {
   name?: string;
@@ -16,10 +18,11 @@ interface TestDataItem {
   existingConfigs?: ExistingAgentConfig[];
   availableTools?: AgentAvailableTool[];
   history?: WorkflowMessage[];
-  expected: Partial<agentConfigCreator.Response>;
+  expected: Partial<ProtocolResult<typeof protocol>>;
 }
 
-const testGenerator = (dataset: TestDataItem[]) =>
+const testGenerator = (dataset: TestDataItem[]) => {
+  const agentConfigCreator = new AgentConfigCreator();
   dataset.map((item) => {
     it(item.name || item.input, async () => {
       const resp = await agentConfigCreator.run(llm, {
@@ -29,11 +32,11 @@ const testGenerator = (dataset: TestDataItem[]) =>
         existingConfigs: item.existingConfigs || [],
       });
 
-      expect(resp.parsed).toEqual(item.expected);
+      expect(resp.parsed).toMatchObject(item.expected);
       expect(resp.message.content).toBeDefined();
     });
   });
-
+};
 const llm = getChatLLM("supervisor");
 
 describe("Agent config creator - laml", () => {
@@ -53,159 +56,209 @@ describe("Agent config creator - laml", () => {
             input:
               "Collect news headlines containing related to AI from the past 24 hours.",
             expected: {
-              kind: "CREATE_AGENT_CONFIG",
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["news_search"],
+              },
             },
           },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "podcast_search",
-          //       description:
-          //         "Search a catalogue of podcast episodes by keyword and date; returns title, show, release date, and audio URL.",
-          //     },
-          //   ],
-          //   input:
-          //     "Find podcasts released this week discussing breakthroughs in gene editing and give me concise episode summaries.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "crypto_price_feed",
-          //       description:
-          //         "Stream current and historical cryptocurrency prices for major exchanges.",
-          //     },
-          //   ],
-          //   input:
-          //     "Track Bitcoin and Ethereum prices for the next 8 hours and alert me if either moves more than 3 %.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "city_events_search",
-          //       description:
-          //         "Query municipal event listings with filters for date, venue, and category; returns structured JSON.",
-          //     },
-          //   ],
-          //   input:
-          //     "List all family-friendly events happening in Central Park this weekend, including start times and ticket info.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "arxiv_search",
-          //       description:
-          //         "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
-          //     },
-          //   ],
-          //   input:
-          //     "Give me a daily digest of new arXiv papers about reinforcement learning, summarized in 3 sentences each.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "health_inspection_db",
-          //       description:
-          //         "Look up restaurant inspection scores and violations by name or address.",
-          //     },
-          //   ],
-          //   input:
-          //     "Notify me whenever a restaurant in my city scores below 80 in its latest health inspection.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "flight_price_tracker",
-          //       description:
-          //         "Track airfare quotes for specific routes and dates; supports hourly polling.",
-          //     },
-          //   ],
-          //   input:
-          //     "Monitor round-trip fares from Prague to Tokyo in October and alert when the price drops below €700.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "sec_filings_search",
-          //       description:
-          //         "Search recent SEC filings (8-K, 10-K, etc.) by company ticker.",
-          //     },
-          //   ],
-          //   input:
-          //     "Collect announcements of upcoming stock splits for any S&P 500 company and summarize the key details.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "phrase_generator",
-          //       description:
-          //         "Generate vocabulary lists and example sentences for supported languages.",
-          //     },
-          //   ],
-          //   input:
-          //     "Create a Spanish word-of-the-day exercise with a short quiz every morning at 7 AM local time.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "movie_db_search",
-          //       description:
-          //         "Query upcoming and past film releases, including cast, synopsis, and release dates.",
-          //     },
-          //   ],
-          //   input:
-          //     "Send me a weekly list of science-fiction movies premiering in theatres or streaming in the next month.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
-          // {
-          //   availableTools: [
-          //     {
-          //       name: "weather_alert_feed",
-          //       description:
-          //         "Stream National Weather Service alerts with geolocation filters.",
-          //     },
-          //   ],
-          //   input:
-          //     "Set up an agent that warns me immediately if there’s a tornado watch or warning within 50 km of my location.",
-          //   expected: {
-          //     type: AgentConfigCreatorOutputTypeEnumSchema.Values
-          //       .CREATE_AGENT_CONFIG,
-          //   },
-          // },
+          {
+            availableTools: [
+              {
+                name: "podcast_search",
+                description:
+                  "Search a catalogue of podcast episodes by keyword and date; returns title, show, release date, and audio URL.",
+              },
+            ],
+            input:
+              "Find podcasts released this week discussing breakthroughs in gene editing and give me concise episode summaries.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["podcast_search"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "crypto_price_feed",
+                description:
+                  "Stream current and historical cryptocurrency prices for major exchanges.",
+              },
+            ],
+            input:
+              "Track Bitcoin and Ethereum prices for the next 8 hours and alert me if either moves more than 3 %.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["crypto_price_feed"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "city_events_search",
+                description:
+                  "Query municipal event listings with filters for date, venue, and category; returns structured JSON.",
+              },
+            ],
+            input:
+              "List all family-friendly events happening in Central Park this weekend, including start times and ticket info.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["city_events_search"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "arxiv_search",
+                description:
+                  "Search arXiv preprints by keyword, subject area, and date; returns title, authors, abstract, and PDF link.",
+              },
+            ],
+            input:
+              "Give me a daily digest of new arXiv papers about reinforcement learning, summarized in 3 sentences each.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["arxiv_search"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "health_inspection_db",
+                description:
+                  "Look up restaurant inspection scores and violations by name or address.",
+              },
+            ],
+            input:
+              "Notify me whenever a restaurant in my city scores below 80 in its latest health inspection.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["health_inspection_db"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "flight_price_tracker",
+                description:
+                  "Track airfare quotes for specific routes and dates; supports hourly polling.",
+              },
+            ],
+            input:
+              "Monitor round-trip fares from Prague to Tokyo in October and alert when the price drops below €700.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["flight_price_tracker"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "sec_filings_search",
+                description:
+                  "Search recent SEC filings (8-K, 10-K, etc.) by company ticker.",
+              },
+            ],
+            input:
+              "Collect announcements of upcoming stock splits for any S&P 500 company and summarize the key details.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "phrase_generator",
+                description:
+                  "Generate vocabulary lists and example sentences for supported languages.",
+              },
+            ],
+            input:
+              "Create a Spanish word-of-the-day exercise with a short quiz every morning at 7 AM local time.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["phrase_generator"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "movie_db_search",
+                description:
+                  "Query upcoming and past film releases, including cast, synopsis, and release dates.",
+              },
+            ],
+            input:
+              "Send me a weekly list of science-fiction movies premiering in theatres or streaming in the next month.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["movie_db_search"],
+              },
+            },
+          },
+          {
+            availableTools: [
+              {
+                name: "weather_alert_feed",
+                description:
+                  "Stream National Weather Service alerts with geolocation filters.",
+              },
+            ],
+            input:
+              "Set up an agent that warns me immediately if there’s a tornado watch or warning within 50 km of my location.",
+            expected: {
+              RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+              RESPONSE_CREATE_AGENT_CONFIG: {
+                agent_type: expect.any(String),
+                description: expect.any(String),
+                instructions: expect.any(String),
+                tools: ["weather_alert_feed"],
+              },
+            },
+          },
         ]);
       });
     },
@@ -242,8 +295,7 @@ News headlines matching “<keywords>” from the past 24 hours:
           ],
           input: "Search headlines news exclusively focused on US president.",
           expected: {
-            kind: AgentConfigCreatorOutputTypeEnumSchema.Values
-              .UPDATE_AGENT_CONFIG,
+            RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
           },
         },
         {
@@ -267,8 +319,7 @@ News headlines matching “<keywords>” from the past 24 hours:
           input:
             "Update the historical sites search agent to focus on the 13th–15th centuries.",
           expected: {
-            kind: AgentConfigCreatorOutputTypeEnumSchema.Values
-              .UPDATE_AGENT_CONFIG,
+            RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
           },
         },
       ]);
@@ -308,8 +359,7 @@ News headlines matching “<keywords>” from the past 24 hours:
           input:
             "Collect news headlines containing related to AI from the past 24 hours.",
           expected: {
-            kind: AgentConfigCreatorOutputTypeEnumSchema.Values
-              .SELECT_AGENT_CONFIG,
+            RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
           },
         },
       ]);
@@ -348,8 +398,7 @@ News headlines matching “<keywords>” from the past 24 hours:
           ],
           input: "Transform provided text to speech",
           expected: {
-            kind: AgentConfigCreatorOutputTypeEnumSchema.Values
-              .AGENT_CONFIG_UNAVAILABLE,
+            RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
           },
         },
       ]);

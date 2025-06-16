@@ -15,7 +15,7 @@ export function pathStr(path: string[]) {
 export function unwrapString(
   value: string,
   options: {
-    start: string | string[];
+    start?: string | string[];
     end?: string | string[];
     greedy?: boolean;
   },
@@ -23,23 +23,28 @@ export function unwrapString(
   const { start, end, greedy } = options;
   const endValue = end === undefined ? start : end;
 
-  while (
-    (Array.isArray(start) ? start : [start]).some((s) => value.startsWith(s))
-  ) {
-    value = value.substring(1);
+  if (start != null) {
+    while (
+      (Array.isArray(start) ? start : [start]).some((s) => value.startsWith(s))
+    ) {
+      value = value.substring(1);
 
-    if (!greedy) {
-      break;
+      if (!greedy) {
+        break;
+      }
     }
   }
-  while (
-    (Array.isArray(endValue) ? endValue : [endValue]).some((s) =>
-      value.endsWith(s),
-    )
-  ) {
-    value = value.substring(0, value.length - 1);
-    if (!greedy) {
-      break;
+
+  if (endValue != null) {
+    while (
+      (Array.isArray(endValue) ? endValue : [endValue]).some((s) =>
+        value.endsWith(s),
+      )
+    ) {
+      value = value.substring(0, value.length - 1);
+      if (!greedy) {
+        break;
+      }
     }
   }
   return value;
@@ -59,6 +64,10 @@ export function printLAMLObject(
         ? `\n${printLAMLObject(val as LAMLObject, indent, depth + 1)}`
         : ` ${val}\n`;
     output += `${indent.repeat(depth)}${attr}:${valToPrint}`;
+  }
+
+  if (depth === 0) {
+    output = unwrapString(output, { end: ["\n"] });
   }
 
   return output;
