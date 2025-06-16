@@ -6,9 +6,8 @@ import {
   UserMessage,
 } from "beeai-framework/backend/message";
 import { AgentConfigCreatorInput } from "./dto.js";
-import { LAMLObject } from "@/laml/dto.js";
 
-const protocol = laml.ProtocolBuilder.new<Response>()
+const protocol = laml.ProtocolBuilder.new()
   .text({
     name: "RESPONSE_CHOICE_EXPLANATION",
     description:
@@ -52,8 +51,7 @@ const protocol = laml.ProtocolBuilder.new<Response>()
         description:
           "list of selected tools identifiers that this agent type can utilize",
         type: "text",
-      })
-      .buildFields(),
+      }),
   })
   .object({
     name: "RESPONSE_UPDATE_AGENT_CONFIG",
@@ -81,29 +79,24 @@ const protocol = laml.ProtocolBuilder.new<Response>()
         description:
           "list of selected tools identifiers that this agent type can utilize",
         type: "text",
-      })
-      .buildFields(),
+      }),
   })
   .object({
     name: "RESPONSE_SELECT_AGENT_CONFIG",
     isOptional: true,
-    attributes: laml.ProtocolBuilder.new()
-      .text({
-        name: "agent_type",
-        description: "Name of the selected agent config type",
-      })
-      .buildFields(),
+    attributes: laml.ProtocolBuilder.new().text({
+      name: "agent_type",
+      description: "Name of the selected agent config type",
+    }),
   })
   .object({
     name: "RESPONSE_AGENT_CONFIG_UNAVAILABLE",
     isOptional: true,
-    attributes: laml.ProtocolBuilder.new()
-      .text({
-        name: "explanation",
-        description:
-          "Detail explanation why your are not able to create, update or select existing agent config",
-      })
-      .buildFields(),
+    attributes: laml.ProtocolBuilder.new().text({
+      name: "explanation",
+      description:
+        "Detail explanation why your are not able to create, update or select existing agent config",
+    }),
   })
   .build();
 
@@ -453,26 +446,6 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
 
 This is the task:`;
 };
-
-export function toResponse(parsed: LAMLObject) {
-  switch (parsed.RESPONSE_TYPE) {
-    case "CREATE_AGENT_CONFIG":
-      return {
-        kind: parsed.RESPONSE_TYPE,
-        explanation: parsed.RESPONSE_CHOICE_EXPLANATION,
-        data: {
-          // agent_type: parsed.RESPONSE_CREATE_AGENT_CONFIG.agent_type,
-        },
-      } as CreateAgentConfigResponse;
-      break;
-    case "UPDATE_AGENT_CONFIG":
-      break;
-    case "SELECT_AGENT_CONFIG":
-      break;
-    case "AGENT_CONFIG_UNAVAILABLE":
-      break;
-  }
-}
 
 export async function run(llm: ChatModel, input: AgentConfigCreatorInput) {
   const messages: Message[] = [

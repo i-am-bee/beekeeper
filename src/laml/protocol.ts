@@ -1,10 +1,13 @@
-import { clone, isNonNullish, reverse } from "remeda";
+import { clone, isNonNullish, omit, reverse } from "remeda";
 import * as dto from "./dto.js";
 import { protocolToSchema } from "./dto.js";
 import { Parser } from "./parser.js";
 
 export const DEFAULT_INDENT = "  ";
 export const DESCRIPTION = ``;
+
+export type ResultOfProtocol<PB> =
+  PB extends ProtocolBuilder<infer R> ? R : never;
 
 export class ProtocolBuilder<TResult> {
   private _fields: dto.AnyField[];
@@ -13,33 +16,44 @@ export class ProtocolBuilder<TResult> {
     this._fields = [];
   }
 
-  static new<TResult>() {
-    return new ProtocolBuilder<TResult>();
+  static new() {
+    return new ProtocolBuilder();
   }
 
-  text(field: Omit<dto.TextField, "kind">) {
+  text<K extends string>(field: { name: K } & Omit<dto.TextField, "kind">) {
     this._fields.push({ kind: "text", ...clone(field) });
-    return this;
+    type Added = Record<K, string>;
+    return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  number(field: Omit<dto.NumberField, "kind">) {
+  number<K extends string>(field: { name: K } & Omit<dto.NumberField, "kind">) {
     this._fields.push({ kind: "number", ...clone(field) });
-    return this;
+    type Added = Record<K, number>;
+    return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  integer(field: Omit<dto.IntegerField, "kind">) {
+  integer<K extends string>(
+    field: { name: K } & Omit<dto.IntegerField, "kind">,
+  ) {
     this._fields.push({ kind: "integer", ...clone(field) });
-    return this;
+    type Added = Record<K, number>;
+    return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  boolean(field: Omit<dto.BooleanField, "kind">) {
+  boolean<K extends string>(
+    field: { name: K } & Omit<dto.BooleanField, "kind">,
+  ) {
     this._fields.push({ kind: "boolean", ...clone(field) });
-    return this;
+    type Added = Record<K, boolean>;
+    return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  constant(field: Omit<dto.ConstantField, "kind">) {
+  constant<K extends string>(
+    field: { name: K } & Omit<dto.ConstantField, "kind">,
+  ) {
     this._fields.push({ kind: "constant", ...clone(field) });
-    return this;
+    type Added = Record<K, string>;
+    return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
   comment(field: Omit<dto.CommentField, "kind">) {
@@ -47,14 +61,27 @@ export class ProtocolBuilder<TResult> {
     return this;
   }
 
-  object(field: Omit<dto.ObjectField, "kind">) {
-    this._fields.push({ kind: "object", ...clone(field) });
-    return this;
+  object<K extends string, PB extends ProtocolBuilder<any>>(
+    args: {
+      name: K;
+      attributes: PB;
+    } & Omit<dto.ObjectField, "kind" | "name" | "attributes">,
+  ) {
+    const { name, attributes } = args;
+    this._fields.push({
+      kind: "object",
+      name,
+      attributes: attributes.buildFields(),
+      ...clone(omit(args, ["name", "attributes"])),
+    });
+    type Added = Record<K, ResultOfProtocol<PB>>;
+    return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
-  array(field: Omit<dto.ArrayField, "kind">) {
+  array<K extends string>(field: { name: K } & Omit<dto.ArrayField, "kind">) {
     this._fields.push({ kind: "array", ...clone(field) });
-    return this;
+    type Added = Record<K, string>;
+    return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
   buildFields() {

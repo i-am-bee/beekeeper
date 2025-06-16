@@ -53,7 +53,7 @@ describe("Agent config creator - laml", () => {
             input:
               "Collect news headlines containing related to AI from the past 24 hours.",
             expected: {
-              kind: 'CREATE_AGENT_CONFIG',              
+              kind: "CREATE_AGENT_CONFIG",
             },
           },
           // {

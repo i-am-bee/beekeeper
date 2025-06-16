@@ -47,8 +47,7 @@ describe("LAML Protocol", () => {
           description:
             "list of selected tools identifiers that this agent type can utilize",
           type: "text",
-        })
-        .buildFields(),
+        }),
     })
     .object({
       name: "RESPONSE_UPDATE_AGENT_CONFIG",
@@ -76,29 +75,24 @@ describe("LAML Protocol", () => {
           description:
             "list of selected tools identifiers that this agent type can utilize",
           type: "text",
-        })
-        .buildFields(),
+        }),
     })
     .object({
       name: "RESPONSE_SELECT_AGENT_CONFIG",
       isOptional: true,
-      attributes: ProtocolBuilder.new()
-        .text({
-          name: "agent_type",
-          description: "Name of the selected agent config type",
-        })
-        .buildFields(),
+      attributes: ProtocolBuilder.new().text({
+        name: "agent_type",
+        description: "Name of the selected agent config type",
+      }),
     })
     .object({
       name: "RESPONSE_AGENT_CONFIG_UNAVAILABLE",
       isOptional: true,
-      attributes: ProtocolBuilder.new()
-        .text({
-          name: "explanation",
-          description:
-            "Detail explanation why your are not able to create, update or select existing agent config",
-        })
-        .buildFields(),
+      attributes: ProtocolBuilder.new().text({
+        name: "explanation",
+        description:
+          "Detail explanation why your are not able to create, update or select existing agent config",
+      }),
     })
     .build();
 

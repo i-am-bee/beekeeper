@@ -11,9 +11,7 @@ export interface TestItem {
 describe("LAML Parser", () => {
   describe("One field", () => {
     describe("Text", () => {
-      const protocol = ProtocolBuilder.new<{
-        RESPONSE_CHOICE_EXPLANATION: string;
-      }>()
+      const protocol = ProtocolBuilder.new()
         .text({
           name: "RESPONSE_CHOICE_EXPLANATION",
           description:
@@ -137,13 +135,10 @@ RESPONSE_TYPE:`,
           .object({
             name: "RESPONSE_CREATE_AGENT_CONFIG",
             isOptional: true,
-            attributes: ProtocolBuilder.new()
-              .text({
-                name: "agent_type",
-                description: "Name of the new agent config type in snake_case",
-              })
-
-              .buildFields(),
+            attributes: ProtocolBuilder.new().text({
+              name: "agent_type",
+              description: "Name of the new agent config type in snake_case",
+            }),
           })
           .build();
         const parser = new Parser(protocol);
@@ -182,11 +177,9 @@ RESPONSE_TYPE:`,
                 name: "instructions",
                 description:
                   "Natural language but structured text instructs on how agent should act",
-              })
-              .buildFields(),
+              }),
           })
           .build();
-        const parser = new Parser(protocol);
         const testData = [
           {
             name: "One level; two attributes",
@@ -220,7 +213,7 @@ News headlines matching “<keywords>” from the past 24 hours:
 
         testData.forEach(({ name, data, expected }) => {
           it(name, () => {
-            const parsed = parser.parse(data);
+            const parsed = protocol.parse(data);
             expect(parsed).toEqual(expected);
           });
         });
@@ -274,10 +267,7 @@ RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a ne
           expected: Expected<T>;
         }
 
-        interface CreateSingleFieldTestSectionConfig<
-          TResult,
-          TExpected,
-        > {
+        interface CreateSingleFieldTestSectionConfig<TResult, TExpected> {
           testData: SingleFieldTestItem<TExpected>[];
           protocol: Protocol<TResult>;
           getValue: (value: string) => string;
