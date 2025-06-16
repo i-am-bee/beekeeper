@@ -19,7 +19,6 @@ export class AgentFactory extends BaseAgentFactory<ReActAgent> {
     switch (input.agentKind) {
       case "supervisor": {
         const tools = toolsFactory.createTools(input.tools);
-
         return new ReActAgent({
           meta: {
             name: input.agentId,
