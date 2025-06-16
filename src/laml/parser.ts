@@ -386,15 +386,21 @@ export class Parser<TResult> {
             break;
           }
           const startIndex =
-            start.index + start.needle.value.length - 1 + start.needle.sign.length;
+            start.index +
+            start.needle.value.length -
+            1 +
+            start.needle.sign.length;
           if (startIndex < 0) {
             break;
           }
           const endNeedles = getNeedles(field.field.type, num + 1);
           const end = findNeedle(endNeedles);
           const endIndex = end ? end.index : rest.length;
-          const slice = endIndex >= 0 ? rest.slice(startIndex, endIndex) : rest.slice(startIndex);
-          
+          const slice =
+            endIndex >= 0
+              ? rest.slice(startIndex, endIndex)
+              : rest.slice(startIndex);
+
           const sanitized = unwrapString(slice, {
             start: [".", ")"],
           }).trim();

@@ -8,9 +8,9 @@ export const protocol = laml.ProtocolBuilder.new()
   })
   .constant({
     name: "RESPONSE_TYPE",
-    values: ["DIRECT_ANSWER", "CLARIFICATION", "PASS_TO_PLANNER"] as const,
+    values: ["DIRECT_ANSWER", "CLARIFICATION", "COMPOSE_WORKFLOW"] as const,
     description:
-      "Valid values: DIRECT_ANSWER | CLARIFICATION | PASS_TO_PLANNER",
+      "Valid values: DIRECT_ANSWER | CLARIFICATION | COMPOSE_WORKFLOW",
   })
   .comment({
     comment:
@@ -27,7 +27,7 @@ export const protocol = laml.ProtocolBuilder.new()
     description: "Prompt the user for missing or clearer input",
   })
   .text({
-    name: "RESPONSE_PASS_TO_PLANNER",
+    name: "RESPONSE_COMPOSE_WORKFLOW",
     isOptional: true,
     description:
       "A structured object captures the interpreted intent, goals, parameters, and expected deliverables of the user’s task request.",

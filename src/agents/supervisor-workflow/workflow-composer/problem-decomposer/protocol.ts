@@ -22,8 +22,6 @@ export const protocol = laml.ProtocolBuilder.new()
       name: "step_sequence",
       type: "numbered",
     }),
-  }).comment({
-    comment: 'Follow with a sequence of numbered items'
   })
   .object({
     name: "RESPONSE_UNSOLVABLE",
@@ -32,4 +30,5 @@ export const protocol = laml.ProtocolBuilder.new()
       name: "explanation",
       description: "Brief reason why you are unable to create a step sequence",
     }),
-  }).build();
+  })
+  .build();

@@ -1,4 +1,4 @@
-import { TaskRunSchema } from "@/tasks/manager/dto.js";
+import { TaskConfigSchema } from "@/tasks/manager/dto.js";
 import { z } from "zod";
 import { StepResultSchema } from "../base/dto.js";
 
@@ -7,7 +7,9 @@ export const WorkflowComposerInputSchema = z.object({
 });
 export type WorkflowComposerInput = z.infer<typeof WorkflowComposerInputSchema>;
 
-export const WorkflowComposerOutputSchema = StepResultSchema(TaskRunSchema);
+export const WorkflowComposerOutputSchema = StepResultSchema(
+  z.array(TaskConfigSchema),
+);
 export type WorkflowComposerOutput = z.infer<
   typeof WorkflowComposerOutputSchema
 >;

@@ -121,58 +121,58 @@
 //         expected: { type: RequestOutputTypeEnumSchema.Values.CLARIFICATION },
 //       },
 //       {
-//         name: "Ambiguous but multi‑step — CLARIFICATION has priority over PASS_TO_PLANNER",
+//         name: "Ambiguous but multi‑step — CLARIFICATION has priority over COMPOSE_WORKFLOW",
 //         input: "Plan a trip for me.",
 //         expected: { type: RequestOutputTypeEnumSchema.Values.CLARIFICATION },
 //       },
 //     ]);
 //   });
 
-//   describe(RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER, () => {
+//   describe(RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW, () => {
 //     describe(`Realtime data without need of orchestration`, () => {
 //       testGenerator([
 //         {
 //           input: "What time is it?",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input: "Who is the president of Czechia?",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input: "What's the latest price of Tesla?",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input: "Tell me about the latest iPhone.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input: "Get the five most recent released series",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input:
-//             "Get the five most recent sci‑fi series released in the past six months on any of these streaming platforms: Netflix, Max, Prime Video, or SkyShowtime.",
+//             "Get the five most recent sci‑fi series released in the past six months on any of these streaming platforms: Netflix, Max, Prime Video, or SkyShowtime.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input:
 //             "Can you find a flight to the Seattle? It should be a one-way flight from Prague next week on Wednesday. We travel in couple. We would like to travel in business class and don't have any another preferences.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //       ]);
@@ -184,28 +184,28 @@
 //           input:
 //             "Analyze the attached CSV of sales data and produce a dashboard highlighting quarterly revenue trends and customer churn.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input:
 //             "Plan a 5‑day trip to Rome in September including flights from Prague, a 4‑star hotel within walking distance of the Colosseum, daily sightseeing itinerary, and cost estimate.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input:
 //             "Aggregate and summarize the ten most recent peer‑reviewed papers on quantum computing published on arXiv, and generate a slide deck for an executive briefing.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
 //           input:
 //             "Build a sentiment‑analysis dashboard for #AI tweets posted in the last 24 hours and schedule it to refresh hourly.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
@@ -213,7 +213,7 @@
 //           input:
 //             "Create four distinct poems on these topics: vikings, neutrinos, marshmallows, and cats.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
@@ -221,7 +221,7 @@
 //           input:
 //             "Create four distinct poems on these topics: vikings, neutrinos, marshmallows, and cats. Then craft a hip-hop song that deliberately incorporates specific imagery, phrases, and themes from each poem. Then take the hip-hop song and generated poems and highlight which elements from each original poem were integrated into your hip-hop lyrics there, demonstrating parallelization and how multiple specialized outputs enhance the final creative synthesis. So the final output should consist of original poems, the song and the analysis.",
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //       ]);
@@ -253,7 +253,7 @@
 //             } satisfies AssistantWorkflowMessage,
 //           ],
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         {
@@ -274,7 +274,7 @@
 //             } satisfies AssistantWorkflowMessage,
 //           ],
 //           expected: {
-//             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+//             type: RequestOutputTypeEnumSchema.Values.COMPOSE_WORKFLOW,
 //           },
 //         },
 //         // TODO Add
@@ -295,7 +295,7 @@
 //         //   expected: { type: RequestOutputTypeEnumSchema.Values.CLARIFICATION },
 //         // },
 //         // {
-//         //   name: "Ambiguous but multi‑step — CLARIFICATION has priority over PASS_TO_PLANNER",
+//         //   name: "Ambiguous but multi‑step — CLARIFICATION has priority over COMPOSE_WORKFLOW",
 //         //   input: "Plan a trip for me.",
 //         //   expected: { type: RequestOutputTypeEnumSchema.Values.CLARIFICATION },
 //         // },

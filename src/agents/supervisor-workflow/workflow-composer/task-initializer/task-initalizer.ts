@@ -7,6 +7,7 @@ import { Runnable } from "../../base/runnable.js";
 import { AgentConfigInitializer } from "./agent-config-initializer/agent-config-initializer.js";
 import { TaskInitializerOutput } from "./dto.js";
 import { TaskConfigInitializer } from "./task-config-initializer/task-config-initializer.js";
+import { AgentIdValue } from "@/agents/registry/dto.js";
 
 export interface TaskInitializerRun {
   task: string;
@@ -21,10 +22,10 @@ export class TaskInitializer extends Runnable<
   protected agentRegistry: AgentRegistry<unknown>;
   protected taskManager: TaskManager;
 
-  constructor(logger: Logger) {
-    super(logger);
-    this.agentConfigInitialized = new AgentConfigInitializer(logger);
-    this.taskConfigInitialized = new TaskConfigInitializer(logger);
+  constructor(logger: Logger, agentId: AgentIdValue) {
+    super(logger, agentId);
+    this.agentConfigInitialized = new AgentConfigInitializer(logger, agentId);
+    this.taskConfigInitialized = new TaskConfigInitializer(logger, agentId);
     this.agentRegistry = ServiceLocator.getInstance().get(AgentRegistry);
     this.taskManager = ServiceLocator.getInstance().get(TaskManager);
   }
@@ -33,7 +34,7 @@ export class TaskInitializer extends Runnable<
     { task }: TaskInitializerRun,
     ctx: Context,
   ): Promise<TaskInitializerOutput> {
-    const { supervisorAgentId } = ctx;
+    const { agentId: supervisorAgentId } = ctx;
 
     // Agent config
     const availableTools = Array.from(
@@ -46,7 +47,7 @@ export class TaskInitializer extends Runnable<
     const { output: agentConfigOutput } = await this.agentConfigInitialized.run(
       {
         userMessage: task,
-        systemPrompt: {
+        data: {
           availableTools,
           existingAgentConfigs,
           task: task,
@@ -67,7 +68,7 @@ export class TaskInitializer extends Runnable<
     const { output: taskConfigOutput } = await this.taskConfigInitialized.run(
       {
         userMessage: task,
-        systemPrompt: {
+        data: {
           existingTaskConfigs,
           actingAgentId: supervisorAgentId,
           existingAgentConfigs: [agentConfig],

@@ -1,4 +1,7 @@
-import { LLMCall, LLMCallInput } from "@/agents/supervisor-workflow/base/llm-call.js";
+import {
+  LLMCall,
+  LLMCallInput,
+} from "@/agents/supervisor-workflow/base/llm-call.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import { clone } from "remeda";
@@ -9,6 +12,7 @@ import {
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { AgentConfigInitializerTool } from "./tool.js";
+import { AgentIdValue } from "@/agents/registry/dto.js";
 
 /**
  * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
@@ -20,14 +24,14 @@ export class AgentConfigInitializer extends LLMCall<
 > {
   protected tool: AgentConfigInitializerTool;
 
-  constructor(logger: Logger) {
-    super(logger);
+  constructor(logger: Logger, agentId: AgentIdValue) {
+    super(logger, agentId);
     this.tool = new AgentConfigInitializerTool();
   }
 
-  async processResult(
+  protected async processResult(
     result: laml.ProtocolResult<typeof protocol>,
-    input: LLMCallInput<AgentConfigInitializerInput>,    
+    input: LLMCallInput<AgentConfigInitializerInput>,
   ): Promise<AgentConfigInitializerOutput> {
     try {
       let toolCallResult;
@@ -94,14 +98,14 @@ export class AgentConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_SELECT_AGENT_CONFIG is missing`);
           }
 
-          const selected = input.systemPrompt.existingAgentConfigs.find(
+          const selected = input.data.existingAgentConfigs.find(
             (c) => c.agentType === response.agent_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${input.systemPrompt.existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${input.data.existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
             };
           }
 

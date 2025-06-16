@@ -58,9 +58,8 @@ import {
 } from "./dto.js";
 import {
   extendBlockingTaskRunOutput,
-  serializeTaskRunInput,
   taskRunError,
-  taskRunOutput,
+  taskRunOutput
 } from "./helpers.js";
 
 export type TaskRunRuntime = TaskRun & {
@@ -1243,16 +1242,18 @@ export class TaskManager extends WorkspaceRestorable {
       }
     }
 
-    const hasUnfinishedBlockingTasks = !!blockedByTaskRunIds.filter(
-      (id) => (options?.originTaskRunId ?? taskRunId) !== id,
-    ).length;
-    const input = serializeTaskRunInput({
-      context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
-      input: taskRunInput,
-      options: {
-        hasUnfinishedBlockingTasks,
-      },
-    });
+    // TODO Fix this it should be different for the supervisor workflow. Agent should has specified own mapping function from agent factory
+    // const hasUnfinishedBlockingTasks = !!blockedByTaskRunIds.filter(
+    //   (id) => (options?.originTaskRunId ?? taskRunId) !== id,
+    // ).length;
+    // const input = serializeTaskRunInput({
+    //   context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
+    //   input: taskRunInput,
+    //   options: {
+    //     hasUnfinishedBlockingTasks,
+    //   },
+    // });
+    const input = taskRunInput;
 
     const originTaskRunId = options?.originTaskRunId ?? taskRunId;
     const baseTaskRun: BaseTaskRun = {

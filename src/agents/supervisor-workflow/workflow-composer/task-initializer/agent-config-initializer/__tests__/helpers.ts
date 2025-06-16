@@ -1,13 +1,12 @@
-import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
-import { AgentConfigMinimal } from "../dto.js";
-import { protocol } from "../protocol.js";
+import { getChatLLM } from "@/helpers/llm.js";
 import * as laml from "@/laml/index.js";
 import { generateMatrixTests } from "@test/test-matrix/generate-matrix-tests.js";
-import { Logger } from "beeai-framework";
-import { getChatLLM } from "@/helpers/llm.js";
-import { AgentConfigInitializer } from "../agent-config-initializer.js";
 import { TestMatrix } from "@test/test-matrix/test-matrix.js";
 import { TestCase } from "@test/test-matrix/types.js";
+import { Logger } from "beeai-framework";
+import { AgentConfigInitializer } from "../agent-config-initializer.js";
+import { AgentAvailableTool, AgentConfigMinimal } from "../dto.js";
+import { protocol } from "../protocol.js";
 
 export type AgentCase = TestCase<
   string,
@@ -21,7 +20,7 @@ export type AgentCase = TestCase<
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
 const llm = getChatLLM("supervisor");
-const llmCall = new AgentConfigInitializer(logger);
+const llmCall = new AgentConfigInitializer(logger, "supervisor:boss[1]:1");
 
 export function runMatrix(matrix: TestMatrix<any, AgentCase>) {
   generateMatrixTests({

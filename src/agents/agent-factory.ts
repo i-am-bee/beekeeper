@@ -2,44 +2,51 @@ import { BaseToolsFactory } from "@/base/tools-factory.js";
 import { getChatLLM } from "@/helpers/llm.js";
 import { Switches } from "@/runtime/factory.js";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
-import { TokenMemory } from "beeai-framework/memory/tokenMemory";
-import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
-import { BaseAgentFactory, CreateAgentInput } from "./base/agent-factory.js";
-import { supervisor } from "./index.js";
 import { AssistantMessage, ToolMessage } from "beeai-framework/backend/message";
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+import { BaseAgentFactory, CreateAgentInput } from "./base/agent-factory.js";
+import { SupervisorWorkflow } from "./supervisor-workflow/supervisor-workflow.js";
 
-export class AgentFactory extends BaseAgentFactory<ReActAgent> {
+
+export type AgentUpdateCallback = (key: string, value: string) => void;
+
+export class AgentFactory extends BaseAgentFactory<
+  ReActAgent | SupervisorWorkflow
+> {
   createAgent<TCreateInput extends CreateAgentInput = CreateAgentInput>(
     input: TCreateInput,
     toolsFactory: BaseToolsFactory,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     switches?: Switches,
   ) {
     const llm = getChatLLM(input.agentKind);
     const generalInstructions = `You are a ${input.agentKind} kind of agent (agentId=${input.agentId}, agentType=${input.agentType}). ${input.instructions}`;
     switch (input.agentKind) {
       case "supervisor": {
-        const tools = toolsFactory.createTools(input.tools);
-        return new ReActAgent({
-          meta: {
-            name: input.agentId,
-            description: input.description,
-          },
-          llm,
-          memory: new UnconstrainedMemory(),
-          tools,
-          templates: {
-            system: (template) =>
-              template.fork((config) => {
-                config.defaults.instructions =
-                  supervisor.SUPERVISOR_INSTRUCTIONS(input.agentId, switches);
-              }),
-          },
-          execution: {
-            maxIterations: 100,
-            maxRetriesPerStep: 2,
-            totalMaxRetries: 10,
-          },
-        });
+        // const tools = toolsFactory.createTools(input.tools);
+        // return new ReActAgent({
+        //   meta: {
+        //     name: input.agentId,
+        //     description: input.description,
+        //   },
+        //   llm,
+        //   memory: new UnconstrainedMemory(),
+        //   tools,
+        //   templates: {
+        //     system: (template) =>
+        //       template.fork((config) => {
+        //         config.defaults.instructions =
+        //           supervisor.SUPERVISOR_INSTRUCTIONS(input.agentId, switches);
+        //       }),
+        //   },
+        //   execution: {
+        //     maxIterations: 100,
+        //     maxRetriesPerStep: 2,
+        //     totalMaxRetries: 10,
+        //   },
+        // });
+
+        return new SupervisorWorkflow(this.logger, llm, input.agentId);
       }
       case "operator":
         return new ReActAgent({
@@ -68,25 +75,29 @@ export class AgentFactory extends BaseAgentFactory<ReActAgent> {
   }
 
   async runAgent(
-    agent: ReActAgent,
+    agent: ReActAgent | SupervisorWorkflow,
     prompt: string,
-    onUpdate: (key: string, value: string) => void,
+    onUpdate: AgentUpdateCallback,
     signal: AbortSignal,
     addToMemory?: (AssistantMessage | ToolMessage)[],
   ): Promise<string> {
-    if (addToMemory) {
-      agent.memory.addMany(addToMemory);
+    if (agent instanceof SupervisorWorkflow) {
+      return await agent.run({prompt,onUpdate});
+    } else {
+      if (addToMemory) {
+        agent.memory.addMany(addToMemory);
+      }
+
+      const resp = await agent
+        .run({ prompt }, { signal })
+        .observe((emitter) => {
+          emitter.on("update", async ({ update }) => {
+            onUpdate(update.key, update.value);
+          });
+        })
+        .context({ task_run_signal: signal });
+
+      return resp.result.text;
     }
-
-    const resp = await agent
-      .run({ prompt }, { signal })
-      .observe((emitter) => {
-        emitter.on("update", async ({ update }) => {
-          onUpdate(update.key, update.value);
-        });
-      })
-      .context({ task_run_signal: signal });
-
-    return resp.result.text;
   }
 }

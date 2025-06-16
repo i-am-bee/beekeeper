@@ -1,8 +1,7 @@
-import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
 import * as laml from "@/laml/index.js";
-import { AgentConfigInitializerInput, AgentConfigMinimal } from "./dto.js";
+import { AgentAvailableTool, AgentConfigInitializerInput, AgentConfigMinimal } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
 

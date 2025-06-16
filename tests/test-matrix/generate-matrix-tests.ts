@@ -57,7 +57,11 @@ export function generateMatrixTests<
             : ((c.input as any).task ?? "case"));
 
         it(testName, async () => {
-          const resp = await llmCall.run(llm, mapCaseToInput(c));
+          const input = mapCaseToInput(c);
+          const resp = await llmCall.run(
+            { data: input, userMessage: input.task },
+            { llm, agentId: "supervisor:boss[1]:1", onUpdate: () => ({}) },
+          );
 
           // 1) structural / protocol-level matcher
           assertParsed(resp.parsed as ParsedT, c.expected as CaseT["expected"]);

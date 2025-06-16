@@ -9,7 +9,7 @@ import { Runnable } from "./runnable.js";
 
 export interface LLMCallInput<TInput> {
   userMessage: string;
-  systemPrompt: TInput;
+  data: TInput;
 }
 
 export interface LLMCallOutput<TParsed, TOutput> {
@@ -31,12 +31,12 @@ export abstract class LLMCall<
   abstract get protocol(): P;
 
   async run(input: LLMCallInput<TInput>, ctx: Context) {
-    console.log(input, `run`);
-
-    const { llm } = ctx;
+    this.logger.debug(input, `run`);
+    const { llm, onUpdate } = ctx;
+    this.handleOnUpdate(onUpdate, "Run...");
 
     const messages: Message[] = [
-      new SystemMessage(this.systemPrompt(input.systemPrompt)),
+      new SystemMessage(this.systemPrompt(input.data)),
       new UserMessage(input.userMessage),
       // new CustomMessage("control", "thinking"),
     ];
@@ -46,16 +46,16 @@ export abstract class LLMCall<
     });
 
     const raw = resp.getTextContent();
-    console.log(`### INPUT`);
-    console.log(input);
-    console.log(`### RESPONSE`);
-    console.log(`${raw}\n\n`);
-    console.log(`### PARSED`);
+    this.logger.debug(`### INPUT`);
+    this.logger.debug(input);
+    this.logger.debug(`### RESPONSE`);
+    this.logger.debug(`${raw}\n\n`);
+    this.logger.debug(`### PARSED`);
     const parsed = this.protocol.parse(raw);
-    console.log(`${JSON.stringify(parsed, null, " ")}\n\n`);
-    console.log(`### OUTPUT`);
+    this.logger.debug(`${JSON.stringify(parsed, null, " ")}\n\n`);
+    this.logger.debug(`### OUTPUT`);
     const output = await this.processResult(parsed, input, ctx);
-    console.log(`${JSON.stringify(output, null, " ")}\n\n`);
+    this.logger.debug(`${JSON.stringify(output, null, " ")}\n\n`);
 
     return {
       raw,
@@ -64,7 +64,7 @@ export abstract class LLMCall<
     };
   }
 
-  abstract processResult(
+  protected abstract processResult(
     result: laml.ProtocolResult<P>,
     input: LLMCallInput<TInput>,
     ctx: Context,

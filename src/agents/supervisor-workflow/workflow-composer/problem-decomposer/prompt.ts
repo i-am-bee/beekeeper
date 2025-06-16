@@ -1,6 +1,7 @@
 import { BodyTemplateBuilder } from "../../templates/body.js";
 import { ProblemDecomposerInput } from "./dto.js";
 import { protocol } from "./protocol.js";
+import { ExistingResourcesBuilder } from "./templates.js";
 
 const decisionCriteria = BodyTemplateBuilder.new()
   .section({
@@ -51,14 +52,86 @@ const guidelines = BodyTemplateBuilder.new()
   })
   .build();
 
+// interface ExampleInput {
+//   title: string;
+//   subtitle: string;
+//   user: string;
+//   example: laml.ProtocolResult<typeof protocol>;
+// }
+
+// const examples = ((inputs: ExampleInput[]) =>
+//   inputs
+//     .map((input, idx) =>
+//       ChatExampleTemplateBuilder.new()
+//         .title({
+//           position: idx + 1,
+//           text: input.title,
+//           level: 3,
+//           subtitle: input.subtitle,
+//         })
+//         .user(input.user)
+//         .assistant(protocol.printExample(input.example))
+//         .build(),
+//     )
+//     .join("\n"))([
+//       {
+//         title: 'RESPONSE_STEP_SEQUENCE', subtitle: 'Multi‑step Trip',
+//         user: `{
+//   "requestType": "travel_planning",
+//   "primaryGoal": "Create comprehensive Tokyo business trip itinerary",
+//   "userParameters": {
+//     "destination": "Tokyo",
+//     "purpose": "Technology conference",
+//     "duration": "5 days",
+//     "timeframe": "next month",
+//     "accommodationRequirements": ["near conference center"],
+//     "activities": ["historical sites", "authentic cuisine"]
+//   },
+//   "requiredComponents": [
+//     "flight arrangements",
+//     "hotel booking",
+//     "conference logistics",
+//     "sightseeing itinerary",
+//     "restaurant recommendations"
+//   ],
+//   "expectedDeliverables": "Complete itinerary with all bookings and recommendations"
+// }`,
+//         example: {
+//           RESPONSE_CHOICE_EXPLANATION:
+//         }
+//       }
+//     ]);
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const prompt = (input?: ProblemDecomposerInput) =>
+export const prompt = ({
+  availableTools,
+  existingAgents,
+}: ProblemDecomposerInput) =>
   BodyTemplateBuilder.new()
     .introduction(
       `You are a **ProblemDecomposer** — a reasoning module in a multi‑agent workflow.  
 Your mission is to examine any user‑supplied problem, decide whether it can be solved, and if so, outline a clear, ordered sequence of *generic* tasks that will lead to its completion.  
 If the problem contains contradictions, requires unavailable resources, or otherwise cannot be solved, you must say so explicitly.`,
     )
+    .section({
+      title: {
+        text: "Existing resources",
+        level: 2,
+      },
+      newLines: {
+        start: 1,
+        contentStart: 1,
+        contentEnd: 0,
+      },
+      delimiter: {
+        start: true,
+        end: true,
+      },
+      content: ExistingResourcesBuilder.new()
+        .agentConfigs(existingAgents)
+        .availableTools(availableTools)
+        .build(),
+    })
     .section({
       title: {
         text: "Response Format",

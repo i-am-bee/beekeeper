@@ -2,6 +2,7 @@ import { BaseToolsFactory } from "@/base/tools-factory.js";
 import { Switches } from "@/runtime/factory.js";
 import { AssistantMessage, ToolMessage } from "beeai-framework/backend/message";
 import { AgentKindEnum } from "../registry/dto.js";
+import { Logger } from "beeai-framework";
 
 export interface CreateAgentInput {
   agentKind: AgentKindEnum;
@@ -13,6 +14,12 @@ export interface CreateAgentInput {
 }
 
 export abstract class BaseAgentFactory<TAgent> {
+  protected logger: Logger;
+  constructor(logger: Logger) {
+    this.logger = logger.child({
+      name: this.constructor.name,
+    });
+  }
   abstract createAgent(
     input: CreateAgentInput,
     toolsFactory: BaseToolsFactory,

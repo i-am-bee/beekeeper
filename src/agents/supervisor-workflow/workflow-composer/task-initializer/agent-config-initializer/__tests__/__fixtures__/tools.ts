@@ -1,5 +1,5 @@
-import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
 import { clone } from "remeda";
+import { AgentAvailableTool } from "../../dto.js";
 
 /** Raw list so it’s easy to append in PRs */
 export const TOOL_ENTRIES = [

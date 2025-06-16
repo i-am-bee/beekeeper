@@ -17,7 +17,7 @@ export class ProblemDecomposer extends LLMCall<
     return prompt(input);
   }
 
-  async processResult(
+  protected async processResult(
     result: laml.ProtocolResult<typeof protocol>,
   ): Promise<ProblemDecomposerOutput> {
     switch (result.RESPONSE_TYPE) {

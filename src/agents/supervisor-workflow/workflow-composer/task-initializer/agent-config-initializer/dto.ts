@@ -1,7 +1,12 @@
 import { AgentConfigSchema } from "@/agents/registry/dto.js";
 import { StepResultSchema } from "@/agents/supervisor-workflow/base/dto.js";
-import { AgentAvailableToolSchema } from "@/agents/supervisor-workflow/dto.js";
 import { z } from "zod";
+
+export const AgentAvailableToolSchema = z.object({
+  toolName: z.string(),
+  description: z.string(),
+});
+export type AgentAvailableTool = z.infer<typeof AgentAvailableToolSchema>;
 
 export const AgentConfigMinimalSchema = AgentConfigSchema.pick({
   agentConfigId: true,

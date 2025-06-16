@@ -12,6 +12,7 @@ import {
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { TaskConfigInitializerTool } from "./tool.js";
+import { AgentIdValue } from "@/agents/registry/dto.js";
 
 export class TaskConfigInitializer extends LLMCall<
   typeof protocol,
@@ -24,8 +25,8 @@ export class TaskConfigInitializer extends LLMCall<
     return protocol;
   }
 
-  constructor(logger: Logger) {
-    super(logger);
+  constructor(logger: Logger, agentId: AgentIdValue) {
+    super(logger, agentId);
     this.tool = new TaskConfigInitializerTool();
   }
 
@@ -33,7 +34,7 @@ export class TaskConfigInitializer extends LLMCall<
     return prompt(input);
   }
 
-  async processResult(
+  protected async processResult(
     result: laml.ProtocolResult<typeof protocol>,
     input: LLMCallInput<TaskConfigInitializerInput>,
   ): Promise<TaskConfigInitializerOutput> {
@@ -56,7 +57,7 @@ export class TaskConfigInitializer extends LLMCall<
               description: response.description,
               taskConfigInput: response.task_config_input,
             },
-            actingAgentId: input.systemPrompt.actingAgentId,
+            actingAgentId: input.data.actingAgentId,
           });
           return {
             type: "SUCCESS",
@@ -82,7 +83,7 @@ export class TaskConfigInitializer extends LLMCall<
               description: response.description,
               taskConfigInput: response.task_config_input,
             },
-            actingAgentId: input.systemPrompt.actingAgentId,
+            actingAgentId: input.data.actingAgentId,
           });
           return {
             type: "SUCCESS",
@@ -100,14 +101,14 @@ export class TaskConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_SELECT_TASK_CONFIG is missing`);
           }
 
-          const selected = input.systemPrompt.existingTaskConfigs.find(
+          const selected = input.data.existingTaskConfigs.find(
             (c) => c.taskType === response.task_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected task config \`${response.task_type}\` between existing \`${input.systemPrompt.existingTaskConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `Can't find selected task config \`${response.task_type}\` between existing \`${input.data.existingTaskConfigs.map((c) => c.agentType).join(",")}\``,
             };
           }
 

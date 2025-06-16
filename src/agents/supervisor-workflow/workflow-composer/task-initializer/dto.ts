@@ -7,8 +7,5 @@ export const TaskInitializerInputSchema = z.object({
 });
 export type TaskInitializerInput = z.infer<typeof TaskInitializerInputSchema>;
 
-export const TaskInitializerOutputSchema =
-  StepResultSchema(TaskConfigSchema);
-export type TaskInitializerOutput = z.infer<
-  typeof TaskInitializerOutputSchema
->;
+export const TaskInitializerOutputSchema = StepResultSchema(TaskConfigSchema);
+export type TaskInitializerOutput = z.infer<typeof TaskInitializerOutputSchema>;
