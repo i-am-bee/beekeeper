@@ -1,14 +1,14 @@
 import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
 import * as laml from "@/laml/index.js";
+import { Logger } from "beeai-framework";
 import { clone } from "remeda";
 import {
   TaskConfigInitializerInput,
   TaskConfigInitializerOutput,
 } from "./dto.js";
+import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { TaskConfigInitializerTool } from "./tool.js";
-import { prompt } from "./prompt.js";
-import { Logger } from "beeai-framework";
 
 export class TaskConfigInitializer extends LLMCall<
   typeof protocol,
@@ -37,22 +37,24 @@ export class TaskConfigInitializer extends LLMCall<
 
           toolCallResult = await this.tool.run({
             method: "createTaskConfig",
-            agentKind: "operator",
             config: {
-              agentType: response.agent_type,
+              agentKind: "operator",
+              agentType: "TBD",
+              taskKind: "operator",
+              taskType: response.task_type,
               description: response.description,
-              instructions: response.instructions,
-              tools: response.tools,
+              taskConfigInput: response.task_config_input,
             },
+            actingAgentId: context.input.actingAgentId,
           });
           return {
             type: "SUCCESS",
             taskConfig: {
               agentType: toolCallResult.result.data.agentType,
+              taskType: toolCallResult.result.data.taskType,
               description: toolCallResult.result.data.description,
-              // instructions: toolCallResult.result.data.instructions,
-              // tools: clone(toolCallResult.result.data.tools),
-            } as any,
+              taskConfigInput: toolCallResult.result.data.taskConfigInput,
+            },
           };
         }
         case "UPDATE_TASK_CONFIG": {
@@ -63,22 +65,22 @@ export class TaskConfigInitializer extends LLMCall<
 
           toolCallResult = await this.tool.run({
             method: "updateTaskConfig",
-            agentKind: "operator",
-            agentType: response.agent_type,
+            taskKind: "operator",
+            taskType: response.task_type,
             config: {
               description: response.description,
-              instructions: response.instructions,
-              tools: response.tools,
+              taskConfigInput: response.task_config_input,
             },
+            actingAgentId: context.input.actingAgentId,
           });
           return {
             type: "SUCCESS",
             taskConfig: {
               agentType: toolCallResult.result.data.agentType,
+              taskType: toolCallResult.result.data.taskType,
               description: toolCallResult.result.data.description,
-              // instructions: toolCallResult.result.data.instructions,
-              // tools: clone(toolCallResult.result.data.tools),
-            } as any,
+              taskConfigInput: toolCallResult.result.data.taskConfigInput,
+            },
           };
         }
         case "SELECT_TASK_CONFIG": {
@@ -87,14 +89,14 @@ export class TaskConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_SELECT_TASK_CONFIG is missing`);
           }
 
-          const selected = context.input.existingConfigs.find(
-            (c) => c.agentType === response.agent_type,
+          const selected = context.input.existingTaskConfigs.find(
+            (c) => c.taskType === response.task_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${context.input.existingConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `Can't find selected task config \`${response.task_type}\` between existing \`${context.input.existingTaskConfigs.map((c) => c.agentType).join(",")}\``,
             };
           }
 
@@ -108,7 +110,7 @@ export class TaskConfigInitializer extends LLMCall<
         case "TASK_CONFIG_UNAVAILABLE": {
           const response = result.RESPONSE_TASK_CONFIG_UNAVAILABLE;
           if (!response) {
-            throw new Error(`RESPONSE_SELECT_TASK_CONFIG is missing`);
+            throw new Error(`RESPONSE_TASK_CONFIG_UNAVAILABLE is missing`);
           }
 
           return {

@@ -26,24 +26,21 @@ export const protocol = laml.ProtocolBuilder.new()
     isOptional: true,
     attributes: laml.ProtocolBuilder.new()
       .text({
+        name: "task_type",
+        description: "Name of the new task config type in snake_case",
+      })
+      .text({
         name: "agent_type",
-        description: "Name of the new agent config type in snake_case",
+        description: "Name of the existing agent config type",
       })
       .text({
         name: "description",
-        description:
-          "Description of the agent's behavior and purpose of his existence",
+        description: "Detail information about the task and its context",
       })
       .text({
-        name: "instructions",
+        name: "task_config_input",
         description:
-          "Natural language but structured text instructs on how agent should act",
-      })
-      .array({
-        name: "tools",
-        description:
-          "list of selected tools identifiers that this agent type can utilize",
-        type: "text",
+          "Task config input should serves as a template for task run input for derived task runs.",
       }),
   })
   .object({
@@ -51,35 +48,31 @@ export const protocol = laml.ProtocolBuilder.new()
     isOptional: true,
     attributes: laml.ProtocolBuilder.new()
       .text({
+        name: "task_type",
+        description: "Name of the new task config type in snake_case",
+      })
+      .text({
         name: "agent_type",
-        description: "Name of the new agent config type in snake_case",
+        description: "Name of the existing agent config type",
       })
       .text({
         name: "description",
         isOptional: true,
-        description:
-          "Description of the agent's behavior and purpose of his existence",
+        description: "Detail information about the task and its context",
       })
       .text({
-        name: "instructions",
+        name: "task_config_input",
         isOptional: true,
         description:
-          "Natural language but structured text instructs on how agent should act",
-      })
-      .array({
-        name: "tools",
-        isOptional: true,
-        description:
-          "list of selected tools identifiers that this agent type can utilize",
-        type: "text",
+          "Task config input should serves as a template for task run input for derived task runs.",
       }),
   })
   .object({
     name: "RESPONSE_SELECT_TASK_CONFIG",
     isOptional: true,
     attributes: laml.ProtocolBuilder.new().text({
-      name: "agent_type",
-      description: "Name of the selected agent config type",
+      name: "task_type",
+      description: "Name of the selected task config type",
     }),
   })
   .object({
@@ -88,7 +81,7 @@ export const protocol = laml.ProtocolBuilder.new()
     attributes: laml.ProtocolBuilder.new().text({
       name: "explanation",
       description:
-        "Brief reason you are not able to create, update or select an existing agent config",
+        "Brief reason you are not able to create, update or select an existing task config",
     }),
   })
   .build();

@@ -41,6 +41,7 @@ export abstract class LLMCall<
     const messages: Message[] = [
       new SystemMessage(this.systemPrompt(input)),
       new UserMessage(input.task),
+      // new CustomMessage("control", "thinking"),
     ];
 
     const resp = await llm.create({

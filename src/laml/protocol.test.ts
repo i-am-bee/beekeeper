@@ -128,8 +128,7 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE: <!optional;object>
       },
     });
 
-    expect(example)
-      .toEqual(`\`\`\`
+    expect(example).toEqual(`\`\`\`
 RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a new config is required but there is no suitable tool.
 RESPONSE_TYPE: AGENT_CONFIG_UNAVAILABLE
 RESPONSE_AGENT_CONFIG_UNAVAILABLE:

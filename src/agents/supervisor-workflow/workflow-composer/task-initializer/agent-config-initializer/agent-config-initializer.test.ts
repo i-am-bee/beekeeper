@@ -30,7 +30,7 @@ const testGenerator = (dataset: TestDataItem[]) => {
       const resp = await agentConfigCreator.run(llm, {
         task: item.input,
         availableTools: item.availableTools || [],
-        existingConfigs: item.existingConfigs || [],
+        existingAgentConfigs: item.existingConfigs || [],
       });
 
       expect(resp.parsed).toMatchObject(item.expected);
@@ -126,6 +126,8 @@ const AGENT_CONFIGS_ENTRIES = [
       "cs.LG or cs.AI whose abstract mentions “reinforcement learning” and send " +
       "a three-sentence summary for each paper.",
     tools: ["arxiv_search"],
+    agentConfigId: "operator:arxiv_rl_daily[1]:1",
+    agentConfigVersion: 1,
   },
   {
     agentType: "city_events_weekend",
@@ -135,6 +137,8 @@ const AGENT_CONFIGS_ENTRIES = [
       "the user’s city scheduled for the coming weekend (Fri-Sun). Return name, " +
       "venue, start time and ticket price.",
     tools: ["city_events_search"],
+    agentConfigId: "operator:city_events_search[1]:2",
+    agentConfigVersion: 2,
   },
   {
     agentType: "crypto_price_tracker_hourly",
@@ -142,6 +146,8 @@ const AGENT_CONFIGS_ENTRIES = [
     instructions:
       "Fetch Bitcoin and Ethereum spot prices every hour with crypto_price_feed and alert on > 3 % moves.",
     tools: ["crypto_price_feed"],
+    agentConfigId: "operator:crypto_price_tracker_hourly[1]:3",
+    agentConfigVersion: 3,
   },
   {
     agentType: "flight_tracker_daily",
@@ -149,6 +155,8 @@ const AGENT_CONFIGS_ENTRIES = [
     instructions:
       "Query fare once per day and alert on drops below €750 using flight_price_tracker.",
     tools: ["flight_price_tracker"],
+    agentConfigId: "operator:flight_tracker_daily[1]:1",
+    agentConfigVersion: 1,
   },
   {
     agentType: "flight_price_tracker_weekly",
@@ -158,6 +166,8 @@ const AGENT_CONFIGS_ENTRIES = [
       "flight_price_tracker and alert when the price drops below the user’s " +
       "target threshold.",
     tools: ["flight_price_tracker"],
+    agentConfigId: "operator:flight_price_tracker_weekly[1]:1",
+    agentConfigVersion: 1,
   },
   {
     agentType: "historical_sites_search",
@@ -165,20 +175,24 @@ const AGENT_CONFIGS_ENTRIES = [
     instructions:
       "Context: You are an agent specialized in finding historical sites in a given city. You have access to web search tools to gather information about popular historical landmarks, museums, and sites of interest. Users will provide the city and any specific interests they have. Objective: Provide a list of historical sites to visit, including brief descriptions and any relevant visiting information such as opening hours or ticket prices. Response format: Present the information in a list format with each site having a name, description, and visiting details.",
     tools: ["historical_sites_search_api"],
+    agentConfigId: "operator:historical_sites_search[1]:1",
+    agentConfigVersion: 1,
   },
   {
-    agentType: "news_headlines_24h",
-    description: "Gathers news headlines the past 24 hours.",
+    agentType: "news_headlines",
+    description: "Gathers news headlines.",
     instructions: `You are an agent specializing in collecting news headlines. You have access to a news_search tool that allows you to find articles based on keywords and time filters. Users will provide a time frame and one or more search terms for the news they want collected.
 
-Objective: Collect news headlines that contain the user-supplied keywords within the requested time window (default: past 24 hours). Use the news_search tool to execute the query, filtering results to match the specified period. Provide a list of headline URLs together with concise summaries.
+Objective: Collect news headlines that contain the user-supplied keywords within the requested time window. Use the news_search tool to execute the query, filtering results to match the specified period. Provide a list of headline URLs together with concise summaries.
 
 Response format: Begin with a brief sentence that restates the search terms and time frame. Then list each headline on its own line, showing the URL first and a short summary after an em-dash or colon. For example:
 
-News headlines matching “<keywords>” from the past 24 hours:  
+News headlines matching “<keywords>” from the [time_window]:  
 1. URL: [headline_url_1] — Summary: [headline_summary_1]  
 2. URL: [headline_url_2] — Summary: [headline_summary_2]`,
     tools: ["news_search"],
+    agentConfigId: "operator:news_headlines[1]:1",
+    agentConfigVersion: 1,
   },
   {
     agentType: "phrase_generator",
@@ -189,6 +203,8 @@ News headlines matching “<keywords>” from the past 24 hours:
       "example sentence. Finish with a short multiple-choice quiz. Use the " +
       "phrase_generator tool only.",
     tools: ["phrase_generator"],
+    agentConfigId: "operator:phrase_generator[1]:1",
+    agentConfigVersion: 1,
   },
   {
     agentType: "podcast_ai_weekly",
@@ -198,6 +214,8 @@ News headlines matching “<keywords>” from the past 24 hours:
       "episodes published in the last 7 days and send a three-sentence summary " +
       "for each.",
     tools: ["podcast_search"],
+    agentConfigId: "operator:podcast_ai_weekly[1]:1",
+    agentConfigVersion: 1,
   },
   {
     agentType: "scifi_movies_weekly",
@@ -207,6 +225,8 @@ News headlines matching “<keywords>” from the past 24 hours:
       "releasing in the next 30 days using movie_db_search, including synopsis " +
       "and release date.",
     tools: ["movie_db_search"],
+    agentConfigId: "operator:scifi_movies_weekly[1]:1",
+    agentConfigVersion: 1,
   },
   {
     agentType: "weather_tornado_immediate",
@@ -215,21 +235,23 @@ News headlines matching “<keywords>” from the past 24 hours:
       "Continuously monitor weather_alert_feed for tornado watches or " +
       "warnings within 50 km of the user’s coordinates and notify immediately.",
     tools: ["weather_alert_feed"],
+    agentConfigId: "operator:weather_tornado_immediate[1]:1",
+    agentConfigVersion: 1,
   },
 ] as const satisfies ExistingAgentConfig[];
 type AgentConfigName = (typeof AGENT_CONFIGS_ENTRIES)[number]["agentType"];
 const AGENT_CONFIGS = new Map<AgentConfigName, ExistingAgentConfig>(
   AGENT_CONFIGS_ENTRIES.map((e) => [e.agentType, e]),
 );
-function agentConfig<Name extends AgentConfigName>(name: Name) {
+export function agentConfig<Name extends AgentConfigName>(name: Name) {
   return clone(AGENT_CONFIGS.get(name)!);
 }
 
 // ----------------------------------------------------------------------------------------------------
-// TEST
+// TESTS
 // ----------------------------------------------------------------------------------------------------
 
-describe("Agent config creator - laml", () => {
+describe("Agent Config Initializer", () => {
   /**
    * ============================================================================
    * TEST-MATRIX · CREATE_AGENT_CONFIG
@@ -268,7 +290,7 @@ describe("Agent config creator - laml", () => {
    *     Reasoning   : weave filters into instructions
    *     Assert      : instructions mention every filter
    *
-   * 2. MODERATE  (some clutter to consider)
+   * 2. NOISY (some clutter to consider)
    * ──────────────────────────────────────────────────────────────────────────
    *   L-1
    *     Environment : 1 existing config that **doesn’t** match · 2–3 tools
@@ -288,7 +310,7 @@ describe("Agent config creator - laml", () => {
    *     Reasoning   : craft rich instructions, avoid false SELECT
    *     Assert      : description covers **all** constraints
    *
-   * 3. COMPLEX  (dense ecosystem, implicit mapping)
+   * 3. ENTANGLED  (dense ecosystem, implicit mapping)
    * ──────────────────────────────────────────────────────────────────────────
    *   L-1
    *     Environment : many configs (none adequate) · 5–8 tools (2 relevant)
@@ -307,21 +329,12 @@ describe("Agent config creator - laml", () => {
    *     Prompt      : nested, implicit ask (“fear-and-greed index …”)
    *     Reasoning   : conditional inclusion, derived metrics, multi-step summary
    *     Assert      : comprehensive instructions; all and *only* correct tools
-   *
-   * ------------------------------------------------------------------------
-   * HOW TO USE
-   * ------------------------------------------------------------------------
-   * 1. Pick a cell → decide env clutter & prompt trickiness.
-   * 2. Configure `existingConfigs`, `availableTools`, and `input` to match.
-   * 3. Assert `RESPONSE_TYPE === "CREATE_AGENT_CONFIG"` plus the rule under
-   *    **Assert** above.
-   * 4. Cover every cell at least once for full spectrum testing.
    * ============================================================================
    */
   describe("CREATE_AGENT_CONFIG", () => {
     /* ---------- 1 · STRAIGHTFORWARD -------------------------------------- */
     describe("Straightforward", () => {
-      /* L-1 already fully covered by existing tests ----------------------- */
+      /* L-1 ----------------------- */
       describe(`Low complexity (L-1)`, () => {
         testGenerator([
           {
@@ -871,14 +884,14 @@ describe("Agent config creator - laml", () => {
       });
     });
 
-    /* ---------- 2 · MODERATE ------------------------------------------- */
-    describe("Moderate", () => {
+    /* ---------- 2 · NOISY------------------------------------------- */
+    describe("Noisy", () => {
       /* L-1 – 1 unrelated config · 2–3 tools ------------------------------ */
       describe("Low complexity (L-1)", () => {
         testGenerator([
           {
             name: "Existing unrelated config present → still CREATE a podcast agent",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [tool("podcast_search"), tool("news_search")],
             input:
               "Find podcast episodes on artificial intelligence from last week.",
@@ -894,7 +907,7 @@ describe("Agent config creator - laml", () => {
           },
           {
             name: "Health inspection alert, unrelated headlines config present",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [tool("health_inspection_db"), tool("news_search")],
             input:
               "Warn me when any bar scores below 85 in health inspections.",
@@ -910,7 +923,7 @@ describe("Agent config creator - laml", () => {
           },
           {
             name: "Weather tornado alerts, unrelated configs",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [tool("weather_alert_feed"), tool("google_search")],
             input:
               "Alert me immediately if a tornado warning is issued nearby.",
@@ -926,7 +939,7 @@ describe("Agent config creator - laml", () => {
           },
           {
             name: "Daily arXiv quantum papers",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [tool("arxiv_search"), tool("google_search")],
             input:
               "Summarise new arXiv papers about quantum algorithms every day.",
@@ -990,7 +1003,7 @@ describe("Agent config creator - laml", () => {
           },
           {
             name: "Weekend events agent",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [
               tool("city_events_search"),
               tool("podcast_search"),
@@ -1023,7 +1036,7 @@ describe("Agent config creator - laml", () => {
           },
           {
             name: "Daily Spanish word exercise",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [tool("phrase_generator"), tool("google_search")],
             input: "Spanish word-of-the-day every morning 8 AM.",
             expected: {
@@ -1045,7 +1058,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Fusion of news + podcast sources",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1096,7 +1109,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Wildfire news + weather alerts",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1123,7 +1136,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Flight deals + city events combo",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1173,7 +1186,7 @@ describe("Agent config creator - laml", () => {
           },
           {
             name: "Crypto price + filings correlation report",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [
               tool("crypto_price_feed"),
               tool("sec_filings_search"),
@@ -1222,7 +1235,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Food-safety inspections + local headlines",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1275,7 +1288,7 @@ describe("Agent config creator - laml", () => {
           },
           {
             name: "SEC filings + podcasts about AI startups",
-            existingConfigs: [agentConfig("news_headlines_24h")],
+            existingConfigs: [agentConfig("news_headlines")],
             availableTools: [
               tool("sec_filings_search"),
               tool("podcast_search"),
@@ -1306,7 +1319,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Multi-filter flight tracker creation",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("crypto_price_tracker_hourly"),
             ],
@@ -1332,7 +1345,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Sushi rodent alert SF, score < 85",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("crypto_price_tracker_hourly"),
             ],
@@ -1358,7 +1371,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "BTC & ETH daytime tracker (skip weekends)",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("flight_tracker_daily"),
             ],
@@ -1385,7 +1398,7 @@ describe("Agent config creator - laml", () => {
             name: "Berlin outdoor concerts ≤ €30 in August",
             existingConfigs: [
               agentConfig("city_events_weekend"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("flight_price_tracker_weekly"),
             ],
             availableTools: [
@@ -1411,7 +1424,7 @@ describe("Agent config creator - laml", () => {
             name: "Quantum-computing papers 2025 < 250-word abstract",
             existingConfigs: [
               agentConfig("arxiv_rl_daily"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1437,7 +1450,7 @@ describe("Agent config creator - laml", () => {
             name: "Miami hurricane warnings < 200 km June–Nov",
             existingConfigs: [
               agentConfig("weather_tornado_immediate"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1463,7 +1476,7 @@ describe("Agent config creator - laml", () => {
             name: "LA↔Tokyo flights April bags×2 < $700",
             existingConfigs: [
               agentConfig("flight_tracker_daily"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
             ],
             availableTools: [
@@ -1489,7 +1502,7 @@ describe("Agent config creator - laml", () => {
             name: "PG-13 sci-fi movies 1–31 May runtime < 140 min",
             existingConfigs: [
               agentConfig("scifi_movies_weekly"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1515,7 +1528,7 @@ describe("Agent config creator - laml", () => {
             name: "Spanish biz vocab 09:00 weekdays, numeric examples",
             existingConfigs: [
               agentConfig("phrase_generator"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -1540,7 +1553,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "FAANG insider-trading filings < 48 h",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
               agentConfig("historical_sites_search"),
             ],
@@ -1567,15 +1580,15 @@ describe("Agent config creator - laml", () => {
       });
     });
 
-    /* ---------- 3 · COMPLEX -------------------------------------------- */
-    describe("Complex", () => {
+    /* ---------- 3 · ENTANGLED -------------------------------------------- */
+    describe("Entangled", () => {
       /* L-1 – many configs · 5–8 tools (2 relevant) ----------------------- */
       describe("Low complexity (L-1)", () => {
         testGenerator([
           {
             name: "Market sentiment for Bitcoin & Ethereum (prices + headlines)",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("crypto_price_tracker_hourly"),
             ],
@@ -1605,7 +1618,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Academic buzz on quantum gravity",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("crypto_price_tracker_hourly"),
               agentConfig("flight_tracker_daily"),
@@ -1632,7 +1645,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Market mood for renewable energy stocks",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("flight_tracker_daily"),
               agentConfig("crypto_price_tracker_hourly"),
@@ -1663,7 +1676,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Public sentiment on space tourism",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("flight_tracker_daily"),
               agentConfig("podcast_ai_weekly"),
@@ -1693,7 +1706,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Watch corporate filings & headlines on quantum chips",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
               agentConfig("flight_tracker_daily"),
               agentConfig("arxiv_rl_daily"),
@@ -1724,7 +1737,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "AI ethics chatter tracker",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
               agentConfig("podcast_ai_weekly"),
               agentConfig("flight_tracker_daily"),
@@ -1754,7 +1767,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "On-chain buzz for memecoins",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
               agentConfig("podcast_ai_weekly"),
               agentConfig("flight_tracker_daily"),
@@ -1785,7 +1798,7 @@ describe("Agent config creator - laml", () => {
             name: "Cultural heritage talk tracker",
             existingConfigs: [
               agentConfig("historical_sites_search"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("podcast_ai_weekly"),
               agentConfig("flight_tracker_daily"),
             ],
@@ -1814,7 +1827,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Cryptocurrency regulation rumours",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
               agentConfig("podcast_ai_weekly"),
             ],
@@ -1843,7 +1856,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Electric-car battery breakthroughs",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("flight_tracker_daily"),
               agentConfig("historical_sites_search"),
             ],
@@ -1875,7 +1888,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Conditional: alert on cheap flight then show 5-day weather forecast",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("flight_tracker_daily"),
               agentConfig("crypto_price_tracker_hourly"),
             ],
@@ -1909,7 +1922,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "BTC crash → news + filings report",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
               agentConfig("flight_tracker_daily"),
             ],
@@ -1945,7 +1958,7 @@ describe("Agent config creator - laml", () => {
             name: "Paris→Rome flight deal → events + weather",
             existingConfigs: [
               agentConfig("flight_tracker_daily"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
             ],
             availableTools: [
@@ -1979,7 +1992,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Daily AI mega-digest (papers, podcasts, news)",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("arxiv_rl_daily"),
               agentConfig("podcast_ai_weekly"),
             ],
@@ -2016,7 +2029,7 @@ describe("Agent config creator - laml", () => {
             existingConfigs: [
               agentConfig("weather_tornado_immediate"),
               agentConfig("flight_tracker_daily"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
             ],
             availableTools: [
               tool("weather_alert_feed"),
@@ -2050,7 +2063,7 @@ describe("Agent config creator - laml", () => {
             name: "ETH > $4 000 → filings + podcasts",
             existingConfigs: [
               agentConfig("crypto_price_tracker_hourly"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("podcast_ai_weekly"),
             ],
             availableTools: [
@@ -2085,7 +2098,7 @@ describe("Agent config creator - laml", () => {
             name: "UNESCO update → site + news + events",
             existingConfigs: [
               agentConfig("historical_sites_search"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("city_events_weekend"),
             ],
             availableTools: [
@@ -2119,7 +2132,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Insider-trading filings → news + google sentiment",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("flight_tracker_daily"),
               agentConfig("crypto_price_tracker_hourly"),
             ],
@@ -2154,7 +2167,7 @@ describe("Agent config creator - laml", () => {
             name: "Food-safety alerts → inspections + news + events",
             existingConfigs: [
               agentConfig("city_events_weekend"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("historical_sites_search"),
             ],
             availableTools: [
@@ -2189,7 +2202,7 @@ describe("Agent config creator - laml", () => {
             name: "Tornado watch → weather + news + events",
             existingConfigs: [
               agentConfig("weather_tornado_immediate"),
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("city_events_weekend"),
             ],
             availableTools: [
@@ -2242,7 +2255,7 @@ describe("Agent config creator - laml", () => {
         ];
 
         const bigConfigSet = [
-          agentConfig("news_headlines_24h"),
+          agentConfig("news_headlines"),
           agentConfig("crypto_price_tracker_hourly"),
           agentConfig("flight_tracker_daily"),
           agentConfig("historical_sites_search"),
@@ -2258,7 +2271,7 @@ describe("Agent config creator - laml", () => {
           {
             name: "Composite crypto digest (on-chain sentiment + SEC filings + news)",
             existingConfigs: [
-              agentConfig("news_headlines_24h"),
+              agentConfig("news_headlines"),
               agentConfig("crypto_price_tracker_hourly"),
               agentConfig("flight_tracker_daily"),
               agentConfig("historical_sites_search"),
@@ -2560,13 +2573,15 @@ describe("Agent config creator - laml", () => {
    *                   that deprecates one id in favour of the other
    *     Assert      : RESPONSE_UPDATE_AGENT_CONFIG shows merged behaviour
    *                   and rate-limit parameter
+   *
+   * ============================================================================
    */
 
   describe("UPDATE_AGENT_CONFIG", () => {
     testGenerator([
       {
         name: "News headline - Agent specialization requirement leads to UPDATE_AGENT_CONFIG",
-        existingConfigs: [agentConfig("news_headlines_24h")],
+        existingConfigs: [agentConfig("news_headlines")],
         availableTools: [tool("news_search")],
         input: "Search headlines news exclusively focused on US president.",
         expected: {
@@ -2663,13 +2678,15 @@ describe("Agent config creator - laml", () => {
    *     Prompt      : fuzzy, multi-domain request (“climate change chatter”)
    *     Reasoning   : infer dominant medium/topic, tolerate 80 % fit
    *     Assert      : single, closest config chosen; no CREATE/UPDATE triggered
+   *
+   * ============================================================================
    */
 
   describe("SELECT_AGENT_CONFIG", () => {
     testGenerator([
       {
         name: "Collect news headlines via existing agent",
-        existingConfigs: [agentConfig("news_headlines_24h")],
+        existingConfigs: [agentConfig("news_headlines")],
         availableTools: [tool("news_search")],
         input:
           "Collect news headlines containing related to AI from the past 24 hours.",
@@ -2759,6 +2776,8 @@ describe("Agent config creator - laml", () => {
    *                   profiles in real time.”
    *     Reasoning   : violates policy *and* lacks tooling
    *     Assert      : unavailable   (should *not* pivot to CREATE/UPDATE/SELECT)
+   *
+   * ============================================================================
    */
 
   describe("AGENT_CONFIG_UNAVAILABLE", () => {

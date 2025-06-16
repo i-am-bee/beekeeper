@@ -10,14 +10,12 @@ import { Tool, JSONToolOutput, ToolEmitter, ToolInput } from "beeai-framework";
 import { Emitter } from "beeai-framework/emitter/emitter";
 import { z } from "zod";
 
-export const TOOL_NAME = "agent_config_creator";
-
-export type AgentRegistryToolResultData = AgentConfig;
+export const TOOL_NAME = "agent_config_initializer";
 
 export interface AgentConfigCreatorToolResult {
   method: string;
   success: boolean;
-  data: AgentRegistryToolResultData;
+  data: AgentConfig;
 }
 
 export const CreateAgentConfigSchema = z
@@ -77,7 +75,7 @@ export class AgentConfigInitializerTool extends Tool<
   }
 
   protected async _run(input: ToolInput<this>) {
-    let data: AgentRegistryToolResultData;
+    let data: AgentConfig;
     switch (input.method) {
       case "createAgentConfig":
         data = this.agentRegistry.createAgentConfig({

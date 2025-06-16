@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UserWorkflowMessageSchema } from "../dto.js";
+import { UserWorkflowMessageSchema } from "../../dto.js";
 
 export const ProblemDecomposerInputSchema = z.object({
   message: UserWorkflowMessageSchema,

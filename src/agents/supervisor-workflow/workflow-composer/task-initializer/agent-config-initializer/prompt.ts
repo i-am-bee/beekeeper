@@ -1,24 +1,27 @@
 import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
-import { TaskConfigInitializerInput, ExistingTaskConfig } from "./dto.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
-import { ExistingResourcesBuilder } from "./templates.js";
-import { protocol } from "./protocol.js";
 import * as laml from "@/laml/index.js";
+import { AgentConfigInitializerInput, ExistingAgentConfig } from "./dto.js";
+import { protocol } from "./protocol.js";
+import { ExistingResourcesBuilder } from "./templates.js";
 
 const guidelines = BodyTemplateBuilder.new()
+  .section({
+    content: `Agent config is a general template or a prescription (like a class in a programming language) for agents (like an instances) that will actually run at the runtime. They will receive an input from assigned task that is suitable to its purpose. Keep that in mind and design agent config general not just for one use with one set of parameters. Each specific adjustments should will provided through task inputs as an attributes.`,
+  })
   .section({
     title: {
       text: "Response header",
       level: 3,
     },
     content: `1. \`RESPONSE_CHOICE_EXPLANATION\` – justifying your choice.  
-2. \`RESPONSE_TYPE\` – exactly one of: \`CREATE_TASK_CONFIG\`, \`UPDATE_TASK_CONFIG\`, \`SELECT_TASK_CONFIG\`, \`TASK_CONFIG_UNAVAILABLE\` without extra white spaces or new lines.
+2. \`RESPONSE_TYPE\` – exactly one of: \`CREATE_AGENT_CONFIG\`, \`UPDATE_AGENT_CONFIG\`, \`SELECT_AGENT_CONFIG\`, \`AGENT_CONFIG_UNAVAILABLE\` without extra white spaces or new lines.
 These two lines are **mandatory** and must appear first, each on its own line.`,
   })
   .section({
     title: {
-      text: "CREATE_TASK_CONFIG — Rules (numbered for clarity)",
+      text: "CREATE_AGENT_CONFIG — Rules",
       level: 3,
     },
     content: `1. **When to use** – only if a brand-new agent is required.  
@@ -26,62 +29,52 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
 3. **\`description\`** – 1-2 sentences describing mission & scope.  
 4. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.  
 5. **\`tools\`** – list *only* tool IDs from **Available agent tools**.  
-6. Don’t repeat information that lives in the global task description.
-7. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and return \`TASK_CONFIG_UNAVAILABLE\`.`,
+6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.`,
   })
   .section({
     title: {
-      text: "UPDATE_TASK_CONFIG — Rules (numbered for clarity)",
+      text: "UPDATE_AGENT_CONFIG — Rules",
       level: 3,
     },
     content: `1. **When to use** – choose this type only if the agent’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, tool list adjustment).
 2. **\`agent_type\`** – repeat the existing agent’s name **unchanged**.
 3. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
 4. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the *Available agent tools* list**.  
-   ↳ If even one tool is missing, you must respond with \`TASK_CONFIG_UNAVAILABLE\`.
+   ↳ If even one tool is missing, you must respond with \`AGENT_CONFIG_UNAVAILABLE\`.
 5. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
 6. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.`,
   })
   .section({
     title: {
-      text: "SELECT_TASK_CONFIG — Rules (numbered for clarity)",
+      text: "SELECT_AGENT_CONFIG — Rules",
       level: 3,
     },
     content: `1. **When to use** – choose this type **only** when an existing agent’s mission, instructions, and tool set **already cover the new task exactly as-is**. No structural edits are required.
 2. **\`agent_type\`** – supply just the name of the selected agent config (lowercase snake_case).  
    *No other keys are allowed in this response object.*
-3. **No modifications** – you may **not** tweak \`instructions\`, \`description\`, or \`tools\`. If any change is needed, switch to \`UPDATE_TASK_CONFIG\` instead.
+3. **No modifications** – you may **not** tweak \`instructions\`, \`description\`, or \`tools\`. If any change is needed, switch to \`UPDATE_AGENT_CONFIG\` instead.
 4. **Scope confirmation** – before selecting, double-check that:  
    • The requested outcome is within the agent’s stated **objective**.  
    • All necessary capabilities are provided by the agent’s existing **tools**.  
-   • The agent’s **response format** matches what the user will expect.
-5. **Determinism** – output exactly two header lines followed by the minimal object:
-\`\`\`
-RESPONSE_CHOICE_EXPLANATION: <brief justification>
-RESPONSE_TYPE: SELECT_TASK_CONFIG
-RESPONSE_SELECT_TASK_CONFIG:
-  agent_type: <existing_agent_type>
-\`\`\`
-No extra whitespace, keys, or commentary beyond this structure.`,
+   • The agent’s **response format** matches what the user will expect.`,
   })
   .section({
     title: {
-      text: "TASK_CONFIG_UNAVAILABLE — Rules (numbered for clarity)",
+      text: "AGENT_CONFIG_UNAVAILABLE — Rules",
       level: 3,
     },
     newLines: {
       contentEnd: 0,
     },
     content: `1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:  
-  • Required capability is missing from the *Available agent tools*.  
-  • The request violates platform or policy limits.  
+  • Required capability is missing from the *Available agent tools*.   
   • Fulfilling the task would repurpose an existing agent beyond its scope.  
   • Any solution would need resources outside the current environment.
 2. **\`explanation\`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., “No tool supports 3-D rendering.”).  
   • **Do not** apologise, speculate, or offer alternative brainstorming.
 3. **Response structure** – after the two mandatory header lines, output exactly this object and nothing more:
 \`\`\`
-RESPONSE_TASK_CONFIG_UNAVAILABLE:
+RESPONSE_AGENT_CONFIG_UNAVAILABLE:
   explanation: <reason>
 \`\`\`
 4. **Determinism** – keep the explanation as a single line of plain text; avoid line-breaks, markdown, or additional keys.`,
@@ -96,16 +89,16 @@ const decisionCriteria = BodyTemplateBuilder.new()
     },
     content: `| If **ALL** these are true → | …then choose **RESPONSE_TYPE** | Short rationale |
 |---|---|---|
-| • An existing agent’s purpose, instructions **and** tools already satisfy the user need.<br>• No structural changes are required. | **SELECT_TASK_CONFIG** | Re-use as-is. |
-| • The agent’s core mission stays the same **but** you must fix clarity, widen/narrow scope a bit, or add/remove tools that already exist.<br>• No repurposing to a new domain. | **UPDATE_TASK_CONFIG** | Light touch edit. |
-| • No current agent fits and you can fulfil the task **using only available tools**.<br>• Creating a fresh agent will not duplicate an existing \`agent_type\`. | **CREATE_TASK_CONFIG** | Brand-new config. |
-| • Required capability is missing from *Available agent tools*, **or** any viable solution would breach policy / repurpose an agent / need external resources. | **TASK_CONFIG_UNAVAILABLE** | Task impossible within environment. |
+| • An existing agent’s purpose, instructions **and** tools already satisfy the user need.<br>• No structural changes are required. | **SELECT_AGENT_CONFIG** | Re-use as-is. |
+| • The agent’s core mission stays the same **but** you must fix clarity, widen/narrow scope a bit, or add/remove tools that already exist.<br>• No repurposing to a new domain. | **UPDATE_AGENT_CONFIG** | Light touch edit. |
+| • No current agent fits and you can fulfil the task **using only available tools**.<br>• Creating a fresh agent will not duplicate an existing \`agent_type\`. | **CREATE_AGENT_CONFIG** | Brand-new config. |
+| • Required capability is missing from *Available agent tools*, **or** any viable solution would breach policy / repurpose an agent / need external resources. | **AGENT_CONFIG_UNAVAILABLE** | Task impossible within environment. |
 
 **Guidelines for all branches**
 
 1. If more than one row seems to apply, pick the **top-most** matching row.  
-2. Perform the uniqueness check for \`agent_type\` **before** emitting \`CREATE_TASK_CONFIG\`; if the name already exists, return \`TASK_CONFIG_UNAVAILABLE\`.  
-3. Tool validation: any tool you list must appear in **Available agent tools**; otherwise respond with \`TASK_CONFIG_UNAVAILABLE\`.  
+2. Perform the uniqueness check for \`agent_type\` **before** emitting \`CREATE_AGENT_CONFIG\`; if the name already exists, use \`SELECT_AGENT_CONFIG\`.  
+3. Tool validation: any tool you list must appear in **Available agent tools**; otherwise respond with \`AGENT_CONFIG_UNAVAILABLE\`.  
 4. Arrays (e.g., \`tools\`) must be in **alphabetical order** for deterministic grading.`,
   })
   .build();
@@ -115,7 +108,7 @@ interface ExampleInput {
   subtitle: string;
   user: string;
   context: {
-    existingTaskConfigs: ExistingTaskConfig[];
+    existingAgentConfigs: ExistingAgentConfig[];
     availableTools: AgentAvailableTool[];
   };
   example: laml.ProtocolResult<typeof protocol>;
@@ -133,7 +126,7 @@ const examples = ((inputs: ExampleInput[]) =>
         })
         .context(
           ExistingResourcesBuilder.new()
-            .taskConfigs(input.context.existingTaskConfigs)
+            .agentConfigs(input.context.existingAgentConfigs)
             .availableTools(input.context.availableTools)
             .build(),
         )
@@ -147,7 +140,7 @@ const examples = ((inputs: ExampleInput[]) =>
     subtitle:
       "Collect tweets (Available suitable agent tool allow to create a new agent config)",
     context: {
-      existingTaskConfigs: [],
+      existingAgentConfigs: [],
       availableTools: [
         {
           toolName: "twitter_search",
@@ -160,18 +153,18 @@ const examples = ((inputs: ExampleInput[]) =>
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "No existing agent can gather tweets on demand; a new config is required.",
-      RESPONSE_TYPE: "CREATE_TASK_CONFIG",
-      RESPONSE_CREATE_TASK_CONFIG: {
-        agent_type: "tweets_collector_24h",
+      RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+      RESPONSE_CREATE_AGENT_CONFIG: {
+        agent_type: "tweets_collector",
         description:
           "Gathers tweets that match a user-supplied query or hashtag within a given time window (default = 24 h).",
         instructions: `Context: You are a tweet collection agent specializing in gathering tweets containing specific hashtags. You have access to a web search tool that allows you to find tweets based on search queries. Users will provide you with a hashtag and a time frame for the tweets they want collected. 
 
-Objective: Collect tweets containing the specified hashtag from the past 24 hours. Use the web search tool to execute a search query for the hashtag and filter results to include only tweets from the past 24 hours. Provide a list of tweet URLs and their content.
+Objective: Collect tweets containing the specified hashtag from the specific time window. Use the web search tool to execute a search query for the hashtag and filter results to include only tweets from the specific time window. Provide a list of tweet URLs and their content.
 
 Response format: Begin with a summary of the search query and time frame. Then list each tweet with its URL and content. Ensure the list is clear and organized, with each tweet entry on a new line. For example:
 
-#AI Tweets from the past 24 hours:
+#AI Tweets from the past [time_window]:
 1. URL: [tweet_url_1] Content: [tweet_content_1]
 2. URL: [tweet_url_2] Content: [tweet_content_2]`,
         tools: ["twitter_search"],
@@ -183,7 +176,7 @@ Response format: Begin with a summary of the search query and time frame. Then l
     subtitle:
       "Collect tweets (No suitable agent tool or existing agent config)",
     context: {
-      existingTaskConfigs: [],
+      existingAgentConfigs: [],
       availableTools: [
         {
           toolName: "image_generator",
@@ -196,8 +189,8 @@ Response format: Begin with a summary of the search query and time frame. Then l
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "No existing agent can gather tweets on demand; a new config is required but there is no suitable tool.",
-      RESPONSE_TYPE: "TASK_CONFIG_UNAVAILABLE",
-      RESPONSE_TASK_CONFIG_UNAVAILABLE: {
+      RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
+      RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
         explanation:
           "Cannot create or update an agent because there is no tool for collecting tweets.",
       },
@@ -207,7 +200,7 @@ Response format: Begin with a summary of the search query and time frame. Then l
     title: "Update agent config",
     subtitle: "Generalization of restaurants recommendation",
     context: {
-      existingTaskConfigs: [
+      existingAgentConfigs: [
         {
           agentType: "restaurant_recommendations",
           description: "Agent for recommending vegan restaurants in a city.",
@@ -217,6 +210,8 @@ Objective: Provide a list of vegan restaurants, including brief descriptions and
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
           tools: ["google_search", "web_extract"],
+          agentConfigId: "operator:restaurant_recommendations[1]:1",
+          agentConfigVersion: 1,
         },
       ],
       availableTools: [
@@ -236,8 +231,8 @@ Response format: Present the information in a list format with each restaurant h
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "There isn’t an existing agent configuration specifically designed to find Chinese restaurants, but there is one for recommending vegan options, so I’ll update that agent to make it more general.",
-      RESPONSE_TYPE: "UPDATE_TASK_CONFIG",
-      RESPONSE_UPDATE_TASK_CONFIG: {
+      RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
+      RESPONSE_UPDATE_AGENT_CONFIG: {
         agent_type: "restaurant_recommendations",
         description: "Agent for recommending restaurants in a city.",
         instructions: `Context: You are an agent specialized in finding restaurants that satisfy user-defined criteria—such as cuisine (e.g., Italian, Thai), dietary needs (e.g., vegan, gluten-free), budget, or vibe—in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
@@ -253,7 +248,7 @@ Response format: Present the information in a list format with each restaurant h
     title: "Select agent config",
     subtitle: "Weather information",
     context: {
-      existingTaskConfigs: [
+      existingAgentConfigs: [
         {
           agentType: "weather_lookup",
           description:
@@ -269,6 +264,8 @@ Current Weather in [Location] on [Date]:
 - Conditions: [conditions]
 - Notable Patterns: [patterns]`,
           tools: ["weather_conditions"],
+          agentConfigId: "operator:weather_lookup[1]:1",
+          agentConfigVersion: 1,
         },
       ],
       availableTools: [
@@ -293,8 +290,8 @@ Current Weather in [Location] on [Date]:
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "There is an existing agent configuration for getting actual weather situation that can satisfy the request without modification.",
-      RESPONSE_TYPE: "SELECT_TASK_CONFIG",
-      RESPONSE_SELECT_TASK_CONFIG: {
+      RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
+      RESPONSE_SELECT_AGENT_CONFIG: {
         agent_type: "weather_lookup",
       },
     },
@@ -303,7 +300,7 @@ Current Weather in [Location] on [Date]:
     title: "Agent config unavailable",
     subtitle: "3-D house rendering",
     context: {
-      existingTaskConfigs: [
+      existingAgentConfigs: [
         {
           agentType: "restaurant_recommendations",
           description: "Agent for recommending restaurants in a city.",
@@ -313,6 +310,8 @@ Objective: Provide a list of recommended restaurants, including brief descriptio
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
           tools: ["tavily_search"],
+          agentConfigId: "operator:restaurant_recommendations[1]:1",
+          agentConfigVersion: 1,
         },
       ],
       availableTools: [
@@ -331,8 +330,8 @@ Response format: Present the information in a list format with each restaurant h
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "No existing agent handles 3-D rendering and no available tool supports CAD or graphics output.",
-      RESPONSE_TYPE: "TASK_CONFIG_UNAVAILABLE",
-      RESPONSE_TASK_CONFIG_UNAVAILABLE: {
+      RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
+      RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
         explanation:
           "Cannot create or update an agent because there is no tool for 3-D modelling or rendering in the current tool-set.",
       },
@@ -342,7 +341,7 @@ Response format: Present the information in a list format with each restaurant h
     title: "Agent config unavailable",
     subtitle: "Missing suitable tool",
     context: {
-      existingTaskConfigs: [],
+      existingAgentConfigs: [],
       availableTools: [
         {
           toolName: "sound_generator",
@@ -354,8 +353,8 @@ Response format: Present the information in a list format with each restaurant h
     example: {
       RESPONSE_CHOICE_EXPLANATION:
         "No listed tool can collect headline; agent cannot be created.",
-      RESPONSE_TYPE: "TASK_CONFIG_UNAVAILABLE",
-      RESPONSE_TASK_CONFIG_UNAVAILABLE: {
+      RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
+      RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
         explanation:
           "Cannot create or update an agent because there is no tool for collecting headlines.",
       },
@@ -364,12 +363,12 @@ Response format: Present the information in a list format with each restaurant h
 ]);
 
 export const prompt = ({
-  existingConfigs,
+  existingAgentConfigs,
   availableTools,
-}: TaskConfigInitializerInput) =>
+}: Pick<AgentConfigInitializerInput, "existingAgentConfigs" | "availableTools">) =>
   BodyTemplateBuilder.new()
     .introduction(
-      `You are an **TaskConfigCreator** — the action module in a multi-agent workflow.  
+      `You are an **AgentConfigCreator** — the action module in a multi-agent workflow.  
 Your mission is to select, or—if none exists—create new agent configs to accomplish the task. You can also update an existing config as long as the update doesn’t change its purpose.`,
     )
     .section({
@@ -387,7 +386,7 @@ Your mission is to select, or—if none exists—create new agent configs to acc
         end: true,
       },
       content: ExistingResourcesBuilder.new()
-        .taskConfigs(existingConfigs)
+        .agentConfigs(existingAgentConfigs)
         .availableTools(availableTools)
         .build(),
     })

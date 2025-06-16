@@ -1,23 +1,20 @@
-
-import {
-  AgentAvailableToolSchema,
-} from "@/agents/supervisor-workflow/dto.js";
 import { TaskConfigSchema } from "@/tasks/manager/dto.js";
 import { z } from "zod";
+import { ExistingAgentConfigSchema } from "../agent-config-initializer/dto.js";
 
 export const ExistingTaskConfigSchema = TaskConfigSchema.pick({
   taskType: true,
   agentType: true,
   taskConfigInput: true,
   description: true,
-  
 });
 export type ExistingTaskConfig = z.infer<typeof ExistingTaskConfigSchema>;
 
 export const TaskConfigInitializerInputSchema = z.object({
-  existingConfigs: z.array(ExistingTaskConfigSchema),
-  availableTools: z.array(AgentAvailableToolSchema),
+  existingTaskConfigs: z.array(ExistingTaskConfigSchema),
+  existingAgentConfigs: z.array(ExistingAgentConfigSchema),
   task: z.string(),
+  actingAgentId: z.string(),
 });
 export type TaskConfigInitializerInput = z.infer<
   typeof TaskConfigInitializerInputSchema

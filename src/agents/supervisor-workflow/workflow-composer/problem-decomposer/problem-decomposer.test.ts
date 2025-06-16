@@ -1,10 +1,10 @@
 import { getChatLLM } from "@/helpers/llm.js";
 import { describe, expect, it } from "vitest";
+import { WorkflowMessage } from "../../dto.js";
 import {
   ProblemDecomposerOutputTypeEnum,
   ProblemDecomposerOutputTypeEnumSchema,
 } from "./dto.js";
-import { WorkflowMessage } from "../dto.js";
 import * as problemDecomposer from "./problem-decomposer.js";
 
 interface TestDataItem {

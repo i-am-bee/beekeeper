@@ -3,7 +3,7 @@ import { Message, SystemMessage } from "beeai-framework/backend/message";
 import { ZodParserField } from "beeai-framework/parsers/field";
 import { LinePrefixParser } from "beeai-framework/parsers/linePrefix";
 import { z } from "zod";
-import { mapWorkflowMessage } from "../dto.js";
+import { mapWorkflowMessage } from "../../dto.js";
 import {
   ProblemDecomposerInput,
   ProblemDecomposerOutputTypeEnumSchema,

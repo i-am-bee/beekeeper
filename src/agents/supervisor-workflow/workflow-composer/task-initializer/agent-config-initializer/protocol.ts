@@ -52,7 +52,7 @@ export const protocol = laml.ProtocolBuilder.new()
     attributes: laml.ProtocolBuilder.new()
       .text({
         name: "agent_type",
-        description: "Name of the new agent config type in snake_case",
+        description: "Name of an existing agent config type to update",
       })
       .text({
         name: "description",

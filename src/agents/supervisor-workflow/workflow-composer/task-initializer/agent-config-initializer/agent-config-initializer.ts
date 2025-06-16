@@ -52,6 +52,8 @@ export class AgentConfigInitializer extends LLMCall<
               description: toolCallResult.result.data.description,
               instructions: toolCallResult.result.data.instructions,
               tools: clone(toolCallResult.result.data.tools),
+              agentConfigId: toolCallResult.result.data.agentConfigId,
+              agentConfigVersion: toolCallResult.result.data.agentConfigVersion,
             },
           };
         }
@@ -78,6 +80,8 @@ export class AgentConfigInitializer extends LLMCall<
               description: toolCallResult.result.data.description,
               instructions: toolCallResult.result.data.instructions,
               tools: clone(toolCallResult.result.data.tools),
+              agentConfigId: toolCallResult.result.data.agentConfigId,
+              agentConfigVersion: toolCallResult.result.data.agentConfigVersion,
             },
           };
         }
@@ -87,14 +91,14 @@ export class AgentConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_SELECT_AGENT_CONFIG is missing`);
           }
 
-          const selected = context.input.existingConfigs.find(
+          const selected = context.input.existingAgentConfigs.find(
             (c) => c.agentType === response.agent_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${context.input.existingConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${context.input.existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
             };
           }
 
@@ -102,13 +106,12 @@ export class AgentConfigInitializer extends LLMCall<
             type: "SUCCESS",
             agentConfig: clone(selected),
           };
-          break;
         }
 
         case "AGENT_CONFIG_UNAVAILABLE": {
           const response = result.RESPONSE_AGENT_CONFIG_UNAVAILABLE;
           if (!response) {
-            throw new Error(`RESPONSE_SELECT_AGENT_CONFIG is missing`);
+            throw new Error(`RESPONSE_AGENT_CONFIG_UNAVAILABLE is missing`);
           }
 
           return {

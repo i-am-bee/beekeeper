@@ -1,6 +1,6 @@
 import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
-import { ExistingTaskConfig } from "./dto.js";
+import { ExistingAgentConfig } from "./dto.js";
 import * as laml from "@/laml/index.js";
 
 export class ExistingResourcesBuilder {
@@ -14,7 +14,7 @@ export class ExistingResourcesBuilder {
     return new ExistingResourcesBuilder();
   }
 
-  taskConfigs(configs?: ExistingTaskConfig[]) {
+  agentConfigs(configs?: ExistingAgentConfig[]) {
     const content = !configs?.length
       ? "There is no existing agent configs yet."
       : laml.printLAMLObject(
@@ -50,7 +50,9 @@ export class ExistingResourcesBuilder {
       : laml.printLAMLObject(
           tools.reduce((acc, curr, idx) => {
             Object.assign(acc, {
-              [`${idx + 1}. ${curr.toolName}`]: { description: curr.description },
+              [`${idx + 1}. ${curr.toolName}`]: {
+                description: curr.description,
+              },
             } satisfies laml.dto.LAMLObject);
             return acc;
           }, {}),
