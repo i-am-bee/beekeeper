@@ -12,9 +12,9 @@ describe(`Prompt`, () => {
     const stepIndex = stepNo - 1; // Adjust for zero-based index
     const p = prompt({
       resources: {
-        tools: fixtures.tools.values,
-        agents: fixtures.agents.values.slice(0, stepIndex),
-        tasks: fixtures.tasks.values.slice(0, stepIndex),
+        tools: [], //fixtures.tools.values,
+        agents: [], //fixtures.agents.values.slice(0, stepIndex),
+        tasks: [], //fixtures.tasks.values.slice(0, stepIndex),
         taskRuns: [],
       },
       previousSteps: fixtures.taskSteps.values

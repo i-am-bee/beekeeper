@@ -27,30 +27,18 @@ Agents that are already running. Each can be assigned tasks that fall within its
 1. historical_sites_finder:
   agent_type: historical_sites_finder
   tools: historical_sites_search_api
-  instructions: Context: The agent receives a location as input and searches for historical sites within that area.
-Objective: Use the historical_sites_search_api to find and list historical sites in the specified location.
-Response format: Return a list of historical sites, including their names, significance, and any available coordinates or jurisdiction details.
   description: This agent identifies historical sites in a specified location using the historical_sites_search_api.
 2. sports_events_searcher:
   agent_type: sports_events_searcher
   tools: tavily_search_api
-  instructions: Context: The agent receives a location and duration as input and searches for sports events happening during that time.
-Objective: Use the tavily_search_api to find and list sports events, including their schedule and ticket information, in the specified location and duration.
-Response format: Return a list of sports events, including event names, dates, venues, and ticket purchasing details.
   description: This agent searches for sports events happening in a specified location and duration using the tavily_search_api.
 3. dining_recommendations_searcher:
   agent_type: dining_recommendations_searcher
   tools: tavily_search_api
-  instructions: Context: The agent receives a location and a list of dining preferences as input and searches for dining recommendations that match these criteria.
-Objective: Use the tavily_search_api to find and list dining options, including restaurant names, cuisine types, and any available ratings or reviews, in the specified location.
-Response format: Return a list of dining recommendations, including restaurant names, cuisine types, and any available ratings or reviews.
   description: This agent searches for dining recommendations based on specified location and cuisine preferences using the tavily_search_api.
 4. itinerary_compiler:
   agent_type: itinerary_compiler
   tools: 
-  instructions: Context: The agent receives lists of historical sites, sports events, and dining recommendations as input.
-Objective: Organize the provided information into a structured itinerary for a specified number of days.
-Response format: Return a day-by-day itinerary, including suggested times for visits, events, and meals, ensuring a balanced and enjoyable schedule.
   description: This agent compiles a multi-day itinerary based on provided historical sites, sports events, and dining recommendations.
 
 ### Existing tasks
@@ -179,6 +167,8 @@ RESPONSE_MISSING_INPUTS: <!optional;object;0>
 ### STEP_SEQUENCE - Rules
 1. Use plain imperatives (e.g., “Book flight Prague → Rome”).
 2. Each step must define its **inputs and outputs** explicitly.
+   a.  **Completeness check.**  The output list of a step *must* name every field that any *later* step will reference.  
+   (Example: if Step 3 needs `citation_source`, Step 1 or 2 must include `citation_source` in its outputs.)
 3. Each step’s input must be explicitly justified. Each input must be traceable to a valid source:
    - Either explicitly provided in user message,
    - Produced by a previous step (with [from Step X]),
@@ -238,7 +228,7 @@ RESPONSE_MISSING_INPUTS: <!optional;object;0>
     - Is directly present in user message, OR
     - Is produced by a prior step (explicitly using [from Step X]), OR
     - Is justified with a clearly written default assumption in the step itself (explicitly using [source: assumed]).
-    If any required field is missing and cannot be sourced or assumed, you MUST respond with **MISSING_INPUTS**.
+    If any required field (including those referenced by later steps) is missing and cannot be sourced … you MUST respond with **MISSING_INPUTS**.
 
 **Example:**
 ```
@@ -508,7 +498,56 @@ RESPONSE_STEP_SEQUENCE:
     6. Provide an analytical breakdown of how the narratives converge in the screenplay scene (input: screenplay scene [from Step 5]; output: analytical breakdown) [LLM]
 ```
 
-### Example[5]: MISSING_INPUTS - Route optimization for delivery planning
+### Example[5]: STEP_SEQUENCE - Asteroid Mining Feasibility Study for Asteroid 433-Eros (Cross-referencing or verification grounded with tools)
+
+**Context:**
+---
+
+### Available agent tools
+1. spectral_composition_analyzer_api:
+  description: Analyzes asteroid mineral composition using spectroscopic data. Provides raw element percentages and mineral identification but cannot assess mining difficulty or economic viability.
+  toolInput: {"asteroid_id":"<string>","analysis_depth":"surface|deep"}
+2. orbital_mechanics_calculator_api:
+  description: Calculates orbital parameters, approach windows, and delta-v requirements for asteroid missions. Uses asteroid ID to compute trajectory data and cross-references with mineral composition for mission planning.
+  toolInput: {"asteroid_id":"<string>","mineral_composition":"<object>"}
+
+### Existing agents
+There are no existing agents yet.
+
+### Existing tasks
+There are no existing tasks yet.
+
+---
+**User:**
+{
+  "requestType": "Asteroid Assessment Process",
+  "primaryGoal": "Streamline the assessment process for Asteroid 433-Eros to determine mining viability.",
+  "parameters": {
+    "asteroid": "433-Eros"
+  },
+  "subTasks": [
+    "Analyze the mineral composition data of Asteroid 433-Eros.",
+    "Cross-reference the mineral composition findings with orbital mechanics calculations.",
+    "Compile a mining viability report that integrates the technical findings from the mineral analysis and orbital mechanics."
+  ],
+  "expectedDeliverables": [
+    "A detailed report on the mineral composition of Asteroid 433-Eros.",
+    "A set of cross-referenced data between mineral composition and orbital mechanics.",
+    "A comprehensive mining viability report for Asteroid 433-Eros."
+  ]
+}
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The problem is logically consistent and can be solved using the available tools. Each subtask can be addressed with the provided tools, and the necessary inputs are either given or can be assumed.
+RESPONSE_TYPE: STEP_SEQUENCE
+RESPONSE_STEP_SEQUENCE:
+  step_sequence:
+    1. Analyze the mineral composition data of Asteroid 433-Eros (input: asteroid_id: "433-Eros", analysis_depth: "deep"; output: mineral composition data) [tools: spectral_composition_analyzer_api]
+    2. Cross-reference the mineral composition findings with orbital mechanics calculations (input: asteroid_id: "433-Eros", mineral_composition: mineral composition data [from Step 1]; output: cross-referenced data) [tools: orbital_mechanics_calculator_api]
+    3. Compile a mining viability report that integrates the technical findings from the mineral analysis and orbital mechanics (input: mineral composition data [from Step 1], cross-referenced data [from Step 2]; output: comprehensive mining viability report) [LLM]
+```
+
+### Example[6]: MISSING_INPUTS - Route optimization for delivery planning
 
 **Context:**
 ---

@@ -6,7 +6,6 @@ import f1_fixtures from "../../fixtures/__test__/f1-race-prediction/index.js";
 import boston_trip_fixtures from "../../fixtures/__test__/boston-trip/index.js";
 import flight_prague_madrid from "../../fixtures/__test__/flight-prague-madrid/index.js";
 import poetry_song_analysis_fixtures from "../../fixtures/__test__/poetry-song-analysis/index.js";
-import disaster_relief_fixtures from "../../fixtures/prompt/showcases/disaster-relief-supply-drop/index.js";
 import medieval_charter_fixtures from "../../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
 import micro_grid_fixtures from "../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
 import smart_farm_fixtures from "../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
@@ -14,6 +13,7 @@ import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative
 import beekeeping_site_fixtures from "../../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
 import deep_sea_fixtures from "../../fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import asteroid_mining from "../../fixtures/prompt/showcases/asteroid-mining-feasibility/index.js";
+import feedback_analysis from "../../fixtures/prompt/showcases/feedback-sentiment-analysis/index.js";
 import { ProblemDecomposer } from "./problem-decomposer.js";
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
@@ -29,7 +29,7 @@ const onUpdate = () => ({});
  */
 describe(`Problem Decomposer (Playground)`, () => {
   it(`play`, async () => {
-    const fixtures = asteroid_mining; // Choose fixture
+    const fixtures = feedback_analysis; // Choose fixture
 
     const problemDecomposer = new ProblemDecomposer(
       logger,

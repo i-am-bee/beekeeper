@@ -185,10 +185,31 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
     ↳ **Uniqueness guard** – if an agent with the same name already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.
     ↳ **Generic naming** – do not use specific runtime values (e.g., “war_news_search”); keep it general (e.g., “news_source_search”).
     ↳ **Conceptual parameter guard** – Never create a new agent config just because the concept, theme, or topic in the input has changed. General-purpose agents should handle such variation through runtime inputs. For example, generating title for "article A" vs "article B" still uses the same agent.
-
 3. **\`tools\`** – list *only* tool IDs from **Available agent tools** in **Context section**.
-4. **\`description\`** – 1-2 sentences describing mission & scope.
-5. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.
+4. **\`description\`** – 1-2 sentences following this pattern:
+    ↳ **Format**: "[What it does] for [target user] by [how it works]. Delivers [type of output/recommendations]."
+    ↳ **Focus on outcomes**: Emphasize actionable results over technical processes
+    ↳ **Target audience**: Specify who would use this agent
+    ↳ **Examples**:
+        • "Analyzes investment portfolios for financial advisors by processing market data and risk metrics. Delivers rebalancing strategies and client recommendations."
+        • "Evaluates manufacturing quality for production managers by monitoring defect patterns and process variables. Delivers equipment adjustments and quality improvement plans."
+        • "Assesses cybersecurity threats for IT teams by analyzing network traffic and vulnerability scans. Delivers incident response priorities and security hardening steps."
+5. **\`instructions\`** – Write a structured, multi-paragraph guide with exactly these three mandatory sub-headers:
+   **Context:** (Required - 2-3 sentences)
+    - Describe the operational environment where this agent functions
+    - Specify the typical data sources or input origins the agent expects
+    - Mention any important assumptions about data format, quality, or timing
+   **Objective:** (Required - 2-4 sentences)  
+    - State the primary goal using an action verb (analyze, extract, generate, validate, etc.)
+    - List the specific steps the agent will perform, in sequence
+    - Specify any validation, error-handling, or quality checks required
+    - Mention performance criteria or success metrics if applicable
+   **Response format:**
+    - **Begin with a brief human‑readable summary** (1–2 sentences) of the main result or insight.  
+    - Present key details with **Markdown headings, bullet lists, or tables** so a non‑technical reader can scan findings quickly.  
+    - **If a strict machine‑readable payload is required** (e.g., JSON, CSV), enclose it in a fenced code block *after* the narrative section and label the block “Raw JSON output”.  
+    - **Never output raw JSON alone**; always pair it with a human‑oriented explanation or visualization.  
+    - Keep section order and heading names consistent across responses.   
 6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.
 
 #### LLM-Only Agent Guidelines
@@ -207,10 +228,7 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
 - Set \`tools: []\` (empty array) or omit the tools field entirely
 - Focus the \`instructions\` on the specific text processing or analysis task
 - Ensure the agent can handle the expected input format and produce the required output format
-- Design the agent to be stateless and generalizable across similar text-based tasks
-
-
-`,
+- Design the agent to be stateless and generalizable across similar text-based tasks`,
     });
   }
 

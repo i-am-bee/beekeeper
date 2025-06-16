@@ -33,6 +33,7 @@ Your job is to prepare a **task run** for the current task step using the assign
 2. Task config points to the agent config that will be used to execute the task run.
 3. The runtime engine will inject the results from parent steps when it sees `"[from Step X]"` in the input. You do **not** need to resolve these manually.
 4. Your job is to extract only non-dependent input values (i.e., input values not marked with [from Step X]) and use them to fill the matching fields from the task config input template.
+   If **no** non‑dependent fields remain, leave `task_run_input` completely empty.
 ⚠️ Do not include any values marked [from Step X] in the task_run_input. These will be injected by the runtime engine automatically.
 ---
 
@@ -42,7 +43,7 @@ Your job is to prepare a **task run** for the current task step using the assign
 2. Find the matching task config from the list.
 3. Use the `task_config_input` as a template to prepare the actual input.
 4. Copy the values from the task step input that are **not** marked `[from Step X]`.
-   a. Ignore any input parameters marked [from Step X] — do not include them in your task_run_input. These will be filled in automatically later.
+   a. Ignore every parameter marked [from Step X]; never copy them, never stub them with angle‑bracket placeholders, and never rename them. They will be auto‑injected by the runtime engine.
 5. Output a task run using the correct format.
 ---
 
@@ -127,31 +128,19 @@ The previous steps represent the sequence of tasks completed before the current 
 1. document_scanner:
   agent_type: document_scanner
   tools: hires_scan_api
-  instructions: Context: The agent receives a list of document IDs that need to be scanned.
-Objective: Use the book-cradle scanner to produce 600 dpi TIFF images for each document ID provided.
-Response format: Return a list of URLs pointing to the scanned images, maintaining the order of the input document IDs.
-  description: This agent scans documents to produce high-resolution images and returns URLs of the scanned images.
+  description: Scans historical documents for archivists by producing high-resolution TIFFs from cradle-based hardware. Delivers image URLs with resolution metadata.
 2. ocr_latin_text_extractor:
   agent_type: ocr_latin_text_extractor
   tools: ocr_latin_script_api
-  instructions: Context: The agent receives a list of image URLs and a language hint indicating the text is in Latin script.
-Objective: Use the OCR tool to extract text from each image URL provided, ensuring the text is in Latin script.
-Response format: Return a list of extracted text snippets with corresponding confidence scores for each image, maintaining the order of the input image URLs.
-  description: This agent extracts text from images using OCR tuned for Latin script and provides the extracted text along with confidence scores.
+  description: Extracts Latin-script text for manuscript researchers by applying OCR to scanned images. Delivers recognized text with confidence levels.
 3. language_verification:
   agent_type: language_verification
   tools: language_detect_api
-  instructions: Context: The agent receives a list of text snippets that need to be verified for their language.
-Objective: Use the language detection tool to determine the language of each text snippet provided.
-Response format: Return a list of language detection results, including the detected language and confidence score for each text snippet, maintaining the order of the input text snippets.
-  description: This agent verifies the language of the provided text snippets and returns the language detection results.
+  description: Verifies detected languages for editors and pipeline validators by analyzing OCR output. Delivers ISO codes and confidence scores.
 4. vector_text_ingestor:
   agent_type: vector_text_ingestor
   tools: vector_store_ingest_api
-  instructions: This agent ingests verified text into a vector search system, chunking the text and storing it with provenance tags.
-  description: Context: The agent receives a list of document IDs and corresponding verified text that needs to be ingested into a vector search system.
-Objective: Use the vector_store_ingest_api to chunk the text into default sizes of 1000 characters, embed the chunks, and store them with provenance tags.
-Response format: Return a confirmation of successful loading for each document ID, maintaining the order of the input document IDs.
+  description: Stores structured document content for semantic search engineers by chunking and embedding verified text. Delivers ingestion confirmation with provenance metadata.
 
 
 ---
@@ -165,7 +154,7 @@ RESPONSE_CREATE_TASK_RUN:
   task_run_input: { "document_ids": ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"], "chunk_size": 1000  }
 ```
 
-### Example[2]: CREATE_TASK_RUN - Micro-grid Dispatch Planning Workflow
+### Example[2]: CREATE_TASK_RUN - Micro-grid Dispatch Planning Workflow (Empty task_run_input because input is marked with [from Step X])
 
 **Context:**
 ---
@@ -202,31 +191,19 @@ The previous steps represent the sequence of tasks completed before the current 
 1. electricity_demand_forecaster:
   agent_type: electricity_demand_forecaster
   tools: demand_forecast_api
-  instructions: Context: The agent receives a list of city block IDs and a time range to forecast electricity demand.
-Objective: Use the demand_forecast_api to predict electricity demand for each specified city block in 15-minute intervals.
-Response format: Return the demand forecast as a structured list or array, with each entry corresponding to a 15-minute interval.
-  description: This agent forecasts electricity demand for specified city blocks in 15-minute intervals using the demand_forecast_api.
+  description: Forecasts short-term power demand for grid operators by analyzing city block usage patterns. Delivers 15-minute interval predictions per block.
 2. solar_battery_forecaster:
   agent_type: solar_battery_forecaster
   tools: solar_battery_forecast_api
-  instructions: Context: The agent receives a list of site IDs and a time range to forecast solar generation and battery state-of-charge.
-Objective: Use the solar_battery_forecast_api to predict solar output and battery state-of-charge for each specified site in 15-minute intervals.
-Response format: Return the solar and battery forecasts as a structured list or array, with each entry corresponding to a 15-minute interval.
-  description: This agent forecasts solar generation and battery state-of-charge for specified sites in 15-minute intervals using the solar_battery_forecast_api.
+  description: Projects solar output and battery state for site managers by forecasting rooftop PV and charge levels. Delivers 15-minute interval profiles for generation and storage.
 3. dispatch_schedule_optimizer:
   agent_type: dispatch_schedule_optimizer
   tools: grid_load_optimizer_api
-  instructions: Context: The agent receives demand forecasts, solar and battery forecasts, and a frequency deviation constraint to generate an optimized dispatch schedule.
-Objective: Use the grid_load_optimizer_api to calculate control vectors that meet the forecasted demand while ensuring frequency deviation stays within the specified limits.
-Response format: Return the control vectors and a KPI report as a structured output, detailing the optimization results and performance metrics.
-  description: This agent generates an optimized dispatch schedule to meet forecasted electricity demand using solar, battery, and EV resources while maintaining frequency stability.
+  description: Optimizes power dispatch for grid controllers by aligning supply and demand under frequency constraints. Delivers control vectors and performance metrics.
 4. dispatch_command_sender:
   agent_type: dispatch_command_sender
   tools: dispatch_command_api
-  instructions: Context: The agent receives control vectors that need to be sent to implement an optimized dispatch schedule.
-Objective: Use the dispatch_command_api to send the control vectors and receive an acknowledgement of dispatch.
-Response format: Return the acknowledgement of dispatch as a confirmation of successful implementation.
-  description: This agent sends control vectors to implement an optimized dispatch schedule and receives acknowledgements of dispatch.
+  description: Implements control plans for infrastructure managers by sending optimized dispatch commands. Delivers acknowledgements confirming successful dispatch.
 
 
 ---
@@ -240,7 +217,7 @@ RESPONSE_CREATE_TASK_RUN:
   task_run_input: 
 ```
 
-### Example[3]: CREATE_TASK_RUN - Smart-Farm “Rain-Contingency” Harvest Planner
+### Example[3]: CREATE_TASK_RUN - Smart-Farm “Rain-Contingency” Harvest Planner (Empty task_run_input because all inputs are marked with [from Step X])
 
 **Context:**
 ---
@@ -289,45 +266,27 @@ The previous steps represent the sequence of tasks completed before the current 
 1. field_metadata_retriever:
   agent_type: field_metadata_retriever
   tools: field_info_api
-  instructions: Context: The agent is designed to fetch and return detailed metadata for a specified field.
-Objective: Given a field name or ID, the agent will use the field_info_api to obtain and return the field's location, crop type, and moisture constraints.
-Response format: The agent will output the field details in a structured format, including location, crop type, and moisture limits.
-  description: This agent retrieves field metadata and agronomic details such as location, crop type, and moisture limits using the field_info_api.
+  description: Retrieves field metadata for farm managers by querying agronomic databases. Delivers crop type, area, and moisture thresholds.
 2. equipment_id_retriever:
   agent_type: equipment_id_retriever
   tools: equipment_registry_api
-  instructions: Context: The agent is designed to fetch and return equipment IDs for a specified field.
-Objective: Given a field name or ID, the agent will use the equipment_registry_api to obtain and return the list of equipment IDs, including harvesters, drones, and dryers.
-Response format: The agent will output the equipment IDs in a structured format.
-  description: This agent retrieves a list of equipment IDs assigned to a specified field using the equipment_registry_api.
+  description: Retrieves assigned machinery for field operators by checking registry records. Delivers lists of available drones, harvesters, and dryers.
 3. weather_forecast_retriever:
   agent_type: weather_forecast_retriever
   tools: weather_forecast_api
-  instructions: Context: The agent is designed to fetch and return weather forecast data for a given set of field coordinates.
-    Objective: Given field coordinates, the agent will use the weather_forecast_api to obtain and return the 24-hour weather forecast data.
-    Response format: The agent will output the weather forecast data in a structured format.
-  description: This agent retrieves a 24-hour weather forecast for specified field coordinates using the weather_forecast_api.
+  description: Fetches localized weather data for agronomists by querying coordinates. Delivers 24-hour outlooks with hourly rain and wind forecasts.
 4. equipment_status_checker:
   agent_type: equipment_status_checker
   tools: equipment_status_api
-  instructions: Context: The agent is designed to verify and return the operational status of equipment based on provided equipment IDs.
-Objective: Given a list of equipment IDs, the agent will use the equipment_status_api to obtain and return the operational status of each piece of equipment.
-Response format: The agent will output the equipment status in a structured format, indicating whether each piece of equipment is operational or not.
-  description: This agent checks the operational readiness of specified equipment such as harvesters, drones, and grain dryers using the equipment_status_api.
+  description: Checks machinery readiness for technicians by validating operational state of harvest and drying equipment. Delivers pass/fail statuses with optional diagnostics.
 5. harvest_schedule_generator:
   agent_type: harvest_schedule_generator
   tools: harvest_scheduler_api
-  instructions: Context: The agent is designed to create a harvest or drying schedule that optimizes field operations while adhering to moisture constraints.
-Objective: Given field details, a weather forecast, and equipment status, the agent will use the harvest_scheduler_api to generate a schedule that meets moisture limits and optimizes the use of available equipment.
-Response format: The agent will output the harvest schedule in a structured format, detailing the field order and time blocks for operations.
-  description: This agent generates an optimized harvest or drying schedule that meets moisture limits by considering field details, weather forecast, and equipment status.
+  description: Generates field operation plans for harvest coordinators by optimizing schedule under weather and moisture constraints. Delivers ordered field-time blocks with assigned equipment.
 6. timeline_report_generator:
   agent_type: timeline_report_generator
   tools: timeline_report_generator
-  instructions: Context: The agent is designed to produce a detailed timeline for harvest operations, incorporating equipment assignments and weather-related contingency plans.
-Objective: Given a harvest schedule and weather forecast, the agent will generate a final harvest-day plan that includes equipment assignments and contingency notes.
-Response format: The agent will output the timeline in a structured, human-readable format, detailing the sequence of operations, equipment usage, and any necessary adjustments due to weather conditions.
-  description: This agent generates a human-readable timeline with equipment assignments and contingency plans based on a given harvest schedule and weather forecast.
+  description: Creates visual timelines for field operators by translating harvest schedules into readable plans. Delivers step-by-step sequences with equipment and weather contingency notes.
 
 
 ---
@@ -362,10 +321,7 @@ The previous steps represent the sequence of tasks completed before the current 
 1. short_story_generator:
   agent_type: short_story_generator
   tools: 
-  instructions: Context: The agent receives a story concept or theme as input and generates a short story based on it.
-Objective: Create a coherent and engaging short story that aligns with the given concept or theme.
-Response format: The output should be a well-structured short story with a clear beginning, middle, and end, incorporating the provided concept or theme creatively.
-  description: This agent generates short stories based on provided concepts or themes.
+  description: Creates fictional narratives for writers and creatives by expanding on provided themes or prompts. Delivers complete short stories with structured plots.
 
 
 ---
@@ -406,17 +362,11 @@ The previous steps represent the sequence of tasks completed before the current 
 1. flora_nectar_analysis:
   agent_type: flora_nectar_analysis
   tools: ground_survey_validator_api, pollinator_database_lookup_api, satellite_flora_scanner_api
-  instructions: Context: The agent is designed to analyze local flora at a specified location to determine nectar sources suitable for beekeeping.
-Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production suitability for beekeeping.
-Response format: The agent will output nectar suitability data based on the analysis of identified plant species.
-  description: Analyzes local flora to identify and validate nectar sources suitable for beekeeping using satellite and ground survey data.
+  description: Assesses nectar suitability for beekeepers by analyzing local flora using satellite and ground survey data. Delivers a list of validated nectar-producing species and their productivity ratings.
 2. flora_butterfly_host_analysis:
   agent_type: flora_butterfly_host_analysis
   tools: ground_survey_validator_api, pollinator_database_lookup_api, satellite_flora_scanner_api
-  instructions: Context: The agent is designed to analyze local flora at a specified location to determine nectar sources suitable for butterfly host plants.
-Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their compatibility as host plants for butterflies.
-Response format: The agent will output butterfly host compatibility data based on the analysis of identified plant species.
-  description: Analyzes local flora to identify and validate nectar sources suitable for butterfly host plants using satellite and ground survey data.
+  description: Assesses butterfly habitat potential for conservationists by evaluating host plant compatibility in local flora. Delivers a list of validated host species and suitability indicators.
 
 
 ---
@@ -446,10 +396,7 @@ There is no existing task configs yet.
 1. underwater_terrain_mapper:
   agent_type: underwater_terrain_mapper
   tools: terrain_sonar_mapping_api
-  instructions: Context: The agent is designed to perform sonar mapping of underwater zones to identify terrain features.
-  Objective: Use the terrain_sonar_mapping_api to map underwater terrain features based on the provided input parameters.
-  Response format: Return the terrain sonar data as output after conducting the mapping.
-  description: This agent conducts sonar mapping to identify underwater terrain features using the terrain_sonar_mapping_api.
+  description: Maps underwater landscapes for oceanographers by scanning zones with sonar pulses. Delivers geological profiles including depth contours and underwater obstacles.
 
 
 ---
@@ -461,6 +408,49 @@ RESPONSE_CHOICE_EXPLANATION: The task config "sonar_mapping_underwater_terrain" 
 RESPONSE_TYPE: TASK_RUN_UNAVAILABLE
 RESPONSE_TASK_RUN_UNAVAILABLE:
   explanation: Task config "sonar_mapping_underwater_terrain" is not available in the list of existing task configs, so the task run cannot be generated.
+```
+
+### Example[7]: CREATE_TASK_RUN - Feedback Sentiment Analysis (with **all** dependent inputs)
+
+**Context:**
+---
+### Previous steps
+The previous steps represent the sequence of tasks completed before the current user input:
+
+1. Load the customer feedback dataset (input: datasetId: "cust-feedback-2025-06"; output: array of feedback texts) [task_run: operator:load_customer_feedback_dataset[1]:1]
+
+### Existing task configs
+1. load_customer_feedback_dataset:
+  task_type: load_customer_feedback_dataset
+  agent_type: customer_feedback_loader
+  task_config_input: {"datasetId": "<datasetId>"}
+  description: Load the customer feedback dataset using the provided <datasetId> and return an array of feedback texts.
+2. perform_sentiment_analysis:
+  task_type: perform_sentiment_analysis
+  agent_type: sentiment_analysis_agent
+  task_config_input: {"texts": ["<text>", "..."]}
+  description: Perform sentiment analysis on the provided array of feedback texts and return sentiment scores for each text.
+
+### Existing agent configs
+1. customer_feedback_loader:
+  agent_type: customer_feedback_loader
+  tools: customer_feedback_dataset_api
+  description: Retrieves customer feedback for product teams by fetching datasets based on unique identifiers. Delivers categorized text snippets for downstream analysis.
+2. sentiment_analysis_agent:
+  agent_type: sentiment_analysis_agent
+  tools: sentiment_analysis_api
+  description: Performs sentiment analysis for analysts and support teams by scoring customer text feedback. Delivers emotion-labeled results for each entry.
+
+
+---
+**User:**
+Perform sentiment analysis on the feedback texts (input: texts [from Step 1]; output: sentiment scores for each text) [task: perform_sentiment_analysis]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task config for "perform_sentiment_analysis" exists, and the input can be completed using the non-dependent field "outputFormat" provided in the task step.
+RESPONSE_TYPE: CREATE_TASK_RUN
+RESPONSE_CREATE_TASK_RUN:
+  task_run_input: 
 ```
 
 ---

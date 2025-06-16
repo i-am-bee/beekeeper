@@ -45,8 +45,8 @@ ${content}`,
               [`${idx + 1}. ${curr.agentType}`]: {
                 agent_type: curr.agentType,
                 tools: curr.tools,
-                instructions: curr.instructions,
                 description: curr.description,
+                // instructions: curr.instructions,
               },
             } satisfies laml.dto.LAMLObject);
             return acc;

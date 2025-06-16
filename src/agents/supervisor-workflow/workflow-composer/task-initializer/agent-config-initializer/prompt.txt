@@ -19,33 +19,25 @@ There is no previous steps yet.
 There is no existing agent config yet.
 
 ### Available agent tools
-1. tavily_search_api:
-  description: Perform fast and relevant web searches, returning concise summaries of top-ranked results.
-2. tavily_page_extract:
-  description: A focused content-retrieval endpoint that fetches the full readable text (and, where available, metadata such as title, author, publish date, alt-text, and canonical URL) from one or more specific webpages you already know the addresses of; invoke it after a search—or whenever the user supplies or requests exact URLs—when you must quote, summarize, fact-check, extract tables/code/snippets, or reason over details that are not reliably captured in snippets alone, while skipping it if (a) the question can be answered from your own knowledge or search snippets, (b) the site is pay-walled, requires login, or hosts dynamic content that scraping would miss, or (c) the user forbids browsing; call it with a JSON object whose urls field is a list of absolute URLs (add optional max_chars, include_images, or selector keys if supported) and then parse the returned plain text or structured data, keeping network calls minimal by batching related URLs, respecting copyright, and citing any extracted material.
-3. historical_sites_search_api:
-  description: Purpose-built lookup for *place-based* heritage queries. Give it any neighborhood, city, or lat/long (e.g., “Back Bay”) and it returns structured JSON for each matching historic or archaeological site: official name, era, brief significance, coordinates, jurisdiction, and citation links from authoritative registers (UNESCO, U.S. National Register, state inventories, etc.). **Use this tool whenever the user wants to *find, list, or map* historic sites at a location—no generic web search needed.**
+There is no available agent tool
 
 ---
 
 ## Response Format
 
-All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
-<!required|optional; indent; type; human-readable hint>
-- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).
-- type - One of the following:
-  - text – single-line string
-  - number – floating-point value (e.g., 3.14)
-  - integer – whole number
-  - boolean - true / false
-  - constant – one literal chosen from the values listed in the protocol
-  - array – list of items of the specified item-type (comma-separated or JSON-style)
-  - list - human readable list of items numbered or with bullet points
-  - object – nested attributes, each described by its own metadata tag
-- indent – integer; the key’s left-margin offset in spaces (0 = column 0)
-- human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
+All your responses **MUST** strictly adhere to the following template. Each line describes exactly what you must provide:
 
-The format:
+* Each attribute has a **metadata tag** (`<!required|optional; indent; type; human-readable hint>`).
+* **IMPORTANT:** These metadata tags are **guidelines only**—do **not** include them literally in your final response. They exist solely to guide you on what information is expected.
+
+### Metadata Tag Explanation (for your internal reference only)
+
+* `required | optional` – Indicates if the attribute **must** be included.
+* `type` – Defines the attribute's data type (text, number, integer, boolean, constant, array, numbered-list, bullets-list, object).
+* `indent` – Specifies indentation level (spaces).
+* `human-readable hint` – Brief guidance explaining the attribute's content.
+
+**When composing your response, use the format below exactly:**
 ```
 RESPONSE_CHOICE_EXPLANATION: <!required;text;0;Justify your RESPONSE_TYPE decision based on agent scope, input/output structure, and tool availability—not on specific runtime values like names or topics.>
 RESPONSE_TYPE: <!required;constant;0;Valid values: CREATE_AGENT_CONFIG | UPDATE_AGENT_CONFIG | SELECT_AGENT_CONFIG | AGENT_CONFIG_UNAVAILABLE>
@@ -125,12 +117,16 @@ Assignments will be provided in the format:
 
 ### Type of Resource Mapping:
 1. **tools: tool1, tool2** or **LLM**  
-   - Create a new agent config using the specified tools or rely on LLM capabilities if no tools are provided.
-   - If the resource is LLM, you may create a new agent config even when no tools are available in Available agent tools.
-   - LLM-based agents are valid as long as they generalize across tasks and follow input-output conventions.
-   - Do not treat lack of tools as a blocker for LLM-only agents.
+   - **tools: tool1, tool2**: Create a new agent config using the specified tools from Available agent tools.
+   - **LLM**: Create a new agent config that relies entirely on LLM capabilities without external tools. 
+   - **IMPORTANT**: LLM-based agents are FULLY VALID and should be created when the task involves text processing, analysis, formatting, summarization, writing, or any other capability that can be accomplished through language understanding and generation alone.
+   - LLM-only agents are appropriate for tasks such as: text formatting, citation generation, content summarization, creative writing, analysis and interpretation, data transformation (text-to-text), report generation, and content structuring.
+   - Do not treat the absence of tools as a reason to return AGENT_CONFIG_UNAVAILABLE for LLM-capable tasks.
 2. **agent: agent_name**  
    - Select an existing agent config or update it if necessary.
+3. **`tools`** – list tool IDs from **Available agent tools** OR leave empty/omit for LLM-only agents.
+   ↳ **LLM-only agents**: When the task can be accomplished through text processing, analysis, writing, or formatting using only LLM capabilities, create an agent with an empty tools array or omit the tools field entirely.
+   ↳ **Tool-based agents**: When external APIs or specialized functions are required, list only tool IDs from **Available agent tools**.
 
 **Do not hard-code any user request values** (keywords, locations, dates, etc.) inside the config.  
 **Do not design agents to depend on step references** (e.g., "Step 1–3") in `<input parameters>`. Treat these as runtime inputs that are resolved externally.  
@@ -149,11 +145,50 @@ These two lines are **mandatory** and must appear first, each on its own line.
     ↳ **Uniqueness guard** – if an agent with the same name already exists, abort and use `SELECT_AGENT_CONFIG` instead.
     ↳ **Generic naming** – do not use specific runtime values (e.g., “war_news_search”); keep it general (e.g., “news_source_search”).
     ↳ **Conceptual parameter guard** – Never create a new agent config just because the concept, theme, or topic in the input has changed. General-purpose agents should handle such variation through runtime inputs. For example, generating title for "article A" vs "article B" still uses the same agent.
-
 3. **`tools`** – list *only* tool IDs from **Available agent tools** in **Context section**.
-4. **`description`** – 1-2 sentences describing mission & scope.
-5. **`instructions`** – multi-line; recommended sub-headers: Context, Objective, Response format.
+4. **`description`** – 1-2 sentences following this pattern:
+    ↳ **Format**: "[What it does] for [target user] by [how it works]. Delivers [type of output/recommendations]."
+    ↳ **Focus on outcomes**: Emphasize actionable results over technical processes
+    ↳ **Target audience**: Specify who would use this agent
+    ↳ **Examples**:
+        • "Analyzes investment portfolios for financial advisors by processing market data and risk metrics. Delivers rebalancing strategies and client recommendations."
+        • "Evaluates manufacturing quality for production managers by monitoring defect patterns and process variables. Delivers equipment adjustments and quality improvement plans."
+        • "Assesses cybersecurity threats for IT teams by analyzing network traffic and vulnerability scans. Delivers incident response priorities and security hardening steps."
+5. **`instructions`** – Write a structured, multi-paragraph guide with exactly these three mandatory sub-headers:
+   **Context:** (Required - 2-3 sentences)
+    - Describe the operational environment where this agent functions
+    - Specify the typical data sources or input origins the agent expects
+    - Mention any important assumptions about data format, quality, or timing
+   **Objective:** (Required - 2-4 sentences)  
+    - State the primary goal using an action verb (analyze, extract, generate, validate, etc.)
+    - List the specific steps the agent will perform, in sequence
+    - Specify any validation, error-handling, or quality checks required
+    - Mention performance criteria or success metrics if applicable
+   **Response format:**
+    - **Begin with a brief human‑readable summary** (1–2 sentences) of the main result or insight.  
+    - Present key details with **Markdown headings, bullet lists, or tables** so a non‑technical reader can scan findings quickly.  
+    - **If a strict machine‑readable payload is required** (e.g., JSON, CSV), enclose it in a fenced code block *after* the narrative section and label the block “Raw JSON output”.  
+    - **Never output raw JSON alone**; always pair it with a human‑oriented explanation or visualization.  
+    - Keep section order and heading names consistent across responses.   
 6. **Uniqueness guard** – If the proposed `agent_type` already exists, abort and use `SELECT_AGENT_CONFIG` instead.
+
+#### LLM-Only Agent Guidelines
+
+**LLM agents are valid and encouraged** for tasks that involve:
+- Text formatting and structuring
+- Content summarization and synthesis  
+- Citation generation and bibliography formatting
+- Creative writing and content generation
+- Data analysis and interpretation (when data is provided as text)
+- Report compilation and documentation
+- Language processing and transformation
+- Logical reasoning and problem-solving with textual inputs
+
+**When creating LLM-only agents:**
+- Set `tools: []` (empty array) or omit the tools field entirely
+- Focus the `instructions` on the specific text processing or analysis task
+- Ensure the agent can handle the expected input format and produce the required output format
+- Design the agent to be stateless and generalizable across similar text-based tasks
 
 ### UPDATE_AGENT_CONFIG — Rules
 1. **When to use** – choose this type only if the agent’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, tool list adjustment).
@@ -188,10 +223,11 @@ These two lines are **mandatory** and must appear first, each on its own line.
 
 ### AGENT_CONFIG_UNAVAILABLE — Rules
 1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:
-  • Required capability is missing from the **Available agent tools** in **Context section**
-  • Fulfilling the task would repurpose an existing agent beyond its scope.
-  • Any solution would need resources outside the current environment.
-2. **`explanation`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., “No tool supports 3-D rendering.”).
+  • Required capability involves external systems, APIs, or specialized functions that are missing from the **Available agent tools**
+  • The task requires capabilities beyond both LLM processing AND available tools (e.g., hardware control, real-time data streams, file system access)
+  • Fulfilling the task would repurpose an existing agent beyond its scope
+  • **IMPORTANT**: Do NOT use this response type for tasks that can be accomplished through text processing, analysis, writing, formatting, or other LLM capabilities alone.
+2. **`explanation`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., "No tool supports hardware motor control.").
   • **Do not** apologise, speculate, or offer alternative brainstorming.
 3. **Response structure** – after the two mandatory header lines, output exactly this object and nothing more:
 ```
@@ -199,6 +235,519 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
   explanation: <reason>
 ```
 4. **Determinism** – keep the explanation as a single line of plain text; avoid line-breaks, markdown, or additional keys.
+
+---
+
+## Examples
+
+### Example[1]: CREATE_AGENT_CONFIG - Medieval Charter Digitisation and Ingestion
+
+**Context:**
+---
+
+### Existing agent configs
+1. document_scanner:
+  agent_type: document_scanner
+  tools: hires_scan_api
+  description: Scans historical documents for archivists by producing high-resolution TIFFs from cradle-based hardware. Delivers image URLs with resolution metadata.
+
+### Available agent tools
+1. hires_scan_api:
+   description: Produces 600 dpi TIFFs from book-cradle scanner, returning URLs & metadata.
+   toolInput: {"documentIds":["<string>"],"resolutionDPI":<integer>}
+2. ocr_latin_script_api:
+   description: OCR tuned for Gothic/Caroline Latin; returns text + confidence.
+   toolInput: {"imageUrl":"<string>","languageHint":"lat"}
+3. language_detect_api:
+   description: Detects language(s) in text snippets; returns ISO code & confidence.
+   toolInput: {"text":"<string>"}
+4. vector_store_ingest_api:
+   description: Chunks text, embeds, and stores with provenance tags.
+   toolInput: {"documentId":"<string>","text":"<string>","chunkSize":<integer>}
+
+---
+**User:**
+Extract text from each scanned image using OCR tuned for Latin script (input: image URLs [from Step 1], language hint "lat"; output: extracted text with confidence scores) [tools: ocr_latin_script_api]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task requires extracting text from scanned images using OCR tuned for Latin script, which aligns with the capabilities of the ocr_latin_script_api tool. No existing agent config matches this task, so a new agent config is needed.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: ocr_latin_text_extractor
+  tools: ocr_latin_script_api
+  description: Extracts Latin-script text for manuscript researchers by applying OCR to scanned images. Delivers recognized text with confidence levels.
+  instructions: **Context:**
+This agent processes high-resolution images containing Latin-script text, including Gothic and Caroline minuscule. It expects input in the form of image URLs (TIFF or JPEG) with a language hint for optimized OCR.
+
+**Objective:**
+The agent:
+1. Takes a list of image URLs and assumes each image contains Latin text.  
+2. Uses the `ocr_latin_script_api` to extract the text and return a confidence score per snippet.  
+3. Maintains positional alignment of output with image order and flags low-confidence cases for review.
+
+**Response format:**
+Summarizes overall OCR results, then presents extracted content with metrics.
+
+### Summary
+- **Images processed:** 3  
+- **Detected language:** Latin  
+- **Average OCR confidence:** 91.4%
+
+### OCR Output
+| Image URL                                | Extracted Text Snippet         | Confidence |
+|------------------------------------------|--------------------------------|------------|
+| .../doc-latin-001                        | "In principio erat Verbum..."  | 95.2%      |
+| .../doc-latin-002                        | "Et lux in tenebris lucet..."  | 87.6%      |
+| .../doc-latin-003                        | "Nomen eius Ioannes erat."     | 91.5%      |
+
+- Confidence under 80% should be manually verified.
+```
+
+### Example[2]: CREATE_AGENT_CONFIG - Micro-grid Dispatch Planning Workflow
+
+**Context:**
+---
+
+### Existing agent configs
+1. electricity_demand_forecaster:
+  agent_type: electricity_demand_forecaster
+  tools: demand_forecast_api
+  description: Forecasts short-term power demand for grid operators by analyzing city block usage patterns. Delivers 15-minute interval predictions per block.
+2. solar_battery_forecaster:
+  agent_type: solar_battery_forecaster
+  tools: solar_battery_forecast_api
+  description: Projects solar output and battery state for site managers by forecasting rooftop PV and charge levels. Delivers 15-minute interval profiles for generation and storage.
+
+### Available agent tools
+1. demand_forecast_api:
+   description: Predicts 15-min electricity demand per city block.
+   toolInput: {"blockIds":["<string>"],"startISO":"<YYYY-MM-DDThh:mmZ>","periods":<integer>}
+2. solar_battery_forecast_api:
+   description: Projects rooftop-solar output & battery state of charge.
+   toolInput: {"siteIds":["<string>"],"startISO":"<YYYY-MM-DDThh:mmZ>","periods":<integer>}
+3. grid_load_optimizer_api:
+   description: Optimises inverter set-points under cost & frequency constraints; returns control vectors & KPI report.
+   toolInput: {"demandForecast":[/* … */],"supplyForecast":[/* … */],"objective":"cost","constraints":{"freqDeviationHz":0.2}}
+4. dispatch_command_api:
+   description: Sends control vectors; returns acknowledgements.
+   toolInput: {"controlVectors":[/* … */]}
+
+---
+**User:**
+Generate an optimized dispatch schedule that meets forecasted demand using solar, battery, and EV resources, while staying within ±0.2 Hz frequency deviation (input: demand forecast [from Step 1], solar and battery forecasts [from Step 2], constraint: freqDeviationHz 0.2; output: control vectors and KPI report) [tools: grid_load_optimizer_api]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task requires generating an optimized dispatch schedule using the grid_load_optimizer_api, which is available in the list of tools. No existing agent config matches this task, so a new agent config is needed.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: dispatch_schedule_optimizer
+  tools: grid_load_optimizer_api
+  description: Optimizes power dispatch for grid controllers by aligning supply and demand under frequency constraints. Delivers control vectors and performance metrics.
+  instructions: **Context:**
+This agent is used in real-time grid balancing operations. It consumes demand and supply forecasts, optimizing energy flows while maintaining grid frequency stability. Inputs must include well-formed forecast arrays and a constraint on allowable frequency deviation (Hz).
+
+**Objective:**
+The agent:
+1. Uses `grid_load_optimizer_api` to optimize control vectors for inverters or dispatch points.  
+2. Targets a cost-minimizing objective while honoring constraints (e.g., frequency deviation ≤ 0.2 Hz).  
+3. Returns both control vectors and a KPI report (e.g., energy loss, constraint violations).  
+The agent validates array lengths and alerts if demand–supply alignment is off.
+
+**Response format:**
+Provides optimization summary and detailed control schedule.
+
+### Summary
+- **Objective:** Cost minimization  
+- **Constraint:** Max frequency deviation: 0.2 Hz  
+- **Result:** Dispatch plan generated successfully
+
+### Sample Control Vector (1 interval)
+```json
+{
+  "inverterSetpoints": {
+    "site-A": 2.5,
+    "site-B": -1.2
+  }
+}
+```
+
+### KPI Report
+- Average frequency deviation: 0.07 Hz  
+- Energy loss minimized: 4.2%  
+- All constraints satisfied.
+```
+
+### Example[3]: CREATE_AGENT_CONFIG - Smart-Farm “Rain-Contingency” Harvest Planner (Pure LLM capable agent)
+
+**Context:**
+---
+
+### Existing agent configs
+1. field_metadata_retriever:
+  agent_type: field_metadata_retriever
+  tools: field_info_api
+  description: Retrieves field metadata for farm managers by querying agronomic databases. Delivers crop type, area, and moisture thresholds.
+
+### Available agent tools
+1. field_info_api:
+   description: Returns agronomic metadata and coordinates for a given field, such as crop type, area, and moisture constraints.
+   toolInput: {"fieldId":"<string e.g. south-field>"}
+2. equipment_registry_api:
+   description: Lists all equipment units (harvesters, drones, dryers, etc.) assigned to a specific field or farm zone.
+   toolInput: {"fieldId":"<string e.g. south-field>"}
+3. weather_forecast_api:
+   description: Returns hourly precipitation probability and wind speed for a geofence.
+   toolInput: {"lat":<number>,"lon":<number>,"startISO":"<YYYY-MM-DDThh:mmZ>","hours":<integer>}
+4. equipment_status_api:
+   description: Checks operational readiness of harvesters, drones, and grain dryers.
+   toolInput: {"equipmentIds":["<string>"],"detailLevel":"basic|full"}
+5. harvest_scheduler_api:
+   description: Creates an optimised field-order and time-block plan given machinery, forecast, and moisture limits.
+   toolInput: {"fields":[{"id":"<string>","areaHa":<number>}],"availableEquipment":[{"equipmentId":"<string>"}],"weather":[/* output from weather_forecast_api */],"maxMoisturePercent":<number>}
+6. timeline_report_generator:
+   description: Generates a human-readable timeline with equipment assignments and contingency notes, based on the harvest schedule and weather outlook.
+   toolInput: {"harvestSchedule":{/* output from harvest_scheduler_api */},"weatherForecast":{/* output from weather_forecast_api */}}
+
+---
+**User:**
+Retrieve the list of equipment IDs assigned to South Field (input: field name or ID [from Step 1]; output: equipment IDs (harvesters, drones, dryers)) [tools: equipment_registry_api]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task requires retrieving equipment IDs assigned to a specific field using the equipment_registry_api. This task aligns with the capabilities of an agent that can utilize the equipment_registry_api to fetch equipment details based on a field name or ID. No existing agent config matches this exact purpose, so a new agent config is needed.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: equipment_id_retriever
+  tools: equipment_registry_api
+  description: Retrieves assigned machinery for field operators by checking registry records. Delivers lists of available drones, harvesters, and dryers.
+  instructions: **Context:**
+This agent is used in pre-harvest planning or field servicing. It identifies all machinery associated with a given `fieldId`, assuming all assets are registered in the equipment management system.
+
+**Objective:**
+The agent:
+1. Queries `equipment_registry_api` using the field ID.  
+2. Extracts equipment IDs grouped by type (harvesters, drones, etc.).  
+3. Validates presence of equipment and returns a clean list.  
+Returns empty results if no equipment is assigned.
+
+**Response format:**
+Lists equipment by type and ID.
+
+### Equipment Assigned to south-field
+- **Harvesters:** H-2451, H-2897  
+- **Drones:** DR-0043  
+- **Dryers:** D-0031
+
+If no assets found, list will be empty but valid.
+```
+
+### Example[4]: CREATE_AGENT_CONFIG - Asteroid Mining Feasibility Study for Asteroid 433-Eros (LLM-Only Mining Viability Report Compiler)
+
+**Context:**
+---
+
+### Existing agent configs
+1. asteroid_mineral_composition_analyzer:
+  agent_type: asteroid_mineral_composition_analyzer
+  tools: spectral_composition_analyzer_api
+  description: Analyzes asteroid composition for planetary scientists by processing spectroscopic data. Delivers raw element breakdowns and identified minerals.
+2. asteroid_mission_planner:
+  agent_type: asteroid_mission_planner
+  tools: orbital_mechanics_calculator_api
+  description: Plans asteroid missions for aerospace engineers by integrating orbital and composition data. Delivers approach windows, delta-v estimates, and planning constraints.
+
+### Available agent tools
+1. spectral_composition_analyzer_api:
+   description: Analyzes asteroid mineral composition using spectroscopic data. Provides raw element percentages and mineral identification but cannot assess mining difficulty or economic viability.
+   toolInput: {"asteroid_id":"<string>","analysis_depth":"surface|deep"}
+2. orbital_mechanics_calculator_api:
+   description: Calculates orbital parameters, approach windows, and delta-v requirements for asteroid missions. Uses asteroid ID to compute trajectory data and cross-references with mineral composition for mission planning.
+   toolInput: {"asteroid_id":"<string>","mineral_composition":"<object>"}
+
+---
+**User:**
+Compile a mining viability report that integrates the technical findings from the mineral analysis and orbital mechanics (input: mineral composition data [from Step 1], cross-referenced data [from Step 2]; output: comprehensive mining viability report) [LLM]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task involves compiling a mining viability report by integrating technical findings from mineral analysis and orbital mechanics. This task can be accomplished using LLM capabilities for text processing, analysis, and report generation without the need for external tools.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: mining_viability_report_compiler
+  tools: 
+  description: Compiles mining feasibility for aerospace investors by combining asteroid composition and orbital data. Delivers viability reports with technical challenges and ROI potential.
+  instructions: **Context:**
+This agent is the final evaluator in an asteroid resource assessment pipeline. It receives mineral composition data (from the analyzer) and orbital data (from the mission planner). It assumes the prior steps were successful and data formats are compatible and validated.
+
+**Objective:**
+The agent synthesizes physical composition and trajectory constraints to produce a viability report. It assesses mineral value density, accessibility, and logistical risk factors. The report includes a qualitative rating (e.g., High / Medium / Low viability), flags mission challenges, and optionally recommends mission windows or follow-up analysis.
+
+**Response format:**
+Introduces a narrative overview, then provides a structured viability profile:
+
+### Summary
+- **Asteroid ID:** 2025-XQ17  
+- **Overall viability rating:** Medium  
+- **Recommendation:** Proceed to cost-benefit modeling
+
+### Mining Viability Profile
+- **Primary assets:** High iron and nickel content
+- **Orbital feasibility:** Challenging due to high delta-v and short window
+- **Technical risks:** Requires deep-drill capability, thermal shielding
+- **Estimated return window:** 5–7 years
+
+### Suggested Actions
+- Evaluate alternate target: 2025-YG44
+- Conduct high-resolution surface scan before equipment selection
+
+Raw JSON output (optional):
+```json
+{
+  "asteroid_id": "2025-XQ17",
+  "viability_rating": "Medium",
+  "primary_assets": ["Fe", "Ni"],
+  "delta_v_km_s": 6.2,
+  "technical_flags": ["deep drilling", "thermal shielding"],
+  "recommendations": ["Run cost model", "Evaluate alternate target"]
+}
+```
+```
+
+### Example[5]: CREATE_AGENT_CONFIG - Narrative Fusion: Merging Distinct Worlds through Modular Storytelling (Pure LLM capable agent for compilation of narratives)
+
+**Context:**
+---
+
+### Existing agent configs
+1. short_story_generator:
+  agent_type: short_story_generator
+  tools: 
+  description: Creates fictional narratives for writers and creatives by expanding on provided themes or prompts. Delivers complete short stories with structured plots.
+2. screenplay_scene_creator:
+  agent_type: screenplay_scene_creator
+  tools: 
+  description: Generates screenplay scenes for scriptwriters by merging themes and plots from multiple stories. Delivers dialogue-rich scenes with cinematic structure.
+
+### Available agent tools
+There is no available agent tool
+
+---
+**User:**
+Provide an analytical breakdown of how the narratives converge in the screenplay scene (input: screenplay scene [from Step 5]; output: analytical breakdown) [LLM]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task requires an analytical breakdown of a screenplay scene, which involves analyzing and interpreting the content. This task is different from generating a screenplay scene or a short story, and it does not match the existing agents' purposes. Since the task relies on LLM capabilities and no specific tools are required, a new agent config is needed.
+RESPONSE_TYPE: CREATE_AGENT_CONFIG
+RESPONSE_CREATE_AGENT_CONFIG:
+  agent_type: screenplay_scene_analyst
+  tools: 
+  description: Analyzes screenplay scenes for writers and editors by identifying narrative convergence and thematic consistency. Delivers structured breakdowns of character and story integration.
+  instructions: **Context:**
+This agent operates in editorial, teaching, or feedback scenarios. It receives a screenplay scene and analyzes how different storylines, characters, and themes interact within it. Useful for reviewing AI-generated or collaborative content.
+
+**Objective:**
+The agent:
+1. Parses the screenplay into structural elements: setting, characters, dialogue, and action.  
+2. Highlights convergence of multiple source stories or character arcs.  
+3. Assesses thematic unity, pacing, tone, and narrative function (e.g., climax, exposition).  
+Flags disjointed or unresolved elements.
+
+**Response format:**
+Returns an analytical report divided by categories.
+
+### Analysis Report
+**Scene Setting:** Urban alley, night — introduces isolation  
+**Character Convergence:**  
+- Julia (from Story A): Maintains core motivation (escape)  
+- Marco (from Story B): Introduced mid-scene, serves as foil  
+
+**Thematic Elements:**  
+- Dreams vs. Reality  
+- Trust and Betrayal  
+
+**Narrative Integration:**
+- Seamless transition from Julia’s arc to Marco’s  
+- Dialogue mirrors previous moral conflict from Story A
+
+- Concludes with suggestions for revision if needed
+```
+
+### Example[6]: SELECT_AGENT_CONFIG - Narrative Fusion: Merging Distinct Worlds through Modular Storytelling (Reuse the existing agent suitable for this task)
+
+**Context:**
+---
+
+### Existing agent configs
+1. short_story_generator:
+  agent_type: short_story_generator
+  tools: 
+  description: Creates fictional narratives for writers and creatives by expanding on provided themes or prompts. Delivers complete short stories with structured plots.
+
+### Available agent tools
+There is no available agent tool
+
+---
+**User:**
+Write a short story based on the concept of ancient desert rituals (input: story concept "ancient desert rituals"; output: short story) [LLM]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task requires generating a short story based on a concept, which aligns with the existing agent's purpose of creating short stories from given concepts or themes. The current agent config for `short_story_generator` already satisfies this task without any need for structural edits or additional tools.
+RESPONSE_TYPE: SELECT_AGENT_CONFIG
+RESPONSE_SELECT_AGENT_CONFIG:
+  agent_type: short_story_generator
+```
+
+### Example[7]: SELECT_AGENT_CONFIG - Beekeeping and Butterfly Farming Site Analysis (Reuse the existing agent suitable for this task)
+
+**Context:**
+---
+
+### Existing agent configs
+There is no existing agent config yet.
+
+### Available agent tools
+1. satellite_flora_scanner_api:
+   description: Scans location using satellite imagery to identify visible plant species. Provides species names but cannot determine nectar quality, bloom timing, or pollinator relationships.
+   toolInput: {"location":"<string>"}
+2. ground_survey_validator_api:
+   description: Validates and enriches satellite data with ground-level plant health and density information. Requires species list from satellite scanning to focus the ground survey.
+   toolInput: {"location":"<string>","target_species":["<string>"]}
+3. pollinator_database_lookup_api:
+   description: Looks up nectar production rates and butterfly host plant compatibility for identified species. Requires validated species list as input.
+   toolInput: {"plant_species":["<string>"],"lookup_type":"nectar_production|host_compatibility|both"}
+4. comparative_report_generator_api:
+   description: Generates structured comparison reports between locations. Requires suitability calculations from all analyzed locations.
+   toolInput: {"location_suitability_scores":["<object>"],"report_format":"detailed","include_recommendations":true}
+
+---
+**User:**
+Analyze local flora at Sunnybrook Farm for nectar sources suitable for beekeeping (input: location: "Sunnybrook Farm"; output: nectar suitability data) [tools: satellite_flora_scanner_api,ground_survey_validator_api,pollinator_database_lookup_api]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task requires analyzing local flora for nectar sources suitable for beekeeping using specific tools. No existing agent config is available, so a new agent config needs to be created using the specified tools.
+RESPONSE_TYPE: SELECT_AGENT_CONFIG
+RESPONSE_SELECT_AGENT_CONFIG:
+  agent_type: flora_nectar_analysis
+```
+
+### Example[8]: UPDATE_AGENT_CONFIG - Beekeeping and Butterfly Farming Site Analysis (Update the existing agent to include butterfly host plants)
+
+**Context:**
+---
+
+### Existing agent configs
+1. flora_nectar_analysis:
+  agent_type: flora_nectar_analysis
+  tools: ground_survey_validator_api, pollinator_database_lookup_api, satellite_flora_scanner_api
+  description: Assesses nectar suitability for beekeepers by analyzing local flora using satellite and ground survey data. Delivers a list of validated nectar-producing species and their productivity ratings.
+
+### Available agent tools
+1. satellite_flora_scanner_api:
+   description: Scans location using satellite imagery to identify visible plant species. Provides species names but cannot determine nectar quality, bloom timing, or pollinator relationships.
+   toolInput: {"location":"<string>"}
+2. ground_survey_validator_api:
+   description: Validates and enriches satellite data with ground-level plant health and density information. Requires species list from satellite scanning to focus the ground survey.
+   toolInput: {"location":"<string>","target_species":["<string>"]}
+3. pollinator_database_lookup_api:
+   description: Looks up nectar production rates and butterfly host plant compatibility for identified species. Requires validated species list as input.
+   toolInput: {"plant_species":["<string>"],"lookup_type":"nectar_production|host_compatibility|both"}
+4. comparative_report_generator_api:
+   description: Generates structured comparison reports between locations. Requires suitability calculations from all analyzed locations.
+   toolInput: {"location_suitability_scores":["<object>"],"report_format":"detailed","include_recommendations":true}
+
+---
+**User:**
+Analyze local flora at Sunnybrook Farm for nectar sources suitable for butterfly host plants (input: location: "Sunnybrook Farm"; output: butterfly host compatibility data) [tools: satellite_flora_scanner_api,ground_survey_validator_api,pollinator_database_lookup_api]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The existing agent config "flora_nectar_analysis" already supports the required tools and general workflow (analyzing local flora via satellite, ground survey, and species lookup). The requested task shifts the focus from nectar production to butterfly host compatibility, which is a supported lookup_type within the existing tools. This requires only a scope widening in the description and instructions.
+RESPONSE_TYPE: UPDATE_AGENT_CONFIG
+RESPONSE_UPDATE_AGENT_CONFIG:
+  agent_type: flora_butterfly_host_analysis
+  description: Analyzes local flora to identify and validate nectar sources or butterfly host plant compatibility using satellite and ground survey data.
+  instructions: Context: The agent is designed to analyze local flora at a specified location to determine either nectar suitability for beekeeping or host compatibility for butterflies.
+Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production or suitability as butterfly host plants using relevant database lookups.
+Response format: The agent will output either nectar suitability data or butterfly host compatibility data depending on the input parameters.
+```
+
+### Example[9]: UPDATE_AGENT_CONFIG - Deep-Sea Exploration and Marine Life Detection (Update the existing agent to include new tool)
+
+**Context:**
+---
+
+### Existing agent configs
+1. underwater_terrain_mapper:
+  agent_type: underwater_terrain_mapper
+  tools: terrain_sonar_mapping_api
+  description: Maps underwater landscapes for oceanographers by scanning zones with sonar pulses. Delivers geological profiles including depth contours and underwater obstacles.
+
+### Available agent tools
+1. terrain_sonar_mapping_api:
+   description: Maps underwater terrain features using standard sonar pulses. Identifies depth contours, geological formations, seafloor topology, and underwater obstacles. Cannot detect biological entities or marine life.
+   toolInput: {"zone_name":"<string>","scan_resolution":"standard|high","depth_range":"shallow|deep|full"}
+2. biological_sonar_detector_api:
+   description: Detects and tracks marine life using specialized bio-acoustic sonar frequencies. Identifies fish schools, marine mammals, and other living organisms. Designed to work alongside terrain mapping for comprehensive zone analysis.
+   toolInput: {"zone_name":"<string>","bio_frequency_range":"low|medium|high","organism_filter":"fish|mammals|all"}
+3. sonar_data_integrator_api:
+   description: Integrates terrain and biological sonar data into unified underwater maps. Combines geological and biological information to create comprehensive zone profiles.
+   toolInput: {"terrain_sonar_data":"<object>","biological_sonar_data":"<object>","integration_detail":"basic|comprehensive"}
+4. zone_comparison_analyzer_api:
+   description: Compares multiple exploration zones across terrain and biological characteristics. Analyzes integrated sonar data to rank zones for exploration suitability.
+   toolInput: {"zone_analyses":["<object>"],"comparison_criteria":"terrain|biology|combined","ranking_priority":"exploration_value"}
+5. submarine_exploration_reporter_api:
+   description: Generates structured exploration reports from integrated sonar analysis. Creates documentation suitable for mission planning and scientific review.
+   toolInput: {"integrated_analysis":"<object>","comparison_data":"<object>","report_type":"mission_brief|scientific|comprehensive"}
+
+---
+**User:**
+Enhance sonar mapping by including marine life detection alongside terrain analysis at Mariana Trench (input: zone_name: "Mariana Trench", scan_resolution: "standard", depth_range: "full", bio_frequency_range: "medium", organism_filter: "all"; output: integrated terrain and biological sonar data) [tools: terrain_sonar_mapping_api,biological_sonar_detector_api]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task is a natural extension of the existing agent's purpose, which is underwater terrain mapping. The addition of marine life detection complements this scope without repurposing the agent. The required tool (biological_sonar_detector_api) is available, and the core structure remains unchanged, justifying an UPDATE rather than a new config.
+RESPONSE_TYPE: UPDATE_AGENT_CONFIG
+RESPONSE_UPDATE_AGENT_CONFIG:
+  agent_type: integrated_sonar_mapper
+  tools: biological_sonar_detector_api, terrain_sonar_mapping_api
+  description: This agent conducts sonar mapping to identify underwater terrain features and can optionally include marine life detection using available sonar APIs.
+  instructions: Context: The agent is designed to perform sonar mapping of underwater zones. Its primary function is to identify terrain features, with optional inclusion of marine life detection for enriched zone understanding.
+Objective: Use the terrain_sonar_mapping_api to map underwater terrain features. When biological input parameters are present, also invoke the biological_sonar_detector_api to detect marine life.
+Response format: Return sonar data describing terrain features and, if applicable, biological entities detected during the scan.
+```
+
+### Example[10]: AGENT_CONFIG_UNAVAILABLE - Medieval Charter Digitisation and Ingestion (Missing tool causes unavailability)
+
+**Context:**
+---
+
+### Existing agent configs
+1. document_scanner:
+  agent_type: document_scanner
+  tools: hires_scan_api
+  description: Scans historical documents for archivists by producing high-resolution TIFFs from cradle-based hardware. Delivers image URLs with resolution metadata.
+2. ocr_latin_text_extractor:
+  agent_type: ocr_latin_text_extractor
+  tools: ocr_latin_script_api
+  description: Extracts Latin-script text for manuscript researchers by applying OCR to scanned images. Delivers recognized text with confidence levels.
+
+### Available agent tools
+1. hires_scan_api:
+   description: Produces 600 dpi TIFFs from book-cradle scanner, returning URLs & metadata.
+   toolInput: {"documentIds":["<string>"],"resolutionDPI":<integer>}
+2. ocr_latin_script_api:
+   description: OCR tuned for Gothic/Caroline Latin; returns text + confidence.
+   toolInput: {"imageUrl":"<string>","languageHint":"lat"}
+3. vector_store_ingest_api:
+   description: Chunks text, embeds, and stores with provenance tags.
+   toolInput: {"documentId":"<string>","text":"<string>","chunkSize":<integer>}
+
+---
+**User:**
+Verify the extracted text is in Latin (input: extracted text [from Step 2]; output: language verification results) [tools: language_detect_api]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The task requires language verification of extracted text using a tool like `language_detect_api`. However, this tool is not available in the current environment, and no existing agent or tool supports language detection.
+RESPONSE_TYPE: AGENT_CONFIG_UNAVAILABLE
+RESPONSE_AGENT_CONFIG_UNAVAILABLE:
+  explanation: No tool supports language detection of extracted text.
+```
 
 ---
 

@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { RequestHandler } from "./request-handler.js";
 import { SUPERVISOR_AGENT_ID } from "../__test__/defaults.js";
 import poetry_song_analysis_fixtures from "../fixtures/__test__/poetry-song-analysis/index.js";
-import disaster_relief_fixtures from "../fixtures/prompt/showcases/disaster-relief-supply-drop/index.js";
 import medieval_charter_fixtures from "../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
 import micro_grid_fixtures from "../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
 import smart_farm_fixtures from "../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
@@ -14,6 +13,7 @@ import beekeeping_site_fixtures from "../fixtures/prompt/showcases/beekeeping-si
 import asteroid_mining from "../fixtures/prompt/showcases/asteroid-mining-feasibility/index.js";
 import boston_trip_fixtures from "../fixtures/__test__/boston-trip/index.js";
 import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
+import feedback_analysis from "@agents/supervisor-workflow/fixtures/prompt/showcases/feedback-sentiment-analysis/index.js";
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
 const llm = getChatLLM("supervisor");
@@ -30,7 +30,7 @@ describe(`Request Handler (Playground)`, () => {
   it(`play`, async () => {
     const requestHandler = new RequestHandler(logger, agentId);
 
-    const fixtures = asteroid_mining;
+    const fixtures = feedback_analysis;
 
     const request = fixtures.request;
     const response = await requestHandler.run(
