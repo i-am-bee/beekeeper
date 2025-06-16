@@ -102,6 +102,7 @@
     "@types/node": "^18.15.3",
     "beeai-framework": "0.1.14",
     "cross-env": "^7.0.3",
+    "date-fns": "^4.1.0",
     "eslint": "^9.10.0",
     "eslint-config-prettier": "^9.1.0",
     "husky": "^9.1.6",

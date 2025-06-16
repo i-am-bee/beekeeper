@@ -50,7 +50,7 @@ Use **always** when:
 - Complex content creation or generation is needed  
 - Coordinating multiple specialized capabilities would help  
 - The request clearly maps to a multi‑step workflow **and you already have enough details to start planning**  
-- The request needs a factual information
+- The response needs external or real‑time or time sensitive factual data  
 
 ### DIRECT_ANSWER  
 Use **always** when:  
@@ -193,7 +193,6 @@ RESPONSE: {
 }
 \`\`\`
 
-
 ### Pass to Planner – Time‑sensitive data
 **User:** Tell me about the latest iPhone.  
 **Assistant:**
@@ -215,13 +214,34 @@ RESPONSE: {
   ],
   "expectedDeliverables": "Comprehensive summary covering model name, launch date, specs, notable features, regional prices, and availability"
 }
+\`\`\`
+
+### Pass to Planner – Time‑sensitive data
+**User:** Who is the president of Czechia?  
+**Assistant:**
+\`\`\`text
+RESPONSE_CHOICE_EXPLANATION: The current head of state may have changed; up‑to‑date confirmation from an external source is required
+RESPONSE_TYPE: PASS_TO_PLANNER
+RESPONSE: {
+  "requestType": "factual_lookup",
+  "primaryGoal": "Identify the current president of Czechia",
+  "userParameters": {
+    "country": "Czechia"
+  },
+  "requiredComponents": [
+    "retrieve latest official or reputable source on Czech head of state",
+    "verify inauguration date and term status",
+    "compile concise answer with citation"
+  ],
+  "expectedDeliverables": "Verified name of the current Czech president with inauguration date and citation"
+}
 \`\`\``;
 };
 
 export async function run(llm: ChatModel, input: RequestHandlerInput) {
   const messages: Message[] = [new SystemMessage(systemPrompt())];
-  const history = input.history.map(mapWorkflowMessage);
-  if (history.length) {
+  if (input.history && input.history.length) {
+    const history = input.history.map(mapWorkflowMessage);
     messages.push(...history);
   }
   messages.push(mapWorkflowMessage(input.message));
@@ -250,7 +270,8 @@ export async function run(llm: ChatModel, input: RequestHandlerInput) {
     },
   });
 
-  await parser.add(resp.getTextContent());
+  const raw = resp.getTextContent();
+  await parser.add(raw);
   await parser.end();
 
   return {
@@ -261,5 +282,6 @@ export async function run(llm: ChatModel, input: RequestHandlerInput) {
       content: parser.finalState.response_value,
       createdAt: new Date(),
     },
+    raw,
   } satisfies RequestHandlerOutput;
 }

@@ -6,7 +6,7 @@ import {
 } from "../dto.js";
 
 export const RequestHandlerInputSchema = z.object({
-  history: z.array(WorkflowMessageSchema),
+  history: z.array(WorkflowMessageSchema).optional(),
   message: UserWorkflowMessageSchema,
 });
 export type RequestHandlerInput = z.infer<typeof RequestHandlerInputSchema>;
@@ -22,5 +22,6 @@ export const RequestHandlerOutputSchema = z.object({
   type: RequestOutputTypeEnumSchema,
   explanation: z.string(),
   message: AssistantWorkflowMessageSchema,
+  raw: z.string(),
 });
 export type RequestHandlerOutput = z.infer<typeof RequestHandlerOutputSchema>;
