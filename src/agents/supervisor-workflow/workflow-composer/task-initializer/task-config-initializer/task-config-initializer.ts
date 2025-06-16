@@ -2,7 +2,7 @@ import { AgentIdValue } from "@/agents/registry/dto.js";
 import { Context } from "@/agents/supervisor-workflow/base/context.js";
 import {
   LLMCall,
-  LLMCallInput
+  LLMCallInput,
 } from "@/agents/supervisor-workflow/base/llm-call.js";
 import { FnResult } from "@/agents/supervisor-workflow/base/retry/types.js";
 import * as laml from "@/laml/index.js";
@@ -42,6 +42,24 @@ export class TaskConfigInitializer extends LLMCall<
     ctx: Context,
   ): Promise<FnResult<TaskConfigInitializerOutput>> {
     const { onUpdate } = ctx;
+    const {
+      data: { existingAgentConfigs, existingTaskConfigs },
+    } = input;
+
+    const getMissingTaskTypes = (taskTypes: string | string[]) => {
+      return (typeof taskTypes === "string" ? [taskTypes] : taskTypes).filter(
+        (taskType) => !existingTaskConfigs.find((c) => c.taskType === taskType),
+      );
+    };
+
+    const getMissingAgentTypes = (agentTypes: string | string[]) => {
+      return (
+        typeof agentTypes === "string" ? [agentTypes] : agentTypes
+      ).filter(
+        (agentType) =>
+          !existingAgentConfigs.find((c) => c.agentType === agentType),
+      );
+    };
 
     try {
       let toolCallResult;
@@ -65,9 +83,16 @@ export class TaskConfigInitializer extends LLMCall<
             type: result.RESPONSE_TYPE,
             value: `I'm going to create a brand new task config \`${config.taskType}\` for agent \`${config.agentType}\``,
           });
-          this.handleOnUpdate(onUpdate, {
-            value: JSON.stringify(config, null, " "),
-          });
+
+          if (response.agent_type) {
+            const missingAgentTypes = getMissingAgentTypes(response.agent_type);
+            if (missingAgentTypes.length > 0) {
+              return {
+                type: "ERROR",
+                explanation: `You can't create a task config with agent_type:\`${response.agent_type}\` because it doesn't exist. The only existing agents are: \`${existingAgentConfigs.map((c) => c.agentType).join(", ")}\`. Please use one of them.`,
+              };
+            }
+          }
 
           toolCallResult = await this.tool.run({
             method: "createTaskConfig",
@@ -100,6 +125,24 @@ export class TaskConfigInitializer extends LLMCall<
             value: `I'm going to update an existing agent config \`${response.task_config_input}\``,
             payload: { toJson: config },
           });
+
+          const missingTaskTypes = getMissingTaskTypes(response.task_type);
+          if (missingTaskTypes.length > 0) {
+            return {
+              type: "ERROR",
+              explanation: `You can't update task config task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are: \`${existingTaskConfigs.map((c) => c.taskType).join(", ")}\`. Please use one of them.`,
+            };
+          }
+
+          if (response.agent_type) {
+            const missingAgentTypes = getMissingAgentTypes(response.agent_type);
+            if (missingAgentTypes.length > 0) {
+              return {
+                type: "ERROR",
+                explanation: `You can't update task config agent type to \`${response.agent_type}\` because it doesn't exist. The only existing agents are: \`${existingAgentConfigs.map((c) => c.agentType).join(", ")}\`. Please use one of them.`,
+              };
+            }
+          }
 
           toolCallResult = await this.tool.run({
             method: "updateTaskConfig",
@@ -136,7 +179,7 @@ export class TaskConfigInitializer extends LLMCall<
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected task config \`${response.task_type}\` between existing \`${input.data.existingTaskConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `You can't select task config with task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are:\`${input.data.existingTaskConfigs.map((c) => c.taskType).join(",")}\`. Please use one of them.`,
             };
           }
 

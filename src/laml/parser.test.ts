@@ -585,6 +585,11 @@ RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a ne
           type TextArrayFieldTestItem = SingleFieldTestItem<string[]>;
           const constantTestData: TextArrayFieldTestItem[] = [
             {
+              name: "Empty",
+              value: "",
+              expected: [],
+            },
+            {
               name: "A",
               value: "A",
               expected: ["A"],

@@ -12,8 +12,8 @@ import { z } from "zod";
 
 export const TOOL_NAME = "agent_config_initializer";
 
-export interface AgentConfigCreatorToolResult {
-  method: string;
+export interface AgentConfigInitializerToolResult {
+  method: "createAgentConfig" | "updateAgentConfig";
   success: boolean;
   data: AgentConfig;
 }
@@ -46,7 +46,7 @@ export const UpdateAgentConfigSchema = z
   .describe("Update an existing agent configuration.");
 
 export class AgentConfigInitializerTool extends Tool<
-  JSONToolOutput<AgentConfigCreatorToolResult>
+  JSONToolOutput<AgentConfigInitializerToolResult>
 > {
   name = TOOL_NAME;
   description =
@@ -58,7 +58,7 @@ export class AgentConfigInitializerTool extends Tool<
 
   public readonly emitter: ToolEmitter<
     ToolInput<this>,
-    JSONToolOutput<AgentConfigCreatorToolResult>
+    JSONToolOutput<AgentConfigInitializerToolResult>
   > = Emitter.root.child({
     namespace: ["tool", TOOL_NAME],
     creator: this,

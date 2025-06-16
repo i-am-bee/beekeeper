@@ -4,13 +4,13 @@ import { TaskManager } from "@/tasks/manager/manager.js";
 import { ServiceLocator } from "@/utils/service-locator.js";
 import { Logger } from "beeai-framework";
 import { Context } from "../../base/context.js";
+import { FnResult } from "../../base/retry/types.js";
 import { Runnable } from "../../base/runnable.js";
 import { TaskStep } from "../dto.js";
 import { TaskStepMapper } from "../task-step-mapper.js";
 import { AgentConfigInitializer } from "./agent-config-initializer/agent-config-initializer.js";
 import { TaskInitializerOutput } from "./dto.js";
 import { TaskConfigInitializer } from "./task-config-initializer/task-config-initializer.js";
-import { FnResult } from "../../base/retry/types.js";
 
 export interface TaskInitializerRun {
   previousSteps: TaskStep[];
@@ -58,6 +58,7 @@ export class TaskInitializer extends Runnable<
       availableTools,
       existingAgentConfigs,
       previousSteps,
+      selectOnly: taskStep.resource.type === "agent",
       task: task,
     };
 

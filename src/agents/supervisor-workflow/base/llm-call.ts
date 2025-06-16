@@ -111,6 +111,7 @@ export abstract class LLMCall<
 
     const resp = await llm.create({
       messages: [...memory.messages],
+      temperature: 0,
     });
     memory.add(new AssistantMessage(resp.getTextContent()));
 

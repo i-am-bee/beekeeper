@@ -14,9 +14,10 @@ export const prompt = ({
   existingAgentConfigs,
   availableTools,
   previousSteps,
+  selectOnly = false,
 }: Pick<
   AgentConfigInitializerInput,
-  "existingAgentConfigs" | "availableTools" | "previousSteps"
+  "existingAgentConfigs" | "availableTools" | "previousSteps" | "selectOnly"
 >) =>
   BodyTemplateBuilder.new()
     .introduction(
@@ -85,7 +86,7 @@ Based on the type of resource, you will either create, update, or select an agen
         contentEnd: 0,
       },
       delimiter: { end: true },
-      content: decisionCriteria,
+      content: decisionCriteria(selectOnly),
     })
     .section({
       title: {
@@ -98,7 +99,7 @@ Based on the type of resource, you will either create, update, or select an agen
         contentEnd: 0,
       },
       delimiter: { end: true },
-      content: guidelines,
+      content: guidelines(selectOnly),
     })
     .section({
       title: {
@@ -111,14 +112,24 @@ Based on the type of resource, you will either create, update, or select an agen
         contentEnd: 0,
       },
       delimiter: { end: true },
-      content: examples,
+      content: examples(selectOnly),
     })
     .callToAction("This is the task")
     .build();
 
-const guidelines = BodyTemplateBuilder.new()
-  .section({
-    content: `Agent config is a **general-purpose template** for an agent that is activated externally by a task. The agent **does not self-trigger**, schedule, or continuously run on its own. Each time it executes, it receives an input payload from the task that triggered it. Therefore, define the agent’s behavior in a **stateless, input-driven** manner—ensuring it performs the assigned task only during the time it’s invoked.
+const guidelines = (selectOnly: boolean) => {
+  const supportedResponseTypes = selectOnly
+    ? ["SELECT_AGENT_CONFIG", "AGENT_CONFIG_UNAVAILABLE"]
+    : [
+        "CREATE_AGENT_CONFIG",
+        "UPDATE_AGENT_CONFIG",
+        "SELECT_AGENT_CONFIG",
+        "AGENT_CONFIG_UNAVAILABLE",
+      ];
+
+  const builder = BodyTemplateBuilder.new()
+    .section({
+      content: `Agent config is a **general-purpose template** for an agent that is activated externally by a task. The agent **does not self-trigger**, schedule, or continuously run on its own. Each time it executes, it receives an input payload from the task that triggered it. Therefore, define the agent’s behavior in a **stateless, input-driven** manner—ensuring it performs the assigned task only during the time it’s invoked.
 
 **Task Input Format:**  
 Assignments will be provided in the format:  
@@ -135,49 +146,62 @@ Assignments will be provided in the format:
 Do **not** design agents as continuous monitors, autonomous loopers, or triggers of other agents. Their role is **purely functional**: consume input → perform task → return result.
 
 Each agent config should generalize across many similar tasks. Specific parameters (e.g., time ranges, coordinates, query strings) must be passed in as **runtime input**, not hardcoded.`,
-  })
-  .section({
-    title: {
-      text: "Response header",
-      level: 3,
-    },
-    content: `1. \`RESPONSE_CHOICE_EXPLANATION\` – justifying your choice.  
-2. \`RESPONSE_TYPE\` – exactly one of: \`CREATE_AGENT_CONFIG\`, \`UPDATE_AGENT_CONFIG\`, \`SELECT_AGENT_CONFIG\`, \`AGENT_CONFIG_UNAVAILABLE\` without extra white spaces or new lines.
+    })
+    .section({
+      title: {
+        text: "Response header",
+        level: 3,
+      },
+      content: `1. \`RESPONSE_CHOICE_EXPLANATION\` – justifying your choice.  
+2. \`RESPONSE_TYPE\` – exactly one of: ${supportedResponseTypes.map((t) => `\`${t}\``).join(", ")} without extra white spaces or new lines.
 These two lines are **mandatory** and must appear first, each on its own line.`,
-  })
-  .section({
-    title: {
-      text: "CREATE_AGENT_CONFIG — Rules",
-      level: 3,
-    },
-    content: `1. **When to use** – only if a brand-new agent is required.
+    });
+
+  if (supportedResponseTypes.includes("CREATE_AGENT_CONFIG")) {
+    builder.section({
+      title: {
+        text: "CREATE_AGENT_CONFIG — Rules",
+        level: 3,
+      },
+      content: `1. **When to use** – only if a brand-new agent is required.
 2. **\`agent_type\`** – must be unique, lowercase snake_case.
 3. **\`tools\`** – list *only* tool IDs from **Available agent tools** in **Context section**.
 4. **\`description\`** – 1-2 sentences describing mission & scope.
 5. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.
 6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.`,
-  })
-  .section({
-    title: {
-      text: "UPDATE_AGENT_CONFIG — Rules",
-      level: 3,
-    },
-    content: `1. **When to use** – choose this type only if the agent’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, tool list adjustment).
+    });
+  }
+
+  if (supportedResponseTypes.includes("UPDATE_AGENT_CONFIG")) {
+    builder.section({
+      title: {
+        text: "UPDATE_AGENT_CONFIG — Rules",
+        level: 3,
+      },
+      content: `1. **When to use** – choose this type only if the agent’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, tool list adjustment).
 2. **\`agent_type\`** – repeat the existing agent’s name **unchanged**.
 3. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the **Available agent tools** in the **Context section**.
    ↳ If even one tool is missing, you must respond with \`AGENT_CONFIG_UNAVAILABLE\`.
 4. **\`description\`** – include this field *only* if it is being changed. Ensure it reflects any changes made to tools or instructions.
 5. **\`instructions\`** – include this field *only* if it is being changed. The content must align with all updated capabilities or tools.
 6. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
-7. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
-8. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.`,
-  })
-  .section({
-    title: {
-      text: "SELECT_AGENT_CONFIG — Rules",
-      level: 3,
-    },
-    content: `1. **When to use** – choose this type **only** when an existing agent’s mission, instructions, and tool set **already cover the new task exactly as-is**. No structural edits are required.
+7. **Diff-check guard** — Before choosing UPDATE_AGENT_CONFIG you **must** verify that at least one value you output is different from the existing config in “Existing agent configs”.
+   • If every field you intend to output (tools, description, instructions, etc.)
+     would be identical to the stored values, this is a no-op → switch to
+     SELECT_AGENT_CONFIG instead.  
+   • An UPDATE response is valid only when the diff contains a real change.
+8. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
+9. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.`,
+    });
+  }
+
+  if (supportedResponseTypes.includes("SELECT_AGENT_CONFIG")) {
+    builder.section({
+      title: {
+        text: "SELECT_AGENT_CONFIG — Rules",
+        level: 3,
+      },
+      content: `1. **When to use** – choose this type **only** when an existing agent’s mission, instructions, and tool set **already cover the new task exactly as-is**. No structural edits are required.
 2. **\`agent_type\`** – supply just the name of the selected agent config (lowercase snake_case).
    *No other keys are allowed in this response object.*
 3. **No modifications** – you may **not** tweak \`instructions\`, \`description\`, or \`tools\`. If any change is needed, switch to \`UPDATE_AGENT_CONFIG\` instead.
@@ -185,16 +209,19 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
    • The requested outcome is within the agent’s stated **objective**.
    • All necessary capabilities are provided by the agent’s existing **tools**.
    • The agent’s **response format** matches what the user will expect.`,
-  })
-  .section({
-    title: {
-      text: "AGENT_CONFIG_UNAVAILABLE — Rules",
-      level: 3,
-    },
-    newLines: {
-      contentEnd: 0,
-    },
-    content: `1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:
+    });
+  }
+
+  if (supportedResponseTypes.includes("AGENT_CONFIG_UNAVAILABLE")) {
+    builder.section({
+      title: {
+        text: "AGENT_CONFIG_UNAVAILABLE — Rules",
+        level: 3,
+      },
+      newLines: {
+        contentEnd: 0,
+      },
+      content: `1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:
   • Required capability is missing from the **Available agent tools** in **Context section**
   • Fulfilling the task would repurpose an existing agent beyond its scope.
   • Any solution would need resources outside the current environment.
@@ -206,52 +233,81 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
   explanation: <reason>
 \`\`\`
 4. **Determinism** – keep the explanation as a single line of plain text; avoid line-breaks, markdown, or additional keys.`,
-  })
-  .build();
+    });
+  }
 
-const decisionCriteria = BodyTemplateBuilder.new()
-  .section({
-    title: {
-      text: "DECISION CRITERIA — Quick-reference matrix (templates, not instances!)",
-      level: 3,
-    },
-    content: `| If **ALL** these are true → | …then choose **RESPONSE_TYPE** | Short rationale |
-|---|---|---|
-| **• An existing agent’s purpose, instructions _and_ tools already satisfy the user need.**<br>**• No structural changes are required.** | **SELECT_AGENT_CONFIG** | Re-use as-is. |
-| • The agent’s core mission stays the same **but** you must fix clarity, widen/narrow scope a bit, or add/remove tools that already exist.<br>• No repurposing to a new domain. | UPDATE_AGENT_CONFIG | Light-touch edit. |
-| • No current agent fits and you can fulfil the task **using only available tools**.<br>• Creating a fresh agent will not duplicate an existing \`agent_type\`. | CREATE_AGENT_CONFIG | Brand-new config. |
-| • Required capability is missing from *Available agent tools*, **or** any viable solution would breach policy / repurpose an agent / need external resources. | AGENT_CONFIG_UNAVAILABLE | Task impossible within environment. |
+  return builder.build();
+};
 
-> **Hard rule → “Template, not instance”**  
-> Never embed concrete runtime values (e.g. “Trump”, “CNN”, “last 24 hours”) inside an agent config. Treat them as **parameters** the task passes in at execution time.`,
-  })
-  .section({
-    title: {
-      text: "Tool-existence guard",
-      level: 3,
-    },
-    content: `Immediately after choosing a RESPONSE_TYPE, verify that **every tool name you list** appears in *Available agent tools*. If even one is absent, respond with **AGENT_CONFIG_UNAVAILABLE**.`,
-  })
-  .section({
-    title: {
-      text: "`agent_type` naming guard",
-      level: 3,
-    },
-    content: `* \`agent_type\` must be: (a) unique, (b) generic, (c) **distinct from any tool name**.`,
-  })
-  .section({
-    title: {
-      text: "Bad vs. good template example",
-      level: 3,
-    },
-    content: `| ❌ Incorrect (hard-coded) | ✅ Correct (parameterised) |
+const decisionCriteria = (selectOnly: boolean) =>
+  BodyTemplateBuilder.new()
+    .section({
+      title: {
+        text: "DECISION CRITERIA — Plain-language checklist",
+        level: 3,
+      },
+      content: `When you decide **which RESPONSE_TYPE to output**, run through these four options in order.
+Pick the first one whose conditions are **all** true:
+
+${[
+  `**SELECT_AGENT_CONFIG** — *reuse an existing config untouched*
+   * The agent’s current **purpose, instructions, and tools already satisfy the new task**.
+   * **No structural edits are required.**
+   * **Diff-check guard:** if you would not change **any** field (the “diff” is empty), you **must** select rather than update.`,
+  !selectOnly &&
+    `**UPDATE_AGENT_CONFIG** — *make light edits to an existing config*
+   * The agent’s **core mission remains the same**, but you need to:
+     • clarify wording, **or**
+     • slightly widen/narrow scope, **or**
+     • add/remove tools that are already listed in **Available agent tools**.
+   * **Repurposing to a new domain is *not* allowed.**
+   * **Diff-check guard:** at least **one** field you output (tools, description, or instructions) must differ from the stored config.
+     • If every value is identical, switch back to **SELECT_AGENT_CONFIG**.`,
+  !selectOnly &&
+    `**CREATE_AGENT_CONFIG** — *define a brand-new agent*
+   * No existing agent fits the task.
+   * You can solve it **using only the tools in Available agent tools**.
+   * The new \`agent_type\` must be unique and not duplicate any tool name.`,
+  `**AGENT_CONFIG_UNAVAILABLE** — *task impossible within the environment*
+   * The needed capability is missing from **Available agent tools**, **or**
+   * Any viable solution would breach policy, repurpose an agent beyond its scope, or require external resources.`,
+]
+  .filter(Boolean)
+  .map((item, idx) => `${idx + 1}. ${item}`)
+  .join("\n")}
+
+
+**Hard rule – “Template, not instance”**
+Never embed concrete runtime values (e.g., specific names, dates, keywords) inside an agent config. Treat them as parameters supplied at execution time.
+`,
+    })
+    .section({
+      title: {
+        text: "Tool-existence guard",
+        level: 3,
+      },
+      content: `Immediately after choosing a RESPONSE_TYPE, verify that **every tool name you list** appears in *Available agent tools*. If even one is absent, respond with **AGENT_CONFIG_UNAVAILABLE**.`,
+    })
+    .section({
+      title: {
+        text: "`agent_type` naming guard",
+        level: 3,
+      },
+      content: `* \`agent_type\` must be: (a) unique, (b) generic, (c) **distinct from any tool name**.`,
+    })
+    .section({
+      title: {
+        text: "Bad vs. good template example",
+        level: 3,
+      },
+      content: `| ❌ Incorrect (hard-coded) | ✅ Correct (parameterised) |
 |---|---|
 | \`agent_type: cnn_trump_news_search\`<br>\`instructions: …receive the query "Trump", source "CNN", timeframe "last 24 h"…\` | \`agent_type: news_source_search\`<br>\`instructions: …receive *search_terms*, optional *source*, and *timeframe*…\` |`,
-    newLines: {
-      contentEnd: 0,
-    },
-  })
-  .build();
+      newLines: {
+        contentEnd: 0,
+      },
+    })
+    .build();
 
 interface ExampleInput {
   title: string;
@@ -265,249 +321,247 @@ interface ExampleInput {
   example: laml.ProtocolResult<typeof protocol>;
 }
 
-const examples = ((inputs: ExampleInput[]) =>
-  inputs
-    .map((input, idx) =>
-      ChatExampleTemplateBuilder.new()
-        .title({
-          position: idx + 1,
-          text: input.title,
-          level: 3,
-          subtitle: input.subtitle,
-        })
-        .context(
-          ExistingResourcesBuilder.new()
-            .agentConfigs(input.context.existingAgentConfigs)
-            .availableTools(input.context.availableTools)
-            .build(),
-        )
-        .user(input.user)
-        .assistant(protocol.printExample(input.example))
-        .build(),
-    )
-    .join("\n"))([
-  {
-    title: "CREATE_AGENT_CONFIG",
-    subtitle: "Identify historical sites",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [],
-      availableTools: [
-        {
-          toolName: "historical_sites_search_api",
+const examples = (selectOnly: boolean) =>
+  ((inputs: ExampleInput[]) =>
+    inputs
+      .filter(
+        (input) =>
+          !selectOnly ||
+          ["SELECT_AGENT_CONFIG", "AGENT_CONFIG_UNAVAILABLE"].includes(
+            input.example.RESPONSE_TYPE,
+          ),
+      )
+      .map((input, idx) =>
+        ChatExampleTemplateBuilder.new()
+          .title({
+            position: idx + 1,
+            text: input.title,
+            level: 3,
+            subtitle: input.subtitle,
+          })
+          .context(
+            ExistingResourcesBuilder.new()
+              .agentConfigs(input.context.existingAgentConfigs)
+              .availableTools(input.context.availableTools)
+              .build(),
+          )
+          .user(input.user)
+          .assistant(protocol.printExample(input.example))
+          .build(),
+      )
+      .join("\n"))([
+    {
+      title: "CREATE_AGENT_CONFIG",
+      subtitle: "Find local parks",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [],
+        availableTools: [
+          {
+            toolName: "parks_search_api",
+            description:
+              "Search for local parks by location and return a list of parks with descriptions.",
+          },
+        ],
+      },
+      user: "Find local parks in Central Park area (input: location; output: list of parks) [tools: parks_search_api]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "No existing agent can find local parks; a new agent using the parks_search_api tool is needed.",
+        RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+        RESPONSE_CREATE_AGENT_CONFIG: {
+          agent_type: "local_parks_finder",
+          tools: ["parks_search_api"],
           description:
-            "Search for historical sites by location and return a list of sites with descriptions.",
+            "Finds local parks in a specified area using the parks_search_api tool.",
+          instructions: `Context: You are an agent specializing in finding local parks. You are activated by an external task and receive a location as input. You use the parks_search_api tool to retrieve a list of parks in the specified area.
+
+Objective: Use the provided location to fetch a list of local parks. Return the results in a structured format.
+
+Response format: List each park with its name, description, and location:
+
+Local Parks in [Location]:
+1. Name: [Park Name 1] — Description: [Description 1] — Location: [Location 1]
+2. Name: [Park Name 2] — Description: [Description 2] — Location: [Location 2]`,
         },
-      ],
-    },
-    user: "Identify historical sites in Back Bay (input: location; output: list of sites) [tools: historical_sites_search_api]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "No existing agent can identify historical sites; a new agent using historical_sites_search_api is needed.",
-      RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
-      RESPONSE_CREATE_AGENT_CONFIG: {
-        agent_type: "historical_sites_identifier",
-        tools: ["historical_sites_search_api"],
-        description:
-          "Identifies historical sites in a given location using the historical_sites_search_api tool.",
-        instructions: `Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
-
-Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
-
-Response format: List each site with its name and a brief description:
-
-Historical Sites in [Location]:
-1. Name: [Site Name 1] — Description: [Description 1]
-2. Name: [Site Name 2] — Description: [Description 2]`,
       },
     },
-  },
-  {
-    title: "SELECT_AGENT_CONFIG",
-    subtitle: "Game schedules",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [
-        {
-          agentType: "game_searcher",
-          tools: ["sports_schedule_api"],
-          instructions: `Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
+    {
+      title: "SELECT_AGENT_CONFIG",
+      subtitle: "Fishing schedules",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [
+          {
+            agentType: "fishing_schedule_finder",
+            tools: ["fishing_schedule_api"],
+            instructions: `Context: You are an agent specializing in finding fishing schedules. You are activated by an external task and receive fishing type and location as input. You use the fishing_schedule_api tool to retrieve fishing schedules.
 
-Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
+Objective: Use the provided fishing type and location to fetch upcoming fishing schedules. Return the results in a structured format.
 
-Response format: List each game with its date, time, and teams:
+Response format: List each schedule with its date, time, and location:
 
-Upcoming [Sport] Games in [Location]:
-1. Date: [Date 1] — Time: [Time 1] — Teams: [Team A vs. Team B]
-2. Date: [Date 2] — Time: [Time 2] — Teams: [Team C vs. Team D]`,
-          description:
-            "Finds upcoming sports game schedules in a given location using sports_schedule_api.",
+Upcoming [Fishing Type] Fishing Schedules in [Location]:
+1. Date: [Date 1] — Time: [Time 1] — Location: [Location 1]
+2. Date: [Date 2] — Time: [Time 2] — Location: [Location 2]`,
+            description:
+              "Finds upcoming fishing schedules in a given location using fishing_schedule_api.",
+          },
+        ],
+        availableTools: [
+          {
+            toolName: "fishing_schedule_api",
+            description:
+              "Search for fishing schedules by fishing type and location.",
+          },
+          {
+            toolName: "weather_alert_feed",
+            description:
+              "Provides structured severe weather alerts (e.g., watches, warnings) by location and event type. Returns geographic area, issue time, expiration, and full alert text.",
+          },
+        ],
+      },
+      user: "Find upcoming freshwater/saltwater fishing schedules in Boston (input: fishing type, location; output: schedule list) [agent: fishing_schedule_finder]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "The existing fishing_schedule_finder agent config satisfies the new request without changes.",
+        RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
+        RESPONSE_SELECT_AGENT_CONFIG: {
+          agent_type: "fishing_schedule_finder",
         },
-      ],
-      availableTools: [
-        {
-          toolName: "sports_schedule_api",
-          description:
-            "Search for sports game schedules by sport type and location.",
-        },
-        {
-          toolName: "weather_alert_feed",
-          description:
-            "Provides structured severe weather alerts (e.g., watches, warnings) by location and event type. Returns geographic area, issue time, expiration, and full alert text.",
-        },
-      ],
-    },
-    user: "Find upcoming hockey/basketball game schedules in Boston (input: sport, location; output: game list) [agent: game_searcher]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "The existing game_searcher agent config satisfies the new request without changes.",
-      RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
-      RESPONSE_SELECT_AGENT_CONFIG: {
-        agent_type: "game_searcher",
       },
     },
-  },
-  {
-    title: "CREATE_AGENT_CONFIG",
-    subtitle: "Create a 3-day itinerary (LLM)",
-    context: {
-      previousSteps: [
-        `Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]`,
-        `Find upcoming hockey/basketball game schedules in Boston (input: sport, location; output: game list) [agent: sports_game_searcher]`,
-        `Recommend Italian, Chinese, and French restaurants in Back Bay for each day (input: dining preferences, location; output: restaurant list) [agent: multi_cuisine_restaurant_searcher]`,
-      ],
-      existingAgentConfigs: [],
-      availableTools: [
-        {
-          toolName: "phrase_generator",
-          description:
-            "Generate vocabulary lists and example sentences on chosen topics (e.g. inspiration, history etc.) and in chosen style for supported languages.",
-        },
-      ],
-    },
-    user: "Create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions (input: outputs from Steps 1–3; output: detailed itinerary) [LLM]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "No existing agent can create a 3-day itinerary; a new agent using LLM capabilities is needed.",
-      RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
-      RESPONSE_CREATE_AGENT_CONFIG: {
-        agent_type: "itinerary_creator",
-        tools: [],
-        description: `Creates a balanced 3-day itinerary based on input activities, locations, and preferences.`,
-        instructions: `Context: You are an itinerary creator agent. You are activated by an external task and receive input activities, locations, and preferences. You use LLM capabilities to generate a detailed itinerary.
+    {
+      title: "CREATE_AGENT_CONFIG",
+      subtitle: "Create a weekly workout plan (LLM)",
+      context: {
+        previousSteps: [
+          // TODO: Add previous steps important for context
+        ],
+        existingAgentConfigs: [],
+        availableTools: [
+          {
+            toolName: "exercise_database",
+            description:
+              "Provides a database of exercises categorized by muscle group, difficulty level, and equipment required.",
+          },
+        ],
+      },
+      user: "Create a balanced weekly workout plan incorporating strength training, cardio, and flexibility exercises (input: fitness goals, available equipment, and schedule; output: detailed workout plan) [LLM]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "No existing agent can create a balanced weekly workout plan; a new agent using LLM capabilities is needed.",
+        RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
+        RESPONSE_CREATE_AGENT_CONFIG: {
+          agent_type: "weekly_workout_planner",
+          tools: [],
+          description: `Creates a balanced weekly workout plan incorporating strength training, cardio, and flexibility exercises based on user input.`,
+          instructions: `Context: You are an agent specializing in creating weekly workout plans. You are activated by an external task and receive fitness goals, available equipment, and schedule as input. You rely on LLM capabilities to generate a detailed workout plan.
 
-Objective: Use the provided inputs to create a balanced 3-day itinerary. Return the results in a structured format.
+Objective: Use the provided fitness goals, available equipment, and schedule to create a balanced weekly workout plan. Incorporate strength training, cardio, and flexibility exercises tailored to the user's input.
 
-Response format: Present the itinerary day by day with activities and details:
+Response format: Provide a day-by-day workout plan with the following structure:
 
-3-Day Itinerary:
+Weekly Workout Plan:
 Day 1:
-- Activity: [Activity 1] — Details: [Details 1]
-- Activity: [Activity 2] — Details: [Details 2]
+- Exercise: [Exercise Name] — Type: [Strength/Cardio/Flexibility] — Duration: [Time] — Equipment: [Equipment Needed]
 Day 2:
-- Activity: [Activity 3] — Details: [Details 3]
-- Activity: [Activity 4] — Details: [Details 4]
-Day 3:
-- Activity: [Activity 5] — Details: [Details 5]
-- Activity: [Activity 6] — Details: [Details 6]`,
+- Exercise: [Exercise Name] — Type: [Strength/Cardio/Flexibility] — Duration: [Time] — Equipment: [Equipment Needed]
+...
+Day 7:
+- Exercise: [Exercise Name] — Type: [Strength/Cardio/Flexibility] — Duration: [Time] — Equipment: [Equipment Needed]`,
+        },
       },
     },
-  },
-  {
-    title: "UPDATE_AGENT_CONFIG",
-    subtitle: "Expand game_searcher to include concerts",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [
-        {
-          agentType: "game_searcher",
-          tools: ["sports_schedule_api"],
-          description:
-            "Finds upcoming sports game schedules in a given location using sports_schedule_api.",
-          instructions: `Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
+    {
+      title: "UPDATE_AGENT_CONFIG",
+      subtitle: "Expand book_searcher to include audiobooks",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [
+          {
+            agentType: "book_searcher",
+            tools: ["book_catalog_api"],
+            description:
+              "Finds books in a given genre using the book_catalog_api tool.",
+            instructions: `Context: You are an agent specializing in finding books. You are activated by an external task and receive genre and location as input. You use the book_catalog_api tool to retrieve book listings.
 
-Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
+Objective: Use the provided genre and location to fetch book listings. Return the results in a structured format.
 
-Response format: List each game with its date, time, and teams:
+Response format: List each book with its title, author, and description:
 
-Upcoming [Sport] Games in [Location]:
-1. Date: [Date 1] — Time: [Time 1] — Teams: [Team A vs. Team B]
-2. Date: [Date 2] — Time: [Time 2] — Teams: [Team C vs. Team D]
+Books in [Genre] Genre:
+1. Title: [Book Title 1] — Author: [Author 1] — Description: [Description 1]
+2. Title: [Book Title 2] — Author: [Author 2] — Description: [Description 2]`,
+          },
+        ],
+        availableTools: [
+          {
+            toolName: "book_catalog_api",
+            description: "Search for books by genre and location.",
+          },
+          {
+            toolName: "audiobook_catalog_api",
+            description: "Search for audiobooks by genre and location.",
+          },
+        ],
+      },
+      user: "Find books and audiobooks in the mystery genre (input: genre, location; output: book list) [agent: book_searcher]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "The game_searcher agent's purpose remains the same, but its scope must be expanded to include concerts.",
+        RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
+        RESPONSE_UPDATE_AGENT_CONFIG: {
+          agent_type: "book_searcher",
+          tools: ["audiobook_catalog_api", "book_catalog_api"],
+          instructions: `Context: You are an agent specializing in finding books and audiobooks. You are activated by an external task and receive genre and location as input. You use the book_catalog_api and audiobook_catalog_api tools to retrieve listings.
 
-### Available agent tools
-1. sports_schedule_api:
-  description: Search for sports game schedules by sport type and location.
-2. concert_schedule_api:
-  description: Search for upcoming concerts by location and date.`,
+Objective: Use the provided genre and location to fetch book and audiobook listings. Return the results in a structured format.
+
+Response format: List each item with its title, author, and description:
+
+Books and Audiobooks in [Genre] Genre:
+1. Title: [Title 1] — Author: [Author 1] — Description: [Description 1]
+2. Title: [Title 2] — Author: [Author 2] — Description: [Description 2]`,
         },
-      ],
-      availableTools: [
-        {
-          toolName: "sports_schedule_api",
-          description:
-            "Search for sports game schedules by sport type and location.",
-        },
-        {
-          toolName: "concert_schedule_api",
-          description: "Search for upcoming concerts by location and date.",
-        },
-      ],
-    },
-    user: "Find upcoming hockey/basketball games and concerts in Boston (input: event type, location; output: event list) [agent: game_searcher]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "The game_searcher agent's purpose remains the same, but its scope must be expanded to include concerts.",
-      RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
-      RESPONSE_UPDATE_AGENT_CONFIG: {
-        agent_type: "game_searcher",
-        tools: ["concert_schedule_api", "sports_schedule_api"],
-        instructions: `Context: You are an agent specializing in finding event schedules, including sports games and concerts. You are activated by an external task and receive event type and location as input. You use the sports_schedule_api and concert_schedule_api tools to retrieve schedules.
-
-Objective: Use the provided event type and location to fetch upcoming schedules. Return the results in a structured format.
-
-Response format: List each event with its date, time, and details:
-
-Upcoming [Event Type] Events in [Location]:
-1. Date: [Date 1] — Time: [Time 1] — Details: [Details 1]
-2. Date: [Date 2] — Time: [Time 2] — Details: [Details 2]`,
       },
     },
-  },
-  {
-    title: "AGENT_CONFIG_UNAVAILABLE",
-    subtitle: "Missing tool for 3-D rendering",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [],
-      availableTools: [
-        {
-          toolName: "sound_generator",
-          description: "Create sound from natural-language prompts.",
+    {
+      title: "AGENT_CONFIG_UNAVAILABLE",
+      subtitle: "Missing tool for 3-D rendering",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [],
+        availableTools: [
+          {
+            toolName: "sound_generator",
+            description: "Create sound from natural-language prompts.",
+          },
+        ],
+      },
+      user: "Render a 3-D model of my house from this floor plan (input: floor plan; output: 3-D model) [tools: 3d_modeling_tool]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "No tool exists for 3-D modeling or rendering in the current environment.",
+        RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
+        RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
+          explanation:
+            "Cannot create or update an agent because there is no tool for 3-D modeling or rendering.",
         },
-      ],
-    },
-    user: "Render a 3-D model of my house from this floor plan (input: floor plan; output: 3-D model) [tools: 3d_modeling_tool]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "No tool exists for 3-D modeling or rendering in the current environment.",
-      RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
-      RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
-        explanation:
-          "Cannot create or update an agent because there is no tool for 3-D modeling or rendering.",
       },
     },
-  },
-  {
-    title: "SELECT_AGENT_CONFIG",
-    subtitle: "Reuse news_headlines_24",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [
-        {
-          agentType: "news_headlines_24h",
-          tools: ["news_search"],
-          description: "Gathers news headlines related from the past 24 hours.",
-          instructions: `You are an agent specializing in collecting news headlines on chosen topic. You have access to a news_search tool that allows you to find articles based on keywords and time filters. Users will provide a time frame and one or more search terms for the news they want collected.
+    {
+      title: "SELECT_AGENT_CONFIG",
+      subtitle: "Reuse news_headlines_24",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [
+          {
+            agentType: "news_headlines_24h",
+            tools: ["news_search"],
+            description:
+              "Gathers news headlines related from the past 24 hours.",
+            instructions: `You are an agent specializing in collecting news headlines on chosen topic. You have access to a news_search tool that allows you to find articles based on keywords and time filters. Users will provide a time frame and one or more search terms for the news they want collected.
 
 Objective: Collect news headlines that contain the user-supplied keywords within the requested time window (default: past 24 hours). Use the news_search tool to execute the query, filtering results to match the specified period. Provide a list of headline URLs together with concise summaries.
 
@@ -516,139 +570,144 @@ Response format: Begin with a brief sentence that restates the search terms and 
 News headlines matching “<keywords>” from the past 24 hours:  
 1. URL: [headline_url_1] — Summary: [headline_summary_1]  
 2. URL: [headline_url_2] — Summary: [headline_summary_2]`,
+          },
+        ],
+        availableTools: [
+          {
+            toolName: "news_search",
+            description:
+              "Query a curated index of newspapers, magazines, and wire-services for articles that match a keyword or topic. Supports source and date filters, returning structured results with headline, outlet, publication date, snippet, and article URL.",
+          },
+        ],
+      },
+      user: "Gather news headlines from the past 24 hours that match user-supplied keywords (input: keywords; output: news list) [agent: news_headlines_24h]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "The existing news_headlines_24h agent config satisfies the new request without changes.",
+        RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
+        RESPONSE_SELECT_AGENT_CONFIG: {
+          agent_type: "news_headlines_24h",
         },
-      ],
-      availableTools: [
-        {
-          toolName: "news_search",
-          description:
-            "Query a curated index of newspapers, magazines, and wire-services for articles that match a keyword or topic. Supports source and date filters, returning structured results with headline, outlet, publication date, snippet, and article URL.",
-        },
-      ],
-    },
-    user: "Gather news headlines from the past 24 hours that match user-supplied keywords (input: keywords; output: news list) [agent: news_headlines_24h]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "The existing news_headlines_24h agent config satisfies the new request without changes.",
-      RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
-      RESPONSE_SELECT_AGENT_CONFIG: {
-        agent_type: "news_headlines_24h",
       },
     },
-  },
-  {
-    title: "UPDATE_AGENT_CONFIG",
-    subtitle: "Generalize restaurant_recommender",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [
-        {
-          agentType: "restaurant_recommender",
-          tools: ["restaurant_search_api"],
-          description:
-            "Recommends Italian restaurants in a given location using the restaurant_search_api tool.",
-          instructions: `Context: You are an agent specializing in recommending Italian restaurants. You are activated by an external task and receive location as input. You use the restaurant_search_api tool to retrieve a list of Italian restaurants.
+    {
+      title: "UPDATE_AGENT_CONFIG",
+      subtitle: "Generalize recipe_finder and incorporate a new tool",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [
+          {
+            agentType: "recipe_finder",
+            tools: ["recipe_catalog_api"],
+            description:
+              "Finds vegetarian recipes using the recipe_catalog_api tool.",
+            instructions: `Context: You are an agent specializing in finding vegetarian recipes. You are activated by an external task and receive cuisine type as input. You use the recipe_catalog_api tool to retrieve a list of vegetarian recipes.
 
-Objective: Use the provided location to fetch a list of Italian restaurants. Return the results in a structured format.
+Objective: Use the provided cuisine type to fetch a list of vegetarian recipes. Return the results in a structured format.
 
-Response format: List each restaurant with its name, description, and contact details:
+Response format: List each recipe with its name, ingredients, and instructions:
 
-Recommended Italian Restaurants in [Location]:
-1. Name: [Restaurant Name 1] — Description: [Description 1] — Contact: [Contact Details 1]
-2. Name: [Restaurant Name 2] — Description: [Description 2] — Contact: [Contact Details 2]`,
+Recommended Vegetarian Recipes for [Cuisine]:
+1. Name: [Recipe Name 1] — Ingredients: [Ingredients 1] — Instructions: [Instructions 1]
+2. Name: [Recipe Name 2] — Ingredients: [Ingredients 2] — Instructions: [Instructions 2]`,
+          },
+        ],
+        availableTools: [
+          {
+            toolName: "recipe_catalog_api",
+            description:
+              "Search for recipes by cuisine, dietary preferences, and other criteria. Returns recipe names, ingredients, and instructions.",
+          },
+          {
+            toolName: "nutrition_analysis_api",
+            description:
+              "Analyze recipes for nutritional content, providing details like calories, macronutrients, and allergens.",
+          },
+        ],
+      },
+      user: "Recommend recipes of any cuisine or dietary preference based on user-defined criteria and provide nutritional analysis (input: cuisine, dietary preference, search criteria; output: recipe list with nutritional details) [agent: recipe_finder]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "The recipe_finder agent's purpose remains the same, but its scope must be expanded to include user-defined search criteria and nutritional analysis by incorporating the nutrition_analysis_api tool.",
+        RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
+        RESPONSE_UPDATE_AGENT_CONFIG: {
+          agent_type: "recipe_finder",
+          tools: ["nutrition_analysis_api", "recipe_catalog_api"],
+          instructions: `Context: You are an agent specializing in finding recipes and providing nutritional analysis. You are activated by an external task and receive cuisine, dietary preference, and search criteria as input. You use the recipe_catalog_api tool to retrieve a list of recipes and the nutrition_analysis_api tool to analyze their nutritional content.
+
+Objective: Use the provided cuisine, dietary preference, and search criteria to fetch a list of recipes and analyze their nutritional content. Return the results in a structured format.
+
+Response format: List each recipe with its name, ingredients, dietary preference, nutritional details, and instructions:
+
+Recommended Recipes for [Cuisine] ([Dietary Preference]) based on [Search Criteria]:
+1. Name: [Recipe Name 1] — Ingredients: [Ingredients 1] — Dietary Preference: [Dietary Preference 1] — Nutritional Details: [Nutritional Details 1] — Instructions: [Instructions 1]
+2. Name: [Recipe Name 2] — Ingredients: [Ingredients 2] — Dietary Preference: [Dietary Preference 2] — Nutritional Details: [Nutritional Details 2] — Instructions: [Instructions 2]`,
         },
-      ],
-      availableTools: [
-        {
-          toolName: "restaurant_search_api",
-          description:
-            "Search for restaurants by cuisine, location, and other filters. Returns restaurant names, descriptions, and contact details.",
-        },
-      ],
-    },
-    user: "Recommend restaurants of any cuisine in New York City (input: cuisine, location; output: restaurant list) [agent: restaurant_recommender]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "The restaurant_recommender agent's purpose remains the same, but its scope must be generalized to include all cuisines.",
-      RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
-      RESPONSE_UPDATE_AGENT_CONFIG: {
-        agent_type: "restaurant_recommender",
-        tools: ["google_search", "web_extract"],
-        instructions: `Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive cuisine and location as input. You use the restaurant_search_api tool to retrieve a list of restaurants.
-
-Objective: Use the provided cuisine and location to fetch a list of restaurants. Return the results in a structured format.
-
-Response format: List each restaurant with its name, description, and contact details:
-
-Recommended Restaurants in [Location] for [Cuisine]:
-1. Name: [Restaurant Name 1] — Description: [Description 1] — Contact: [Contact Details 1]
-2. Name: [Restaurant Name 2] — Description: [Description 2] — Contact: [Contact Details 2]`,
       },
     },
-  },
-  {
-    title: "AGENT_CONFIG_UNAVAILABLE",
-    subtitle: "Missing tool for flight booking",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [],
-      availableTools: [
-        {
-          toolName: "hotel_search_api",
-          description:
-            "Search for hotels by location, price range, and amenities. Returns hotel names, descriptions, and booking links.",
+    {
+      title: "AGENT_CONFIG_UNAVAILABLE",
+      subtitle: "Missing tool for flight booking",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [],
+        availableTools: [
+          {
+            toolName: "hotel_search_api",
+            description:
+              "Search for hotels by location, price range, and amenities. Returns hotel names, descriptions, and booking links.",
+          },
+        ],
+      },
+      user: "Book a flight from Boston to San Francisco (input: origin, destination; output: flight details) [tools: flight_booking_api]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "No tool exists for flight booking in the current environment.",
+        RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
+        RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
+          explanation:
+            "Cannot create or update an agent because there is no tool for flight booking.",
         },
-      ],
-    },
-    user: "Book a flight from Boston to San Francisco (input: origin, destination; output: flight details) [tools: flight_booking_api]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "No tool exists for flight booking in the current environment.",
-      RESPONSE_TYPE: "AGENT_CONFIG_UNAVAILABLE",
-      RESPONSE_AGENT_CONFIG_UNAVAILABLE: {
-        explanation:
-          "Cannot create or update an agent because there is no tool for flight booking.",
       },
     },
-  },
-  {
-    title: "SELECT_AGENT_CONFIG",
-    subtitle: "Reuse restaurant_recommender",
-    context: {
-      previousSteps: [],
-      existingAgentConfigs: [
-        {
-          agentType: "restaurant_recommender",
-          tools: ["restaurant_search_api"],
-          description:
-            "Recommends restaurants based on user-defined cuisine and location using the restaurant_search_api tool.",
-          instructions: `Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive cuisine and location as input. You use the restaurant_search_api tool to retrieve a list of restaurants.
+    {
+      title: "SELECT_AGENT_CONFIG",
+      subtitle: "Reuse star_gazer",
+      context: {
+        previousSteps: [],
+        existingAgentConfigs: [
+          {
+            agentType: "star_gazer",
+            tools: ["astronomy_search_api"],
+            description:
+              "Recommends celestial objects to observe based on user-defined location and time using the astronomy_search_api tool.",
+            instructions: `Context: You are an agent specializing in recommending celestial objects for observation. You are activated by an external task and receive location and time as input. You use the astronomy_search_api tool to retrieve a list of observable celestial objects.
 
-Objective: Use the provided cuisine and location to fetch a list of restaurants. Return the results in a structured format.
+Objective: Use the provided location and time to fetch a list of celestial objects. Return the results in a structured format.
 
-Response format: List each restaurant with its name, description, and contact details:
+Response format: List each celestial object with its name, description, and visibility details:
 
-Recommended Restaurants in [Location] for [Cuisine]:
-1. Name: [Restaurant Name 1] — Description: [Description 1] — Contact: [Contact Details 1]
-2. Name: [Restaurant Name 2] — Description: [Description 2] — Contact: [Contact Details 2]`,
+Recommended Celestial Objects in [Location] at [Time]:
+1. Name: [Object Name 1] — Description: [Description 1] — Visibility: [Visibility Details 1]
+2. Name: [Object Name 2] — Description: [Description 2] — Visibility: [Visibility Details 2]`,
+          },
+        ],
+        availableTools: [
+          {
+            toolName: "astronomy_search_api",
+            description:
+              "Search for celestial objects by location, time, and other filters. Returns object names, descriptions, and visibility details.",
+          },
+        ],
+      },
+      user: "Recommend celestial objects to observe in Los Angeles at 10 PM (input: location, time; output: celestial object list) [agent: star_gazer]",
+      example: {
+        RESPONSE_CHOICE_EXPLANATION:
+          "The existing star_gazer agent config satisfies the new request without changes.",
+        RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
+        RESPONSE_SELECT_AGENT_CONFIG: {
+          agent_type: "star_gazer",
         },
-      ],
-      availableTools: [
-        {
-          toolName: "restaurant_search_api",
-          description:
-            "Search for restaurants by cuisine, location, and other filters. Returns restaurant names, descriptions, and contact details.",
-        },
-      ],
-    },
-    user: "Recommend Mexican restaurants in Los Angeles (input: cuisine, location; output: restaurant list) [agent: restaurant_recommender]",
-    example: {
-      RESPONSE_CHOICE_EXPLANATION:
-        "The existing restaurant_recommender agent config satisfies the new request without changes.",
-      RESPONSE_TYPE: "SELECT_AGENT_CONFIG",
-      RESPONSE_SELECT_AGENT_CONFIG: {
-        agent_type: "restaurant_recommender",
       },
     },
-  },
-]);
+  ] as any[]); // FIXME

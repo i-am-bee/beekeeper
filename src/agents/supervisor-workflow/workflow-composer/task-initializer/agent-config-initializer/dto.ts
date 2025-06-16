@@ -30,6 +30,7 @@ export const AgentConfigInitializerInputSchema = z.object({
   existingAgentConfigs: z.array(AgentConfigMinimalSchema),
   previousSteps: z.array(TaskStepSchema),
   availableTools: z.array(AgentAvailableToolSchema),
+  selectOnly: z.boolean().optional(),
   task: z.string(),
 });
 export type AgentConfigInitializerInput = z.infer<

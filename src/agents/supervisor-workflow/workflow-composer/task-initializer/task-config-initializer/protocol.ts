@@ -27,7 +27,7 @@ export const protocol = laml.ProtocolBuilder.new()
     attributes: laml.ProtocolBuilder.new()
       .text({
         name: "task_type",
-        description: "Name of the new task config type in snake_case",
+        description: "Name of the new task config type in snake_case **never includes any concrete parameter values**",
       })
       .text({
         name: "agent_type",

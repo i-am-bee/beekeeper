@@ -99,7 +99,7 @@ Based on the agent config type, you will either create, update, or select a task
 
 const guidelines = BodyTemplateBuilder.new()
   .section({
-    content: `Task config is a general template or a prescription (like a class in a programming language) for task runs (like an instances) that will be actually proceed at the runtime with various values on inputs but with the same format. Keep that in mind and design task config general not just for one use. Each specific adjustments should be provided through task config input as an attributes.`,
+    content: `Task config is a general template or a prescription (like a class in a programming language) for task runs (like instances) that will be executed at runtime with various values on inputs but with the same format. Keep that in mind and design task config general – not just for one use. **\`task_type\` and \`description\` must therefore stay *parameter‑agnostic* (use placeholders such as \`<given location>\` for description or just \`location\` for task_type instead of literal values like “London”).** Each specific adjustment should be provided through \`task_config_input\` attributes.`,
   })
   .section({
     title: {
@@ -116,10 +116,10 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
       level: 3,
     },
     content: `1. **When to use** – only if a brand-new task is required.
-2. **\`task_type\`** – Must be unique, lowercase snake_case.
+2. **\`task_type\`** – Must be unique, lowercase snake_case, and must **never embed a concrete input value**. Use operation‑only names (e.g., \`find_nearest_airports\`, not \`find_nearest_airports_in_london\`).
 3. **\`agent_type\`** – Name of the one of the existing agent configs type.
 4. **\`task_config_input\`** – General format of input required to run the task; often it is a JSON.
-5. **\`description\`** – Detail information about the task and its context.
+5. **\`description\`** – Describe the generic task. Use placeholders (\`<given location>\`, \`<user budget>\`, etc.) instead of literal input examples.
 6. **Uniqueness guard** – If the proposed \`task_type\` already exists, abort and use \`SELECT_TASK_CONFIG\` instead.`,
   })
   .section({
@@ -129,11 +129,12 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
     },
     content: `1. **When to use** – choose this type only if the task’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, task config input adjustment).
 2. **\`task_type\`** – repeat the existing task’s name **unchanged**.
-3. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
-4. **\`agent_type\`** – Name of the one of the existing agent configs type.
-5. **\`task_config_input\` edits** – General format of input required to run the task; often it is a JSON.
-6. **\`description\`** – Detail information about the task and its context.
-7. **Scope discipline** – edits may refine task config input, improve formatting, or prune redundancies, but they must **never repurpose** the task for a different domain.`,
+3. **Do not insert literal runtime values; keep placeholders intact.**
+4. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
+5. **\`agent_type\`** – Name of the one of the existing agent configs type.
+6. **\`task_config_input\` edits** – General format of input required to run the task; often it is a JSON.
+7. **\`description\`** – Detail information about the task and its context.
+8. **Scope discipline** – edits may refine task config input, improve formatting, or prune redundancies, but they must **never repurpose** the task for a different domain.`,
   })
   .section({
     title: {

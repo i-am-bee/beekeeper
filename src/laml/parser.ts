@@ -309,15 +309,24 @@ export class Parser<TResult> {
         const usedBulletSign = BULLET_SIGNS.find((s) =>
           value.trimStart().startsWith(s),
         );
-        const rawSplit = value
-          .split(usedBulletSign ? "\n" : ",")
-          .map((v) => (usedBulletSign ? v.replace(usedBulletSign, "") : v));
+        const rawSplit =
+          value.length === 0
+            ? []
+            : value
+                .split(usedBulletSign ? "\n" : ",")
+                .map((v) =>
+                  usedBulletSign ? v.replace(usedBulletSign, "") : v,
+                );
 
         const type = field.field.type;
         const constants = field.field.constants;
         const split = rawSplit.map((val, idx) => {
           val = unwrapString(val.trim(), {
-            start: ['"', "'", "`"],
+            envelops: [
+              ['"', '"'],
+              ["'", "'"],
+              ["`", "`"],
+            ],
             greedy: true,
           });
 

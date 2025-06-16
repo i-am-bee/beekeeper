@@ -88,8 +88,7 @@ export class AgentConfigInitializer extends LLMCall<
 Please address these issues and provide the corrected response:`;
             return {
               type: "ERROR",
-              explanation,  // `Can't create agent config \`${config.agentType}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\`. Available tools: \`${availableTools.map((t) => t.toolName).join(", ")}\`.`,
-              
+              explanation,
             };
           }
 

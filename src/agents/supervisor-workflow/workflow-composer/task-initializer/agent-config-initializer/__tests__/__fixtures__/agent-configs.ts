@@ -54,12 +54,12 @@ export const AGENT_CONFIG_ENTRIES = [
     agentConfigVersion: 1,
   },
   {
-    agentType: "historical_sites_search",
+    agentType: "historical_sites_identifier",
     description: "Agent for searching historical sites in a city.",
     instructions:
       "Context: You are an agent specialized in finding historical sites in a given city. You have access to web search tools to gather information about popular historical landmarks, museums, and sites of interest. Users will provide the city and any specific interests they have. Objective: Provide a list of historical sites to visit, including brief descriptions and any relevant visiting information such as opening hours or ticket prices. Response format: Present the information in a list format with each site having a name, description, and visiting details.",
     tools: ["historical_sites_search_api"],
-    agentConfigId: "operator:historical_sites_search:1",
+    agentConfigId: "operator:historical_sites_identifier:1",
     agentConfigVersion: 1,
   },
   {

@@ -19,7 +19,7 @@ import { z } from "zod";
 export const TOOL_NAME = "task_manager";
 
 export interface TaskConfigInitializerToolResult {
-  method: string;
+  method: "createTaskConfig" | "updateTaskConfig";
   success: true;
   data: TaskConfig;
 }
