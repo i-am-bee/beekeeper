@@ -47,7 +47,7 @@ export const UpdateAgentConfigSchema = z
   })
   .describe("Update an existing agent configuration.");
 
-export class AgentConfigCreatorTool extends Tool<
+export class AgentConfigInitializerTool extends Tool<
   JSONToolOutput<AgentConfigCreatorToolResult>
 > {
   name = TOOL_NAME;
@@ -72,8 +72,8 @@ export class AgentConfigCreatorTool extends Tool<
   }
 
   inputSchema() {
-    const schemas = [CreateAgentConfigSchema, UpdateAgentConfigSchema];
-    return z.discriminatedUnion("method", schemas as any);
+    const schemas = [CreateAgentConfigSchema, UpdateAgentConfigSchema] as const;
+    return z.discriminatedUnion("method", schemas);
   }
 
   protected async _run(input: ToolInput<this>) {
@@ -93,7 +93,7 @@ export class AgentConfigCreatorTool extends Tool<
         });
         break;
       default:
-        throw new Error(`Undefined method ${input.method}`);
+        throw new Error(`Undefined method ${JSON.stringify(input)}`);
     }
     return new JSONToolOutput({
       method: input.method,

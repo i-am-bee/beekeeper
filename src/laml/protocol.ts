@@ -5,6 +5,7 @@ import { Parser } from "./parser.js";
 import { printLAMLObject } from "./utils.js";
 
 export const DEFAULT_INDENT = "  ";
+export const INDENT_LENGTH = DEFAULT_INDENT.length;
 export const DESCRIPTION = ``;
 
 export type ProtocolBuilderResult<TProtocolBuilder> =
@@ -301,7 +302,7 @@ export class Protocol<TResult> {
         const text =
           field.kind === "comment"
             ? `<${field.comment}>`
-            : `${field.name}: <${[field.isOptional ? "!optional" : "!required", field.kind, field.description].filter(isNonNullish).join(";")}>`;
+            : `${field.name}: <${[field.isOptional ? "!optional" : "!required", field.kind, path.length * INDENT_LENGTH, field.description].filter(isNonNullish).join(";")}>`;
         output += `${_indent}${text}\n`;
         return "CONTINUE";
       },
@@ -312,7 +313,7 @@ export class Protocol<TResult> {
 
   printExplanation() {
     return `All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
-  <!required|optional; type; human-readable hint>
+<!required|optional; indent; type; human-readable hint>
 - required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).  
 - type - One of the following:
   - text – single-line string  
@@ -322,6 +323,7 @@ export class Protocol<TResult> {
   - constant – one literal chosen from the values listed in the protocol  
   - array – list of items of the specified item-type (comma-separated or JSON-style)  
   - object – nested attributes, each described by its own metadata tag  
+- indent – integer; the key’s left-margin offset in spaces (0 = column 0)
 - human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
 
 The format:

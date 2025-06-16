@@ -8,7 +8,7 @@ import {
 import { DateStringSchema } from "@/base/dto.js";
 
 export const AgentAvailableToolSchema = z.object({
-  name: z.string(),
+  toolName: z.string(),
   description: z.string(),
 });
 export type AgentAvailableTool = z.infer<typeof AgentAvailableToolSchema>;

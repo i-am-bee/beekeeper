@@ -9,20 +9,20 @@ export const protocol = laml.ProtocolBuilder.new()
   .constant({
     name: "RESPONSE_TYPE",
     values: [
-      "CREATE_AGENT_CONFIG",
-      "UPDATE_AGENT_CONFIG",
-      "SELECT_AGENT_CONFIG",
-      "AGENT_CONFIG_UNAVAILABLE",
+      "CREATE_TASK_CONFIG",
+      "UPDATE_TASK_CONFIG",
+      "SELECT_TASK_CONFIG",
+      "TASK_CONFIG_UNAVAILABLE",
     ] as const,
     description:
-      "CREATE_AGENT_CONFIG | UPDATE_AGENT_CONFIG | SELECT_AGENT_CONFIG | AGENT_CONFIG_UNAVAILABLE",
+      "Valid values: CREATE_TASK_CONFIG | UPDATE_TASK_CONFIG | SELECT_TASK_CONFIG | TASK_CONFIG_UNAVAILABLE",
   })
   .comment({
     comment:
       "Follow by one of the possible responses format based on the chosen response type",
   })
   .object({
-    name: "RESPONSE_CREATE_AGENT_CONFIG",
+    name: "RESPONSE_CREATE_TASK_CONFIG",
     isOptional: true,
     attributes: laml.ProtocolBuilder.new()
       .text({
@@ -47,7 +47,7 @@ export const protocol = laml.ProtocolBuilder.new()
       }),
   })
   .object({
-    name: "RESPONSE_UPDATE_AGENT_CONFIG",
+    name: "RESPONSE_UPDATE_TASK_CONFIG",
     isOptional: true,
     attributes: laml.ProtocolBuilder.new()
       .text({
@@ -75,7 +75,7 @@ export const protocol = laml.ProtocolBuilder.new()
       }),
   })
   .object({
-    name: "RESPONSE_SELECT_AGENT_CONFIG",
+    name: "RESPONSE_SELECT_TASK_CONFIG",
     isOptional: true,
     attributes: laml.ProtocolBuilder.new().text({
       name: "agent_type",
@@ -83,12 +83,12 @@ export const protocol = laml.ProtocolBuilder.new()
     }),
   })
   .object({
-    name: "RESPONSE_AGENT_CONFIG_UNAVAILABLE",
+    name: "RESPONSE_TASK_CONFIG_UNAVAILABLE",
     isOptional: true,
     attributes: laml.ProtocolBuilder.new().text({
       name: "explanation",
       description:
-        "Detail explanation why your are not able to create, update or select existing agent config",
+        "Brief reason you are not able to create, update or select an existing agent config",
     }),
   })
   .build();
