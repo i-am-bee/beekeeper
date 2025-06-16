@@ -1,4 +1,3 @@
-import { parseEnv } from "beeai-framework/internals/env";
 import { TaskKindEnum, TaskRun } from "./dto.js";
 
 export function taskRunOutput(taskRun: TaskRun, checkTerminalStatus = true) {
@@ -78,10 +77,7 @@ export function serializeTaskRunInput(
   }: TaskRunInput,
   taskKind: TaskKindEnum = "operator",
 ): string {
-  if (
-    parseEnv.asBoolean("DEV_SUPERVISOR_WORKFLOW_ENABLED", false) &&
-    taskKind === "supervisor"
-  ) {
+  if (taskKind === "supervisor") {
     // Workflow receives plain input
     return input ?? "";
   }

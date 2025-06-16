@@ -19,7 +19,7 @@ import {
 } from "./registry/tool.js";
 
 export enum AgentTypes {
-  BOSS = "boss",
+  BEEKEEPER = "beekeeper",
 }
 
 export const SUPERVISOR_INSTRUCTIONS = (
@@ -95,7 +95,7 @@ export const SUPERVISOR_INSTRUCTIONS = (
       * \`${AgentKindEnumSchema.enum.operator}\`: Agents that complete specific tasks.
     * Each agent config has a unique agent type (e.g., 'travel_planner').
   * An **agent** is an instance of an agent config. It represents a live entity in the system that actually processes assigned tasks.
-    * Each agent instance has a unique ID: \`{agentKind}:{agentType}[{instanceNum}]:{version}\`, for example \`supervisor:boss[1]:1\` or \`operator:travel_planner[2]:3\`. 
+    * Each agent instance has a unique ID: \`{agentKind}:{agentType}[{instanceNum}]:{version}\`, for example \`supervisor:beekeeper[1]:1\` or \`operator:travel_planner[2]:3\`. 
   * **Agent pool**:
     * Each agent config automatically creates a pool of agent instances, according to configured parameters.
     * Instances are available for assignment to relevant tasks.
@@ -256,7 +256,7 @@ export const PROCESS_AND_PLAN_TASK_NAME = `process_input_and_plan`;
 export const getProcessAndPlanTaskConfig = (agentConfigVersion: number) =>
   ({
     agentKind: "supervisor",
-    agentType: AgentTypes.BOSS,
+    agentType: AgentTypes.BEEKEEPER,
     agentConfigVersion: agentConfigVersion,
     concurrencyMode: "EXCLUSIVE",
     intervalMs: 0,
@@ -273,7 +273,7 @@ export const getProcessAndPlanTaskConfig = (agentConfigVersion: number) =>
 // export const getProcessOutputsTaskConfig = (agentConfigVersion: number) =>
 //   ({
 //     agentKind: "supervisor",
-//     agentType: AgentTypes.BOSS,
+//     agentType: AgentTypes.BEEKEEPER,
 //     agentConfigVersion: agentConfigVersion,
 //     concurrencyMode: "EXCLUSIVE",
 //     intervalMs: 0,

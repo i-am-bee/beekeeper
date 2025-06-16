@@ -200,18 +200,18 @@ export async function createRuntime({
   if (
     !registry.isAgentConfigExists(
       AgentKindEnumSchema.Enum.supervisor,
-      supervisor.AgentTypes.BOSS,
+      supervisor.AgentTypes.BEEKEEPER,
     )
   ) {
     registry.createAgentConfig({
       autoPopulatePool: false,
       agentKind: AgentKindEnumSchema.Enum.supervisor,
-      agentType: supervisor.AgentTypes.BOSS,
+      agentType: supervisor.AgentTypes.BEEKEEPER,
       instructions: "",
       tools: registry
         .getToolsFactory(AgentKindEnumSchema.Enum.supervisor)
         .getAvailableToolsNames(),
-      description: "The boss supervisor agent that control whole app.",
+      description: "The beekeeper supervisor agent that control whole app.",
       maxPoolSize: 1,
     });
   }
@@ -224,7 +224,7 @@ export async function createRuntime({
 
   const agent = await registry.acquireAgent(
     AgentKindEnumSchema.Enum.supervisor,
-    supervisor.AgentTypes.BOSS,
+    supervisor.AgentTypes.BEEKEEPER,
   );
 
   const { agentId: supervisorAgentId } = agent;

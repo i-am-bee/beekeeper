@@ -292,7 +292,7 @@ export class ChatInput extends ContainerComponent {
     this._isAborting = isAborting;
     const disabled = this._isAborting;
     const buttonStyle = chatStyles.getAbortButtonStyle(disabled);
-    this.abortButton.element.style = buttonStyle.style;    
+    this.abortButton.element.style = buttonStyle.style;
   }
 
   // Method to start monitoring the input value for changes

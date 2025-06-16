@@ -16,7 +16,7 @@ import { ProblemDecomposer } from "./problem-decomposer.js";
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
 const llm = getChatLLM("supervisor");
-const agentId = "supervisor:boss[1]:1";
+const agentId = "supervisor:beekeeper[1]:1";
 const onUpdate = () => ({});
 
 /**
@@ -31,7 +31,7 @@ describe(`Problem Decomposer (Playground)`, () => {
 
     const problemDecomposer = new ProblemDecomposer(
       logger,
-      "supervisor:boss[1]:1",
+      "supervisor:beekeeper[1]:1",
     );
 
     const request = fixtures.requestHandlerOutput;

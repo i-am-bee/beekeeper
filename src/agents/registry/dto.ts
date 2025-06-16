@@ -29,14 +29,14 @@ export type AgentTypeValue = z.infer<typeof AgentTypeValueSchema>;
 export const AgentIdValueSchema = z
   .string()
   .describe(
-    "Unique agent id composed of '{agentKind}:{agentType}[{instanceNum}]:{version}' e.g: 'supervisor:boss[1]:1' or 'operator:poem_generator[2]:3'",
+    "Unique agent id composed of '{agentKind}:{agentType}[{instanceNum}]:{version}' e.g: 'supervisor:beekeeper[1]:1' or 'operator:poem_generator[2]:3'",
   );
 export type AgentIdValue = z.infer<typeof AgentIdValueSchema>;
 
 export const AgentConfigIdValueSchema = z
   .string()
   .describe(
-    "Unique agent config id composed of '{agentKind}:{agentType}:{version}' e.g: 'supervisor:boss:1' or 'operator:poem_generator:3'",
+    "Unique agent config id composed of '{agentKind}:{agentType}:{version}' e.g: 'supervisor:beekeeper:1' or 'operator:poem_generator:3'",
   );
 export type AgentConfigIdValue = z.infer<typeof AgentConfigIdValueSchema>;
 
