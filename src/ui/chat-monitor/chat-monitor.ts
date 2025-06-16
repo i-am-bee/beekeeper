@@ -308,6 +308,7 @@ export class ChatMonitor extends ContainerComponent {
 
     // Send message via runtime handler
     await this.runtimeHandler.sendMessage(message, signal);
+    this.chatInput.reset();
   }
 
   private onAbortClick(): void {

@@ -255,20 +255,20 @@ export class ChatInput extends ContainerComponent {
     if (this._isProcessing !== isProcessing) {
       if (isProcessing) {
         this.stopValueMonitoring();
+        this.controlsManager.focus(this._abortButton.id);
         this._sendButton.element.hide();
         this._inputBox.element.hide();
         this._abortButton.element.show();
         this.setupControls("processing");
-        this.controlsManager.focus(this._abortButton.id);
       } else {
         this._sendButton.element.show();
         this._inputBox.element.show();
+        this.focusInputBox();
         this._abortButton.element.hide();
         if (!this.valueCheckInterval) {
           this.startValueMonitoring();
         }
         this.setupControls(this._isSendEnabled ? "ready_to_send" : "ready");
-        this.controlsManager.focus(this._inputBox.id);
       }
     }
 
@@ -292,9 +292,7 @@ export class ChatInput extends ContainerComponent {
     this._isAborting = isAborting;
     const disabled = this._isAborting;
     const buttonStyle = chatStyles.getAbortButtonStyle(disabled);
-    this.abortButton.element.style = buttonStyle.style;
-    this.abortButton.element.options.mouse = !disabled;
-    this.screen.element.render();
+    this.abortButton.element.style = buttonStyle.style;    
   }
 
   // Method to start monitoring the input value for changes
