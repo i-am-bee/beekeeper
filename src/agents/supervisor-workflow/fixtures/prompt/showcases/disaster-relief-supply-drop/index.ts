@@ -2,6 +2,7 @@ import toolsFixtures from "./tools.js";
 import agentsFixtures from "./agent-config.js";
 import tasksFixtures from "./task-config.js";
 import taskStepsFixtures from "./task-step.js";
+import taskRunsFixtures from "./task-run.js";
 import {
   ChoiceExplanations,
   WorkflowComposeFixture,
@@ -63,6 +64,7 @@ const fixtures = new WorkflowComposeFixture(
   toolsFixtures,
   agentsFixtures,
   tasksFixtures,
+  taskRunsFixtures,
 );
 
 export default fixtures;

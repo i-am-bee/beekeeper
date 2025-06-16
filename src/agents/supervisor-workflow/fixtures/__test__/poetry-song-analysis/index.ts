@@ -6,6 +6,7 @@ import toolsFixtures from "./tools.js";
 import agentsFixtures from "./agent-config.js";
 import tasksFixtures from "./task-config.js";
 import taskStepsFixtures from "./task-step.js";
+import taskRunsFixtures from "./task-run.js";
 
 const title = "Poetry and Hip-Hop Song Analysis";
 
@@ -16,6 +17,16 @@ const choiceExplanations = {
   requestHandler:
     "The request involves creating multiple poems and a song, followed by an analysis, which is a complex, multi-step task.",
   problemDecomposer: "",
+  steps: [
+    // {
+    //   stepNo: 1,
+    //   agentConfig:
+    //     "The task requires retrieving field metadata and agronomic details using the field_info_api tool. There is no existing agent config, so a new agent config needs to be created to handle this task.",
+    //   taskConfig:
+    //     "There are no existing task configs that match the requirement to retrieve field metadata and agronomic details. Therefore, a new task config needs to be created.",
+    //   taskRun: `The task config "retrieve_field_metadata" exists and the input can be completed using the non-dependent field "field name or ID" provided in the task step.`,
+    // },
+  ],
 } satisfies ChoiceExplanations;
 
 export const requestHandlerOutput = `{
@@ -43,6 +54,7 @@ const fixtures = new WorkflowComposeFixture(
   toolsFixtures,
   agentsFixtures,
   tasksFixtures,
+  taskRunsFixtures,
 );
 
 export default fixtures;

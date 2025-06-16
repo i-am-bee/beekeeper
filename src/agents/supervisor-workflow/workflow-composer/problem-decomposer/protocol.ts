@@ -8,8 +8,8 @@ export const protocol = laml.ProtocolBuilder.new()
   })
   .constant({
     name: "RESPONSE_TYPE",
-    values: ["STEP_SEQUENCE", "UNSOLVABLE"] as const,
-    description: "Valid values: STEP_SEQUENCE | UNSOLVABLE",
+    values: ["STEP_SEQUENCE", "UNSOLVABLE", "MISSING_INPUTS"] as const,
+    description: "Valid values: STEP_SEQUENCE | UNSOLVABLE | MISSING_INPUTS",
   })
   .comment({
     comment:
@@ -29,7 +29,17 @@ export const protocol = laml.ProtocolBuilder.new()
     isOptional: true,
     attributes: laml.ProtocolBuilder.new().text({
       name: "explanation",
-      description: "Brief reason why you are unable to create a step sequence",
+      description:
+        "User-facing explanation of why the request cannot be solved.",
+    }),
+  })
+  .object({
+    name: "RESPONSE_MISSING_INPUTS",
+    isOptional: true,
+    attributes: laml.ProtocolBuilder.new().text({
+      name: "explanation",
+      description:
+        "User-facing explanation of clearly identifying missing inputs and suggesting what the user could provide to make it solvable. Include examples where possible.",
     }),
   })
   .build();

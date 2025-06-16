@@ -5,7 +5,15 @@ import { addTaskConfigMissingAttrs } from "../../../helpers/add-missing-config-a
 
 type AgentType = FixtureName<typeof agentConfigFixtures>;
 
-const ENTRIES = [] as const satisfies (TaskConfigMinimal & {
+const ENTRIES = [
+  // {
+  //   taskType: "generate_short_story",
+  //   agentType: "short_story_generator" satisfies AgentType,
+  //   description:
+  //     "Generate a short story based on a provided <story concept>. Ensure it has a clear beginning, middle, and end, creatively incorporating the concept.",
+  //   taskConfigInput: `{"story_concept":"<concept or theme for the story>"}`,
+  // },
+] as const satisfies (TaskConfigMinimal & {
   agentType: AgentType;
 })[];
 

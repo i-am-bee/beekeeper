@@ -1,18 +1,11 @@
-import disaster_relief_fixtures from "@/agents/supervisor-workflow/fixtures/prompt/showcases/disaster-relief-supply-drop/index.js";
-import medieval_charter_digitisation_fixtures from "@/agents/supervisor-workflow/fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
-import micro_grid_fixtures from "@/agents/supervisor-workflow/fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
-import smart_farm_fixtures from "@/agents/supervisor-workflow/fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import * as laml from "@/laml/index.js";
+import { examplesEnabled } from "../../helpers/env.js";
 import { BodyTemplateBuilder } from "../../templates/body.js";
 import { ChatExampleTemplateBuilder } from "../../templates/chat-example.js";
-import {
-  createExampleInput,
-  ExampleInput,
-} from "./__tests__/helpers/create-example-input.js";
+import { ExampleInput } from "./__tests__/helpers/create-example-input.js";
 import { ProblemDecomposerInput } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
-import { examplesEnabled } from "../../helpers/env.js";
 
 export const prompt = ({
   resources: {
@@ -139,11 +132,13 @@ const decisionCriteria = BodyTemplateBuilder.new()
 | • The problem statement is logically consistent (no internal contradictions).
 • The desired goal is realistically achievable with ordinary human knowledge, tools, well-defined agent capabilities or well-defined task descriptions with suitable input.
 • **For every step you would plan, at least one existing task, agent *or* available tool can plausibly carry it out.**
+• **Every required input field for each tool (e.g., blockIds, siteIds) is either explicitly provided, produced by a previous step, or justified by a minimal assumption.**
 • Any non-essential missing details can be filled by safe, explicitly stated assumptions that do not change the user’s intent. | **STEP_SEQUENCE** | Decompose the solvable problem into an ordered, generic plan. |
 | • The problem contains irreconcilable contradictions (e.g., mutually exclusive outcomes).
 • Achieving the goal would require resources, knowledge, or abilities outside the system’s scope.
 • **At least one intended step lacks a suitable task/agent/tool**, or no resources are provided at all.
-• Essential information is missing and cannot be responsibly inferred. | **UNSOLVABLE** | Explain clearly why no workable plan can be created. |
+| • The goal is achievable in theory, but **essential user input is missing** and cannot be inferred or produced.
+• Essential information is missing and cannot be responsibly inferred. | **MISSING_INPUTS** | Ask the user to supply key inputs before proceeding. |
 
 **Guidelines for all branches**
 
@@ -183,11 +178,11 @@ const guidelines = BodyTemplateBuilder.new()
       level: 3,
     },
     content: `1. **Do not ask the user for information they did not request.**
-2. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to UNSOLVABLE.
+2. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to \`MISSING_INPUTS\`.
    a. You must not introduce new parameters unless:
       - They were directly present in userParameters, or
       - They were produced by an earlier step, or
-      - You make a safe, minimal assumption (e.g., "next meeting" = soonest meeting in calendar), which you must explicitly state in the step description.
+      - You make a safe, minimal assumption (e.g., "next meeting" = soonest meeting in calendar).
 3. If a parameter is helpful but not essential (e.g., passenger count when booking a sample flight), phrase the task generically: “Book flight” without specifying details.`,
   })
   .section({
@@ -197,16 +192,17 @@ const guidelines = BodyTemplateBuilder.new()
     },
     content: `1. Use plain imperatives (e.g., “Book flight Prague → Rome”).
 2. Each step must define its **inputs and outputs** explicitly.
-3. Each step’s input must be explicitly justified. You may only use as input:
-   - Parameters from the original user message,
-   - Outputs of earlier steps (explicitly referenced as “from Step N”),
-   - Or minimal assumptions clearly stated in the step description.
-     Inputs that are undefined or vague (with no prior step to provide it) are not allowed. If required inputs cannot be grounded, the problem is UNSOLVABLE.
+3. Each step’s input must be explicitly justified. Each input must be traceable to a valid source:
+   - Either explicitly provided in user message,
+   - Produced by a previous step (with [from Step X]),
+   - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
+   If any input cannot be traced in this way, the step — and the whole problem — must be marked \`MISSING_INPUTS\`. Do not invent values (e.g., blockIds, siteIds) without justification.
 4. Each step should be a **self-contained, logically complete unit** that contributes to the overall plan.
 5. Clearly indicate whether the step uses a **task**, an **agent**, a **tool**, or is handled by general **LLM capabilities**.
-6. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”). 
+6. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”).
    - If a step requires multiple inputs from previous steps, list each input separately and explicitly indicate the originating step number. Do not group multiple inputs into a single vague description.
    - **Example**: Compose a summary report (input: market analysis [from Step 1], customer feedback [from Step 2], competitive review [from Step 3]; output: comprehensive report) [LLM]
+   - All traceable input references (e.g., tag [from Step 1]) must be placed inside quotation marks to form valid string values (e.g., "tag [from Step 1]") in JSON-style input structures. Do not use <...> placeholders.
 7. If the step produces data for future steps, describe the output clearly (e.g., "produces list of top 5 destinations").
 8. Avoid vague phrasing. Prefer specific tasks with clear outputs and actionable parameters.
 9. **Exactly one resource category per step.**  
@@ -225,13 +221,13 @@ const guidelines = BodyTemplateBuilder.new()
 12. Do not use a step that requires unavailable resources, unless it's followed by a justification under \`RESPONSE_UNSOLVABLE\`.
 13. Format each step as a single line including:
     - the **imperative description** of the task,
-    - followed by \`(input: ..., output: ...)\`,
+    - followed by \`(input: input 1, input 2 [source: assumed] ... ; output: output 1, output 2 ...)\`,
     - followed by a resource in square brackets: \`[tools: tool_name_1, tool_name_2...]\`, \`[agent: agent_name]\`, \`[task: task_name]\`, or \`[LLM]\`.
-14. Final validation pass: For each step, verify that all inputs are either:
-    - Provided by the user directly,
-    - Derived from earlier steps (using [from Step X]),
-    - Or clearly justified by an explicit assumption. 
-    Any input that fails this traceability check makes the plan invalid.
+14. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
+    - Is directly present in user message, OR
+    - Is produced by a prior step (explicitly using [from Step X]), OR
+    - Is justified with a clearly written default assumption in the step itself (explicitly using [source: assumed]).
+    If any required field is missing and cannot be sourced or assumed, you MUST respond with **MISSING_INPUTS**.
 
 **Example:**
 \`\`\`
@@ -243,18 +239,44 @@ Generate directions from the user’s current location to the nearest shelter (i
       text: "UNSOLVABLE - Rules",
       level: 3,
     },
+    content: `1. The explanation must be a self-contained, human-readable paragraph written for the user — not referencing internal steps, resource priorities, or system-specific reasoning steps.
+2. Clearly state which required information is missing, **in plain terms**, and why it is essential to completing the task.
+3. Whenever possible, include **a brief example** of what a valid value would look like for each missing input (e.g., block ID "block-101").
+4. If the missing input could be supplied by the user, make that recommendation explicit.
+5. Avoid vague or overly technical language. Assume the user is not familiar with internal step structure or execution flow.
+6. Do not declare UNSOLVABLE if the missing input could be created using a valid tool-chain. Explain why that is not possible if you still choose UNSOLVABLE.`,
+  })
+  .section({
+    title: {
+      text: "MISSING_INPUTS - Rules",
+      level: 3,
+    },
     newLines: {
       contentEnd: 0,
     },
-    content: `1. The explanation must be written in free-text form, not as a bullet list.
-2. Clearly describe which required steps or capabilities are infeasible with the current resources.
-3. Include a concise justification for the limitation (e.g., a missing tool, lack of real-time data, or unavailable agent type).
-4. If the problem could be made solvable with a specific change, mention that condition explicitly.
-5. Avoid proposing new steps unless doing so helps clarify why the problem is unsolvable.
-2. Keep the explanation concise but actionable — avoid vague statements.
-3. If the problem could be made solvable by changing a specific detail, mention it as a suggestion (e.g., "If live price tracking were available, step 2 could proceed").
-4. Avoid proposing new steps or assumptions unless explicitly required to explain infeasibility.
-5. Do not declare UNSOLVABLE if the missing information can be obtained by a reasonable sequence that combines available tools (e.g., web_search → web_page_extract). Explain why such a sequence wouldn’t work if you still choose UNSOLVABLE.`,
+    content: `1. You **must** select \`RESPONSE_TYPE: MISSING_INPUTS\` when:
+   - A required input for at least one step is not present in user message,
+   - It is not produced by an earlier step,
+   - It cannot be resolved through a minimal, explicit assumption,
+   - And no existing tool/agent/task can plausibly generate it as a substep.
+2. The missing input must be **essential** to achieving the stated goal. Do not trigger \`MISSING_INPUTS\` for optional, cosmetic, or secondary attributes.
+3. Your explanation **must clearly identify**:
+   - What the missing input(s) are,
+   - Why they are required,
+   - How they could be phrased or structured (example format or value),
+   - What the user can do to supply them.
+4. **Examples are required.** If the input must be a \`blockId\`, \`siteId\`, \`startISO\`, or other structured value, include a concrete example of a valid one in the explanation.
+5. Avoid system-specific or internal terms. Do not mention "steps", "tools", "agents", or "input traceability". Write as if addressing a non-technical user.
+6. Only request information that is directly needed to resolve the task as described. Never ask for inputs unrelated to the user’s goal or implied deliverables.
+7. Use the MISSING_INPUTS response instead of UNSOLVABLE if:
+   - The problem can be solved with the right inputs,
+   - The missing values can be reasonably supplied by the user,
+   - And the execution chain is otherwise valid.
+8. **Do not invent placeholder values** to proceed with the task. If you must invent any parameter that is not (a) safe, (b) minimal, and (c) explicitly stated in the output, the correct response is MISSING_INPUTS.
+9. When in doubt between UNSOLVABLE and MISSING_INPUTS:
+   - Choose **MISSING_INPUTS** if the user can fix the problem by supplying a clear, specific value.
+   - Choose **UNSOLVABLE** only when a required capability, resource, or tool is entirely unavailable and no workaround exists.
+10. If multiple inputs are missing, list each one clearly in the explanation with a short description and example.`,
   })
   .build();
 
@@ -287,22 +309,22 @@ const examples = ((inputs: ExampleInput[]) =>
         .build(),
     )
     .join("\n"))([
-  createExampleInput({
-    scenario: "STEP_SEQUENCE",
-    fixtures: disaster_relief_fixtures,
-  }),
-  createExampleInput({
-    scenario: "STEP_SEQUENCE",
-    fixtures: medieval_charter_digitisation_fixtures,
-  }),
-  createExampleInput({
-    scenario: "STEP_SEQUENCE",
-    fixtures: micro_grid_fixtures,
-  }),
-  createExampleInput({
-    scenario: "STEP_SEQUENCE",
-    fixtures: smart_farm_fixtures,
-  }),
+  // createExampleInput({
+  //   scenario: "STEP_SEQUENCE",
+  //   fixtures: disaster_relief_fixtures,
+  // }),
+  // createExampleInput({
+  //   scenario: "STEP_SEQUENCE",
+  //   fixtures: medieval_charter_digitisation_fixtures,
+  // }),
+  // createExampleInput({
+  //   scenario: "STEP_SEQUENCE",
+  //   fixtures: micro_grid_fixtures,
+  // }),
+  // createExampleInput({
+  //   scenario: "STEP_SEQUENCE",
+  //   fixtures: smart_farm_fixtures,
+  // }),
   // TODO Original examples can be removed once the new ones are OK
   //   {
   //     title: "STEP_SEQUENCE",
@@ -879,4 +901,41 @@ const examples = ((inputs: ExampleInput[]) =>
   //       },
   //     },
   //   },
+  {
+    title: "UNSOLVABLE",
+    subtitle: "Route optimization for delivery planning",
+    context: {
+      resources: {
+        tools: [
+          {
+            toolName: "route_optimizer_api",
+            description:
+              "Calculates the fastest delivery route based on a list of destination addresses and start time.",
+            toolInput:
+              '{"destinationAddresses":["<string>"],"departureTime":"<YYYY-MM-DDThh:mmZ>"}',
+          },
+        ],
+        agents: [],
+        tasks: [],
+        taskRuns: [],
+      },
+      previousSteps: [],
+    },
+    user: `{
+  "requestType": "delivery_route_planning",
+  "primaryGoal": "Plan the fastest delivery route for our afternoon shipment",
+  "userParameters": {
+    "departureTime": "2025-06-10T13:00:00Z"
+  },
+  "expectedDeliverables": "A step-by-step delivery route plan including time estimates"
+}`,
+    example: {
+      RESPONSE_CHOICE_EXPLANATION:
+        "The request matches the system’s capabilities but is missing critical inputs that cannot be generated.",
+      RESPONSE_TYPE: "UNSOLVABLE",
+      RESPONSE_UNSOLVABLE: {
+        explanation: `The system can plan and optimize a delivery route, but it needs at least one valid destination address to proceed. Since no address or delivery point was included in the request, and there is no available tool to look it up, the task cannot continue. For example, providing an address like "Main Street 42, Springfield" would enable route planning.`,
+      },
+    },
+  },
 ]);

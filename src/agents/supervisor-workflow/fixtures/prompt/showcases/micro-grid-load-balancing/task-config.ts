@@ -5,7 +5,22 @@ import { addTaskConfigMissingAttrs } from "../../../helpers/add-missing-config-a
 
 type AgentType = FixtureName<typeof agentConfigFixtures>;
 
-const ENTRIES = [] as const satisfies (TaskConfigMinimal & {
+const ENTRIES = [
+  {
+    taskType: "forecast_electricity_demand",
+    agentType: "electricity_demand_forecaster" satisfies AgentType,
+    description:
+      "Forecast electricity demand for each specified city block starting from <start_time> for <number_of_periods> 15-minute intervals using the demand_forecast_api.",
+    taskConfigInput: `{"blockIds": ["<blockId>", "..."], "start_time": "<start_time>", "periods": "<number_of_periods>"}`,
+  },
+  // {
+  //   taskType: "TBD",
+  //   agentType: "TBD" satisfies AgentType,
+  //   description:
+  //     "TBD",
+  //   taskConfigInput: `TBD`,
+  // },
+] as const satisfies (TaskConfigMinimal & {
   agentType: AgentType;
 })[];
 

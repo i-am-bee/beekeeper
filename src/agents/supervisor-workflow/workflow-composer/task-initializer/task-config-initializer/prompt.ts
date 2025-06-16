@@ -139,8 +139,11 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
     content: `1. **When to use** – only if a brand-new task is required.
 2. **\`task_type\`** – Must be unique, lowercase snake_case, and must **never embed a concrete input value**. Use operation‑only names (e.g., \`find_nearest_airports\`, not \`find_nearest_airports_in_london\`).
 3. **\`agent_type\`** – Name of the one of the existing agent configs type.
-4. **\`task_config_input\`** – General format of input required to run the task; often it is a JSON.
-5. **\`description\`** – Describe the generic task. Use placeholders (\`<given location>\`, \`<user budget>\`, etc.) instead of literal input examples.
+4. **\`task_config_input\`** – General format of input required to run the task; typically structured as JSON.
+   - **IMPORTANT:** When the input involves arrays (like multiple short stories or other lists), you **MUST NOT** specify a fixed count of items.
+   - Clearly indicate array inputs using a single placeholder within brackets, such as ["<item>", "..."], explicitly signaling flexibility for 1 or more items.
+   - **DO NOT** include numbered placeholders (e.g., "<item 1>", "<item 2>") that imply a fixed array length. Always generalize to allow any number of inputs (e.g., "<item>", "...").
+5. **\`description\`** – Write a concise instruction for the agent executing the task, explicitly formatted as an assignment. For example: "Generate a short story based on a provided <story concept>. Ensure it has a clear beginning, middle, and end." Always use placeholders (<given location>, <story concept>, etc.) instead of specific literal examples.
 6. **Uniqueness guard** – If the proposed \`task_type\` is already listed in **Existing task configs**, abort and use \`SELECT_TASK_CONFIG\` instead.  
    ⚠️ Do not assume a task exists just because an agent of a similar name is present.`,
   })

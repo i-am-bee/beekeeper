@@ -138,6 +138,7 @@ export abstract class LLMCall<
           result: {
             type: "ERROR",
             explanation: output.explanation,
+            escalation: output.escalation,
           },
           payload: memory,
         };

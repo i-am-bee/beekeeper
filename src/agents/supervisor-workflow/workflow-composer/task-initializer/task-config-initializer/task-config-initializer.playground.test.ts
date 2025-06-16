@@ -9,6 +9,8 @@ import { Logger } from "beeai-framework";
 import { describe, expect, it } from "vitest";
 import disaster_relief_supply_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/disaster-relief-supply-drop/index.js";
 import narrative_fusion_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/narrative-fusion/index.js";
+import smart_farm_harvest_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
+import micro_grid_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
 import { Resources } from "../../helpers/resources/dto.js";
 import { TaskStepMapper } from "../../helpers/task-step/task-step-mapper.js";
 import { getTaskConfigInitializerTool } from "./__tests__/helpers/mocks.js";
@@ -28,8 +30,8 @@ const onUpdate = () => ({});
 describe("TaskConfigInitializer (Playground)", () => {
   it.fails(`play`, async () => {
     // Setup playground
-    const fixtures = narrative_fusion_fixtures; // Chose fixture
-    const stepNo = 6; // Chose step number (first is 1)
+    const fixtures = micro_grid_fixtures; // Chose fixture
+    const stepNo = 1; // Chose step number (first is 1)
 
     const taskConfigInitializer = getTaskConfigInitializerTool(logger, agentId);
 

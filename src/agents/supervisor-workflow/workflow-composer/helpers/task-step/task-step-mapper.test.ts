@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agentConfig } from "../../../fixtures/__test__/agent-configs.js";
+import boston_trip_fixtures from "../../../fixtures/__test__/boston-trip/index.js";
 import { TaskStep } from "./dto.js";
 import { TaskStepMapper } from "./task-step-mapper.js";
 
@@ -32,16 +32,16 @@ describe("TaskStepMapper", () => {
           type: "tools",
           tools: ["concert_schedule_api", "sports_schedule_api"],
         },
-        
+
         dependencies: [1],
       } satisfies TaskStep);
     });
     it("should parse task step with agent resource", () => {
       const taskStepString =
-        "Find upcoming hockey/basketball game schedules in Boston (input: sport [from Step 1], location [from Step 2]; output: game list) [agent: game_searcher]";
+        "Find upcoming hockey/basketball game schedules in Boston (input: sport [from Step 1], location [from Step 2]; output: game list) [agent: game_scheduler]";
       const parsed = TaskStepMapper.parse(taskStepString, 1, {
         tools: [],
-        agents: [agentConfig("game_searcher")],
+        agents: [boston_trip_fixtures.agents.get("game_scheduler")],
         tasks: [],
         taskRuns: [],
       });
@@ -52,9 +52,9 @@ describe("TaskStepMapper", () => {
           "input: sport [from Step 1], location [from Step 2]; output: game list",
         resource: {
           type: "agent",
-          agent: agentConfig("game_searcher"),
+          agent: boston_trip_fixtures.agents.get("game_scheduler"),
         },
-        
+
         dependencies: [1, 2],
       } satisfies TaskStep);
     });
@@ -95,8 +95,29 @@ describe("TaskStepMapper", () => {
         resource: {
           type: "llm",
         },
-        
+
         dependencies: [1],
+      } satisfies TaskStep);
+    });
+    it("steps range should not fail", () => {
+      const taskStepString =
+        "Create a screenplay scene that merges the four short stories (input: short stories [from Steps 1-4]; output: screenplay scene merging all stories) [LLM]";
+      const parsed = TaskStepMapper.parse(taskStepString, 1, {
+        tools: [],
+        agents: [],
+        tasks: [],
+        taskRuns: [],
+      });
+      expect(parsed).toEqual({
+        no: 1,
+        step: "Create a screenplay scene that merges the four short stories",
+        inputOutput:
+          "input: short stories [from Steps 1-4]; output: screenplay scene merging all stories",
+        resource: {
+          type: "llm",
+        },
+
+        dependencies: [1, 2, 3, 4],
       } satisfies TaskStep);
     });
   });
@@ -111,7 +132,6 @@ describe("TaskStepMapper", () => {
           type: "tools",
           tools: ["concert_schedule_api", "sports_schedule_api"],
         },
-        
       };
       const formatted = TaskStepMapper.format(taskStep);
       expect(formatted).toBe(
@@ -125,13 +145,13 @@ describe("TaskStepMapper", () => {
         inputOutput: "input: sport, location; output: game list",
         resource: {
           type: "agent",
-          agent: agentConfig("game_searcher"),
+          agent: boston_trip_fixtures.agents.get("game_scheduler"),
         },
-        
+
       };
       const formatted = TaskStepMapper.format(taskStep);
       expect(formatted).toBe(
-        "Find upcoming hockey/basketball game schedules in Boston (input: sport, location; output: game list) [agent: game_searcher]",
+        "Find upcoming hockey/basketball game schedules in Boston (input: sport, location; output: game list) [agent: game_scheduler]",
       );
     });
     it("should format task step with llm resource", () => {
@@ -143,7 +163,6 @@ describe("TaskStepMapper", () => {
         resource: {
           type: "llm",
         },
-        
       };
       const formatted = TaskStepMapper.format(taskStep);
       expect(formatted).toBe(

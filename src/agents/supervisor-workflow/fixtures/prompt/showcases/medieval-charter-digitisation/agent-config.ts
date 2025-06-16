@@ -5,7 +5,15 @@ import { addAgentConfigMissingAttrs } from "../../../helpers/add-missing-config-
 
 // type ToolName = FixtureName<typeof toolsFixtures>;
 
-const ENTRIES = [] as const satisfies AgentConfigTiny[];
+const ENTRIES = [
+    //   {
+  //   agentType: "TBD",
+  //   description:
+  //     "TBD",
+  //   instructions: `TBD`,
+  //   tools: [] as const satisfies ToolName[],
+  // },
+] as const satisfies AgentConfigTiny[];
 
 export default createFixtures(
   addAgentConfigMissingAttrs(ENTRIES),

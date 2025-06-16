@@ -5,7 +5,5 @@
 ☐ Logic fixer
 - Add step after the problem decomposer to fix the logic of the generated code. E.g. cyclic graph, missing conditional logic, unused outputs, missing deliverables etc..
 
-☐ Task Run Initializer
-- Parallelism works just for the first step, it should be fixed to work for all steps
-    - There should work something like Array.map for dependents steps
-    - What if user input causing parallelism will not be put just into the first step? 
+☐ Input negotiator
+- User request should be handle by a negotiator that will ask user for more details if needed (when request handler need clarification, or problemDecomposer creates step with grounded inputs).

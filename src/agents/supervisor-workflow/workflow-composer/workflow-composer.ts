@@ -56,7 +56,7 @@ export class WorkflowComposer extends Runnable<
       );
       return {
         type: "ERROR",
-        explanation: `Problem decomposition failed: ${problemDecomposerRunResult.explanation}`,
+        explanation: problemDecomposerRunResult.explanation,
       };
     }
     const { result: problemDecomposerResult } = problemDecomposerRunResult;

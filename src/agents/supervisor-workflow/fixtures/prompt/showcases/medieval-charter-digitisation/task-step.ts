@@ -4,6 +4,8 @@ import {
   TaskStepWithVariousResource,
 } from "../../../base/resource-fixtures.js";
 import toolsFixtures from "./tools.js";
+import tasksFixtures from "./task-config.js";
+import taskRunsFixtures from "./task-run.js";
 
 type ToolName = FixtureName<typeof toolsFixtures>;
 

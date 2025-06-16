@@ -1,6 +1,12 @@
 import { createFixtures, FixtureName } from "../../../base/fixtures.js";
-import { createResourceFixtures, TaskStepWithVariousResource } from "../../../base/resource-fixtures.js";
+import {
+  createResourceFixtures,
+  TaskStepWithVariousResource,
+} from "../../../base/resource-fixtures.js";
 import toolsFixtures from "./tools.js";
+import agentsFixtures from "./agent-config.js";
+import tasksFixtures from "./task-config.js";
+import taskRunsFixtures from "./task-run.js";
 
 type ToolName = FixtureName<typeof toolsFixtures>;
 
@@ -10,10 +16,20 @@ const ENTRIES = [
     step: "Forecast electricity demand for each city block between 18:00 and 21:00 on 2025-06-05",
     inputOutput:
       "input: blockIds, start time 2025-06-05T18:00Z, periods: 12; output: demand forecast in 15-min intervals",
-    resource: createResourceFixtures({
-      tools: ["demand_forecast_api"] as const satisfies ToolName[],
-      type: "tools",
-    }),
+    resource: createResourceFixtures(
+      {
+        type: "tools",
+        tools: ["demand_forecast_api"] as const satisfies ToolName[],
+      },
+      {
+        type: "agent",
+        agent: agentsFixtures.get("electricity_demand_forecaster"),
+      },
+      {
+        type: "task",
+        task: tasksFixtures.get("forecast_electricity_demand"),
+      },
+    ),
   },
   {
     no: 2,

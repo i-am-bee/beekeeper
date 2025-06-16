@@ -49,13 +49,13 @@ const choiceExplanations = {
       stepNo: 5,
       agentConfig: `The task requires creating a screenplay scene by merging four short stories. This task involves generating a narrative output based on provided inputs, which aligns with the capabilities of a language model (LLM). There is no existing agent config that specifically addresses screenplay creation, and no tools are required for this task, making it suitable for creating a new LLM-based agent.`,
       taskConfig: `The task requires creating a screenplay scene by merging multiple short stories, which aligns with the purpose of the existing agent config \`screenplay_scene_creator\`. However, there is no existing task config for this purpose, so a new task config needs to be created.`,
-      taskRun: `The task config for merging short stories into a screenplay scene already exists, and the input can be completed using non-dependent fields.`,
+      taskRun: `The task config "merge_short_stories_into_screenplay_scene" exists, and the input can be completed using non-dependent fields. The task run can be created using the existing task config.`,
     },
     {
       stepNo: 6,
       agentConfig: `The task requires an analytical breakdown of a screenplay scene, which involves analyzing and interpreting the content. This task is different from generating a screenplay scene or a short story, and it does not match the existing agents' purposes. Since the task relies on LLM capabilities and no specific tools are required, a new agent config is needed.`,
       taskConfig: `The task requires an analytical breakdown of a screenplay scene, which aligns with the purpose of the screenplay_scene_analyst agent. There is no existing task config for this specific analysis task, so a new task config needs to be created.`,
-      taskRun: `The task config for "analyze_screenplay_scene_convergence" exists, and the input can be completed using non-dependent fields.`,
+      taskRun: `The task config "analyze_screenplay_scene_convergence" exists, and the input can be completed using non-dependent fields. The input "screenplay scene" is marked as [from Step 5], so it will be automatically filled by the runtime engine.`,
     },
   ],
 } satisfies ChoiceExplanations;

@@ -90,6 +90,28 @@ Please address these issues and provide the corrected response:`;
           };
         }
 
+        // Invented parameters
+        const stepsWithInventedParams = steps.filter(
+          (step) => step.inputOutput.indexOf("[source: assumed]") !== -1,
+        );
+        if (stepsWithInventedParams.length > 0) {
+          this.handleOnUpdate(onUpdate, {
+            value: `Problem decomposer invented inputs:`,
+            payload: { toJson: stepsWithInventedParams },
+          });
+          const explanation = `The response contains these steps with the assumed inputs:${laml.listFormatter(
+            "numbered",
+          )(
+            stepsWithInventedParams.map((s) => s.inputOutput),
+            "",
+          )}
+Please corrected response type MISSING_INPUTS:`;
+          return {
+            type: "ERROR",
+            explanation,
+          };
+        }
+
         return {
           type: "SUCCESS",
           result: steps,
@@ -108,6 +130,18 @@ Please address these issues and provide the corrected response:`;
         return {
           type: "ERROR",
           explanation: `I'm not able to decompose the problem due to: ${response.explanation}`,
+          escalation: true,
+        };
+      }
+      case "MISSING_INPUTS": {
+        const response = result.RESPONSE_MISSING_INPUTS;
+        if (!response) {
+          throw new Error(`RESPONSE_MISSING_INPUTS is missing`);
+        }
+
+        return {
+          type: "ERROR",
+          explanation: response.explanation,
           escalation: true,
         };
       }

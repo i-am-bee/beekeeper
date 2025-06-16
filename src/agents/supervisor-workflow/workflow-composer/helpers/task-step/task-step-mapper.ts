@@ -22,11 +22,11 @@ export class TaskStepResourceAssignError extends Error {
 }
 
 export class TaskStepMapper {
-  private static parseInputDependencies(inputOutput: string): number[] {
+  public static parseInputDependencies(inputOutput: string): number[] {
     const deps = new Set<number>();
 
-    // “Step 3“,  “Steps 2–6“  (en-dash or hyphen)
-    const stepRegex = /\bStep\s+(\d+)(?:\s*[–-]\s*(\d+))?/gi;
+    // "Step 3", "Steps 2–6" (en-dash or hyphen)
+    const stepRegex = /\bSteps?\s+(\d+)(?:\s*[–-]\s*(\d+))?/gi;
     let match: RegExpExecArray | null;
 
     while ((match = stepRegex.exec(inputOutput))) {

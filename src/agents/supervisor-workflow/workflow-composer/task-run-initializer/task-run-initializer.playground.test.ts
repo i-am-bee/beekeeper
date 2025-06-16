@@ -2,6 +2,8 @@
 import { SUPERVISOR_AGENT_ID } from "@/agents/supervisor-workflow/__test__/defaults.js";
 import { getChatLLM } from "@/helpers/llm.js";
 import narrative_fusion_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/narrative-fusion/index.js";
+import smart_farm_harvest_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
+import micro_grid_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
 import { Logger } from "beeai-framework";
 import { describe, expect, it } from "vitest";
 
@@ -23,8 +25,8 @@ const onUpdate = () => ({});
 describe("TaskRunInitializer (Playground)", () => {
   it.fails(`play`, async () => {
     // Setup playground
-    const fixtures = narrative_fusion_fixtures; // Chose fixture
-    const stepNo = 6; // Chose step number (first is 1)
+    const fixtures = micro_grid_fixtures; // Chose fixture
+    const stepNo = 1; // Chose step number (first is 1)
 
     const taskRunInitializer = getTaskRunInitializerTool(logger, agentId);
 

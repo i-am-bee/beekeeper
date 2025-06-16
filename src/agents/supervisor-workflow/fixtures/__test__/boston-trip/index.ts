@@ -6,6 +6,7 @@ import agentsFixtures from "./agent-config.js";
 import tasksFixtures from "./task-config.js";
 import taskStepsFixtures from "./task-step.js";
 import toolsFixtures from "./tools.js";
+import taskRunsFixtures from "./task-run.js";
 
 const title = "Trip Planning for Boston Visit";
 const prompt =
@@ -15,6 +16,16 @@ const choiceExplanations = {
     "The request involves creating a multi-day itinerary with specific activities and dining preferences, which requires detailed planning.",
   problemDecomposer:
     "The problem is logically consistent and all required components can be addressed using the available tools. Each step, such as identifying historical sites, finding game schedules, and recommending restaurants, can be achieved with the tools provided. Therefore, a STEP_SEQUENCE can be generated.",
+  steps: [
+    // {
+    //   stepNo: 1,
+    //   agentConfig:
+    //     "The task requires retrieving field metadata and agronomic details using the field_info_api tool. There is no existing agent config, so a new agent config needs to be created to handle this task.",
+    //   taskConfig:
+    //     "There are no existing task configs that match the requirement to retrieve field metadata and agronomic details. Therefore, a new task config needs to be created.",
+    //   taskRun: `The task config "retrieve_field_metadata" exists and the input can be completed using the non-dependent field "field name or ID" provided in the task step.`,
+    // },
+  ],
 } satisfies ChoiceExplanations;
 const requestHandlerOutput = `{
   "requestType": "travel_itinerary",
@@ -43,6 +54,7 @@ const fixtures = new WorkflowComposeFixture(
   toolsFixtures,
   agentsFixtures,
   tasksFixtures,
+  taskRunsFixtures,
 );
 
 export default fixtures;

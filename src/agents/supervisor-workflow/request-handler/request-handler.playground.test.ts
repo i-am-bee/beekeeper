@@ -4,7 +4,6 @@ import { Logger } from "beeai-framework";
 import { describe, expect, it } from "vitest";
 import { RequestHandler } from "./request-handler.js";
 import { SUPERVISOR_AGENT_ID } from "../__test__/defaults.js";
-import local_parks_fixtures from "../fixtures/__test__/local-parks/index.js";
 import poetry_song_analysis_fixtures from "../fixtures/__test__/poetry-song-analysis/index.js";
 import disaster_relief_fixtures from "../fixtures/prompt/showcases/disaster-relief-supply-drop/index.js";
 import medieval_charter_fixtures from "../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
@@ -28,7 +27,7 @@ describe(`Request Handler (Playground)`, () => {
   it.fails(`play`, async () => {
     const requestHandler = new RequestHandler(logger, agentId);
 
-    const fixtures = narrative_fusion_fixtures;
+    const fixtures = micro_grid_fixtures;
 
     const request = fixtures.request;
     const runOutput = await requestHandler.run(
