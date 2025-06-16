@@ -17,33 +17,34 @@ interface TestDataItem {
     type: RequestOutputTypeEnum;
   };
 }
+
+const testGenerator = (dataset: TestDataItem[]) =>
+  dataset.map((item) => {
+    it(item.name || item.input, async () => {
+      const resp = await requestHandler.run(llm, {
+        message: {
+          kind: "user",
+          content: item.input,
+          createdAt: new Date(),
+        },
+        history: item.history,
+      });
+
+      console.log(`### INPUT`);
+      console.log(`${item.input}\n`);
+      console.log(`### RESPONSE`);
+      console.log(`${resp.explanation}\n`);
+      console.log(`${resp.message.content}\n\n`);
+      console.log(`${resp.raw}\n\n`);
+
+      expect(resp.type).toEqual(item.expected.type);
+      expect(resp.message.content).toBeDefined();
+    });
+  });
+
 const llm = getChatLLM("supervisor");
 
 describe("Request handler", () => {
-  const testGenerator = (dataset: TestDataItem[]) =>
-    dataset.map((item) => {
-      it(item.name || item.input, async () => {
-        const resp = await requestHandler.run(llm, {
-          message: {
-            kind: "user",
-            content: item.input,
-            createdAt: new Date(),
-          },
-          history: item.history,
-        });
-
-        console.log(`### INPUT`);
-        console.log(`${item.input}\n`);
-        console.log(`### RESPONSE`);
-        console.log(`${resp.explanation}\n`);
-        console.log(`${resp.message.content}\n\n`);
-        console.log(`${resp.raw}\n\n`);
-
-        expect(resp.type).toEqual(item.expected.type);
-        expect(resp.message.content).toBeDefined();
-      });
-    });
-
   describe(RequestOutputTypeEnumSchema.Values.DIRECT_ANSWER, () => {
     testGenerator([
       {
@@ -54,12 +55,6 @@ describe("Request handler", () => {
       },
       {
         input: "How are you?",
-        expected: {
-          type: RequestOutputTypeEnumSchema.Values.DIRECT_ANSWER,
-        },
-      },
-      {
-        input: "What time is it?",
         expected: {
           type: RequestOutputTypeEnumSchema.Values.DIRECT_ANSWER,
         },
@@ -116,6 +111,12 @@ describe("Request handler", () => {
         },
       },
       {
+        input: "Can you find me a used car?",
+        expected: {
+          type: RequestOutputTypeEnumSchema.Values.CLARIFICATION,
+        },
+      },
+      {
         input: "Book a hotel in Paris.",
         expected: { type: RequestOutputTypeEnumSchema.Values.CLARIFICATION },
       },
@@ -130,6 +131,12 @@ describe("Request handler", () => {
   describe(RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER, () => {
     describe(`Realtime data without need of orchestration`, () => {
       testGenerator([
+        {
+          input: "What time is it?",
+          expected: {
+            type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+          },
+        },
         {
           input: "Who is the president of Czechia?",
           expected: {
@@ -201,6 +208,22 @@ describe("Request handler", () => {
             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
           },
         },
+        {
+          name: "Poem generation",
+          input:
+            "Create four distinct poems on these topics: vikings, neutrinos, marshmallows, and cats.",
+          expected: {
+            type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+          },
+        },
+        {
+          name: "Poem generation with analysis",
+          input:
+            "Create four distinct poems on these topics: vikings, neutrinos, marshmallows, and cats. Then craft a hip-hop song that deliberately incorporates specific imagery, phrases, and themes from each poem. Then take the hip-hop song and generated poems and highlight which elements from each original poem were integrated into your hip-hop lyrics there, demonstrating parallelization and how multiple specialized outputs enhance the final creative synthesis. So the final output should consist of original poems, the song and the analysis.",
+          expected: {
+            type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
+          },
+        },
       ]);
     });
 
@@ -254,6 +277,7 @@ RESPONSE: I'd be happy to help, but I need to know which country's president you
             type: RequestOutputTypeEnumSchema.Values.PASS_TO_PLANNER,
           },
         },
+        // TODO Add
         // {
         //   input: "Can you find me a flat?",
         //   expected: {
