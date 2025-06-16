@@ -1,25 +1,14 @@
+import { TaskConfigSchema } from "@/tasks/manager/dto.js";
 import { z } from "zod";
-import {
-  AssistantWorkflowMessageSchema,
-  WorkflowMessageSchema,
-} from "../../dto.js";
+import { StepResultSchema } from "../../base/dto.js";
 
-export const TaskExecutorInputSchema = z.object({
-  history: z.array(WorkflowMessageSchema).optional(),
-  availableFunctions: z.array(z.string()),
+export const TaskInitializerInputSchema = z.object({
   task: z.string(),
 });
-export type TaskExecutorInput = z.infer<typeof TaskExecutorInputSchema>;
+export type TaskInitializerInput = z.infer<typeof TaskInitializerInputSchema>;
 
-export const TaskExecutorOutputTypeEnumSchema = z.enum(["SUCCESS", "FAIL"]);
-export type TaskExecutorOutputTypeEnum = z.infer<
-  typeof TaskExecutorOutputTypeEnumSchema
+export const TaskInitializerOutputSchema =
+  StepResultSchema(TaskConfigSchema);
+export type TaskInitializerOutput = z.infer<
+  typeof TaskInitializerOutputSchema
 >;
-
-export const TaskExecutorOutputSchema = z.object({
-  type: TaskExecutorOutputTypeEnumSchema,
-  explanation: z.string(),
-  result: AssistantWorkflowMessageSchema,
-  raw: z.string(),
-});
-export type TaskExecutorOutput = z.infer<typeof TaskExecutorOutputSchema>;

@@ -1,16 +1,13 @@
+import { TaskRunSchema } from "@/tasks/manager/dto.js";
 import { z } from "zod";
-import { AssistantWorkflowMessageSchema } from "../dto.js";
+import { StepResultSchema } from "../base/dto.js";
 
-export const ExecutorInputSchema = z.object({
-  existingResources: z.array(z.string()),
-  availableFunctions: z.array(z.string()),
-  plan: z.array(z.string()),
+export const WorkflowComposerInputSchema = z.object({
+  input: z.string(),
 });
-export type ExecutorInput = z.infer<typeof ExecutorInputSchema>;
+export type WorkflowComposerInput = z.infer<typeof WorkflowComposerInputSchema>;
 
-export const ExecutorOutputSchema = z.object({
-  explanation: z.string(),
-  message: AssistantWorkflowMessageSchema,
-  raw: z.string(),
-});
-export type PlanExecutorOutput = z.infer<typeof ExecutorOutputSchema>;
+export const WorkflowComposerOutputSchema = StepResultSchema(TaskRunSchema);
+export type WorkflowComposerOutput = z.infer<
+  typeof WorkflowComposerOutputSchema
+>;

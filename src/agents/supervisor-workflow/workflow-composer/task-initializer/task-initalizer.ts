@@ -1,94 +1,95 @@
-import { ChatModel } from "beeai-framework";
-import {
-  AssistantMessage,
-  Message,
-  SystemMessage,
-} from "beeai-framework/backend/message";
-import { ZodParserField } from "beeai-framework/parsers/field";
-import { LinePrefixParser } from "beeai-framework/parsers/linePrefix";
-import { z } from "zod";
-import { TaskExecutorInput, TaskExecutorOutputTypeEnumSchema } from "./dto.js";
-import { mapWorkflowMessage } from "../../dto.js";
+import { AgentRegistry } from "@/agents/registry/registry.js";
+import { TaskManager } from "@/tasks/manager/manager.js";
+import { ServiceLocator } from "@/utils/service-locator.js";
+import { Logger } from "beeai-framework";
+import { Context } from "../../base/context.js";
+import { Runnable } from "../../base/runnable.js";
+import { AgentConfigInitializer } from "./agent-config-initializer/agent-config-initializer.js";
+import { TaskInitializerOutput } from "./dto.js";
+import { TaskConfigInitializer } from "./task-config-initializer/task-config-initializer.js";
 
-const systemPrompt = () => {
-  return `You are a **TaskExecutor** — the action module in a multi-agent workflow.  
-Your mission is to read a single task sent by an upstream agent, inspect the **function catalog** and determine the appropriate processing path.
+export interface TaskInitializerRun {
+  task: string;
+}
 
----
+export class TaskInitializer extends Runnable<
+  TaskInitializerRun,
+  TaskInitializerOutput
+> {
+  protected agentConfigInitialized: AgentConfigInitializer;
+  protected taskConfigInitialized: TaskConfigInitializer;
+  protected agentRegistry: AgentRegistry<unknown>;
+  protected taskManager: TaskManager;
 
-## Response Format
-
-All your responses **must** follow this exact format — in this order:
-RESPONSE_CHOICE_EXPLANATION: <briefly explain *why* you selected the given RESPONSE_TYPE>
-RESPONSE_TYPE: <FUNCTION_CALL | FAIL>
-RESPONSE: <your actual reply in the chosen style>
-
----
-
-## Decision Criteria
-
-### FUNCTION_CALL  
-Use **always** when:
-- You find a suitable function(s) in function catalog that you plan to call to complete the task.
-
-### FAIL
-Use **always** when:
-- You are not able to complete the task due to lack of suitable function. 
-
----
-
-## Domain
-Your domain is creation of multi-agent system 
-
----
-
-This is your task to execute:`;
-};
-
-export async function run(llm: ChatModel, input: TaskExecutorInput) {
-  const messages: Message[] = [new SystemMessage(systemPrompt())];
-  if (input.history && input.history.length) {
-    const history = input.history.map(mapWorkflowMessage);
-    messages.push(...history);
+  constructor(logger: Logger) {
+    super(logger);
+    this.agentConfigInitialized = new AgentConfigInitializer(logger);
+    this.taskConfigInitialized = new TaskConfigInitializer(logger);
+    this.agentRegistry = ServiceLocator.getInstance().get(AgentRegistry);
+    this.taskManager = ServiceLocator.getInstance().get(TaskManager);
   }
-  messages.push(new AssistantMessage(input.task));
 
-  const resp = await llm.create({
-    messages,
-  });
+  async run(
+    { task }: TaskInitializerRun,
+    ctx: Context,
+  ): Promise<TaskInitializerOutput> {
+    const { supervisorAgentId } = ctx;
 
-  const parser = new LinePrefixParser({
-    response_choice_explanation: {
-      prefix: "RESPONSE_CHOICE_EXPLANATION:",
-      isStart: true,
-      next: ["response_type"],
-      field: new ZodParserField(z.string().min(1)),
-    },
-    response_type: {
-      prefix: "RESPONSE_TYPE:",
-      next: ["response_value"],
-      field: new ZodParserField(TaskExecutorOutputTypeEnumSchema),
-    },
-    response_value: {
-      prefix: "RESPONSE:",
-      isEnd: true,
-      next: [],
-      field: new ZodParserField(z.string().min(1)),
-    },
-  });
+    // Agent config
+    const availableTools = Array.from(
+      this.agentRegistry.getToolsFactory("operator").availableTools.values(),
+    );
+    const existingAgentConfigs = this.agentRegistry.getAgentConfigs({
+      kind: "operator",
+    });
 
-  const raw = resp.getTextContent();
-  await parser.add(raw);
-  await parser.end();
+    const { output: agentConfigOutput } = await this.agentConfigInitialized.run(
+      {
+        userMessage: task,
+        systemPrompt: {
+          availableTools,
+          existingAgentConfigs,
+          task: task,
+        },
+      },
+      ctx,
+    );
+    if (agentConfigOutput.type === "ERROR") {
+      return agentConfigOutput;
+    }
+    const agentConfig = agentConfigOutput.result;
 
-  return {
-    type: parser.finalState.response_type,
-    explanation: parser.finalState.response_choice_explanation,
-    message: {
-      kind: "assistant",
-      content: parser.finalState.response_value,
-      createdAt: new Date(),
-    },
-    raw,
-  };
+    // Task config
+    const existingTaskConfigs = this.taskManager.getAllTaskConfigs(
+      supervisorAgentId,
+      { kind: "operator" },
+    );
+    const { output: taskConfigOutput } = await this.taskConfigInitialized.run(
+      {
+        userMessage: task,
+        systemPrompt: {
+          existingTaskConfigs,
+          actingAgentId: supervisorAgentId,
+          existingAgentConfigs: [agentConfig],
+          task,
+        },
+      },
+      ctx,
+    );
+
+    if (taskConfigOutput.type === "ERROR") {
+      return taskConfigOutput;
+    }
+
+    const taskConfig = this.taskManager.getTaskConfig(
+      "operator",
+      taskConfigOutput.result.taskType,
+      supervisorAgentId,
+    );
+
+    return {
+      type: "SUCCESS",
+      result: taskConfig,
+    };
+  }
 }

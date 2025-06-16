@@ -1,7 +1,7 @@
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import * as laml from "@/laml/index.js";
-import { ExistingTaskConfig } from "./dto.js";
-import { ExistingAgentConfig } from "../agent-config-initializer/dto.js";
+import { TaskConfigMinimal } from "./dto.js";
+import { AgentConfigMinimal } from "../agent-config-initializer/dto.js";
 
 export class ExistingResourcesBuilder {
   private output: string;
@@ -14,7 +14,7 @@ export class ExistingResourcesBuilder {
     return new ExistingResourcesBuilder();
   }
 
-  agentConfigs(configs?: ExistingAgentConfig[]) {
+  agentConfigs(configs?: AgentConfigMinimal[]) {
     const content = !configs?.length
       ? "There is no existing agent configs yet."
       : laml.printLAMLObject(
@@ -44,7 +44,7 @@ export class ExistingResourcesBuilder {
     return this;
   }
 
-  taskConfigs(configs?: ExistingTaskConfig[]) {
+  taskConfigs(configs?: TaskConfigMinimal[]) {
     const content = !configs?.length
       ? "There is no existing task configs yet."
       : laml.printLAMLObject(

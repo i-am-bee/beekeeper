@@ -1,8 +1,31 @@
 import { clone } from "remeda";
-import { ConstantField, FieldKind } from "./dto.js";
+import { ConstantField, FieldKind, ListFieldType } from "./dto.js";
 import { ParserOutput } from "./parser-output.js";
-import { FieldRef, Protocol } from "./protocol.js";
+import { DEFAULT_INDENT, FieldRef, Protocol } from "./protocol.js";
 import { pathStr, truncateText, unwrapString } from "./utils.js";
+
+// Bullet list
+const BULLET_SIGNS: string[] = [
+  "•", // U+2022 Bullet
+  "◦", // U+25E6 White (hollow) bullet
+  "●", // U+25CF Black circle
+  "○", // U+25CB White circle
+  "‣", // U+2023 Triangular bullet
+  "⁃", // U+2043 Hyphen bullet
+  "∙", // U+2219 Bullet operator
+  "▪", // U+25AA Black small square
+  "▫", // U+25AB White small square
+  "■", // U+25A0 Black square
+  "◾", // U+25FE Black medium-small square
+  "▸", // U+25B8 Black right-pointing small triangle
+  "►", // U+25BA Black right-pointing pointer
+  "❖", // U+2756 Black diamond with white X
+  "♦", // U+2666 Black diamond
+  "–", // U+2013 En dash
+  "-", // U+002D Hyphen-minus
+  "*", // U+002A Asterisk
+  "·", // U+00B7 Middle dot
+] as const;
 
 export type ConversionFn = (val: string) => string;
 
@@ -282,29 +305,6 @@ export class Parser<TResult> {
           end: ["]", ")", ">"],
         }).trim();
 
-        // Bullet list
-        const BULLET_SIGNS: string[] = [
-          "•", // U+2022 Bullet
-          "◦", // U+25E6 White (hollow) bullet
-          "●", // U+25CF Black circle
-          "○", // U+25CB White circle
-          "‣", // U+2023 Triangular bullet
-          "⁃", // U+2043 Hyphen bullet
-          "∙", // U+2219 Bullet operator
-          "▪", // U+25AA Black small square
-          "▫", // U+25AB White small square
-          "■", // U+25A0 Black square
-          "◾", // U+25FE Black medium-small square
-          "▸", // U+25B8 Black right-pointing small triangle
-          "►", // U+25BA Black right-pointing pointer
-          "❖", // U+2756 Black diamond with white X
-          "♦", // U+2666 Black diamond
-          "–", // U+2013 En dash
-          "-", // U+002D Hyphen-minus
-          "*", // U+002A Asterisk
-          "+", // U+002B Plus sign
-          "·", // U+00B7 Middle dot
-        ] as const;
         const usedBulletSign = BULLET_SIGNS.find((s) =>
           value.trimStart().startsWith(s),
         );
@@ -345,6 +345,67 @@ export class Parser<TResult> {
         });
 
         return split;
+      }
+      case "list": {
+        const getNeedles = (type: ListFieldType, num: number) => {
+          return (type === "numbered" ? [String(num)] : BULLET_SIGNS).map(
+            (s) => ({
+              sign: s,
+              value: `\n${DEFAULT_INDENT.repeat(field.path.length)}${s}`,
+            }),
+          );
+        };
+
+        const result = [];
+        let rest = value;
+
+        let num = 0;
+        do {
+          num++;
+
+          const findNeedle = (needles: ReturnType<typeof getNeedles>) => {
+            // Test all needles mainly used for different variants of bullets. TODO It can be done better via regexp.
+            let needle;
+            let tmpNeedle;
+            let index = -1;
+            while ((tmpNeedle = needles.pop()) && index < 0) {
+              index = rest.indexOf(tmpNeedle.value);
+              needle = tmpNeedle;
+            }
+
+            if (index < 0 || !needle) {
+              return null;
+            }
+
+            return { index, needle };
+          };
+
+          const startNeedles = getNeedles(field.field.type, num);
+          const start = findNeedle(startNeedles);
+          if (!start) {
+            break;
+          }
+          const startIndex =
+            start.index + start.needle.value.length - 1 + start.needle.sign.length;
+          if (startIndex < 0) {
+            break;
+          }
+          const endNeedles = getNeedles(field.field.type, num + 1);
+          const end = findNeedle(endNeedles);
+          const endIndex = end ? end.index : rest.length;
+          const slice = endIndex >= 0 ? rest.slice(startIndex, endIndex) : rest.slice(startIndex);
+          
+          const sanitized = unwrapString(slice, {
+            start: [".", ")"],
+          }).trim();
+
+          result.push(sanitized);
+          if (startIndex + 1 >= rest.length) {
+            break;
+          }
+          rest = rest.slice(startIndex + 1);
+        } while (rest.length);
+        return result;
       }
       case "object":
       case "comment":

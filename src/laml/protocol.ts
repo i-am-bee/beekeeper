@@ -136,6 +136,18 @@ export class ProtocolBuilder<TResult> {
     return this as unknown as ProtocolBuilder<TResult & Added>;
   }
 
+  list<K extends string, Opt extends boolean | undefined = undefined>(
+    field: {
+      name: K;
+      isOptional?: Opt;
+    } & Omit<dto.ListField, "kind" | "name" | "isOptional">,
+  ) {
+    this._fields.push({ kind: "list", ...clone(field) });
+
+    type Added = AddProp<K, string[], Opt>; // adjust element-type if needed
+    return this as unknown as ProtocolBuilder<TResult & Added>;
+  }
+
   buildFields() {
     return clone(this._fields);
   }
@@ -322,6 +334,7 @@ export class Protocol<TResult> {
   - boolean - true / false  
   - constant – one literal chosen from the values listed in the protocol  
   - array – list of items of the specified item-type (comma-separated or JSON-style)  
+  - list - human readable list of items numbered or with bullet points
   - object – nested attributes, each described by its own metadata tag  
 - indent – integer; the key’s left-margin offset in spaces (0 = column 0)
 - human-readable hint - brief guidance explaining the purpose or expected content of the attribute.

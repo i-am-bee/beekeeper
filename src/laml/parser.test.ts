@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Parser } from "./parser.js";
-import { Protocol, ProtocolBuilder } from "./protocol.js";
+import { DEFAULT_INDENT, Protocol, ProtocolBuilder } from "./protocol.js";
 
 export interface TestItem {
   name: string;
@@ -963,6 +963,51 @@ RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a ne
             protocol: constantArrayProtocol,
             getValue: (value) => `CONSTANT_ARRAY: ${value}`,
             getExpected: (expected) => ({ CONSTANT_ARRAY: expected }),
+            getExpectedError: (expected: ExpectedError) => expected.error,
+          });
+        });
+
+        describe("Numbered list", () => {
+          const printList = (...values: string[]) =>
+            "\n" +
+            values.map((v, i) => `${DEFAULT_INDENT}${i + 1}. ${v}`).join(`\n`);
+
+          type NumberArrayFieldTestItem = SingleFieldTestItem<string[]>;
+          const constantTestData: NumberArrayFieldTestItem[] = [
+            {
+              name: "1. lorem",
+              value: printList("lorem"),
+              expected: ["lorem"],
+            },
+            {
+              name: "1. lorem 2. ipsum",
+              value: printList(`lorem`, `ipsum`),
+              expected: ["lorem", "ipsum"],
+            },
+            {
+              name: "1. lorem [text with new lines]] 2. ipsum",
+              value: printList(
+                `lorem   \n text that should stay \n\t in the first item`,
+                `   ipsum   `,
+              ),
+              expected: [
+                "lorem   \n text that should stay \n\t in the first item",
+                "ipsum",
+              ],
+            },
+          ];
+          const numberedListProtocol = ProtocolBuilder.new()
+            .list({
+              name: "NUMBERED_LIST",
+              type: "numbered",
+            })
+            .build();
+
+          createSingleFieldTestSection({
+            testData: constantTestData,
+            protocol: numberedListProtocol,
+            getValue: (value) => `NUMBERED_LIST:${value}`,
+            getExpected: (expected) => ({ NUMBERED_LIST: expected }),
             getExpectedError: (expected: ExpectedError) => expected.error,
           });
         });

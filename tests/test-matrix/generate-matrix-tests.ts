@@ -1,5 +1,5 @@
 // tests/helpers/generateMatrixTests.ts
-import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
+import { LLMCall } from "@/agents/supervisor-workflow/base/llm-call.js";
 import { ChatModel } from "beeai-framework";
 import { describe, it, expect } from "vitest";
 import { TestMatrix } from "./test-matrix.js";

@@ -1,6 +1,6 @@
 import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
-import { ExistingAgentConfig } from "./dto.js";
+import { AgentConfigMinimal } from "./dto.js";
 import * as laml from "@/laml/index.js";
 
 export class ExistingResourcesBuilder {
@@ -14,7 +14,7 @@ export class ExistingResourcesBuilder {
     return new ExistingResourcesBuilder();
   }
 
-  agentConfigs(configs?: ExistingAgentConfig[]) {
+  agentConfigs(configs?: AgentConfigMinimal[]) {
     const content = !configs?.length
       ? "There is no existing agent configs yet."
       : laml.printLAMLObject(

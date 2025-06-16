@@ -1,5 +1,5 @@
 import { clone } from "remeda";
-import { ExistingTaskConfig } from "../../dto.js";
+import { TaskConfigMinimal } from "../../dto.js";
 import { AgentConfigType } from "../../../agent-config-initializer/__tests__/__fixtures__/agent-configs.js";
 
 export const TASK_CONFIG_ENTRIES = [
@@ -92,11 +92,11 @@ export const TASK_CONFIG_ENTRIES = [
       popularity: "underrated",
     }),
   },
-] as const satisfies ExistingTaskConfig[];
+] as const satisfies TaskConfigMinimal[];
 
 export type TaskConfigType = (typeof TASK_CONFIG_ENTRIES)[number]["taskType"];
 
-const CONFIGS_MAP = new Map<TaskConfigType, ExistingTaskConfig>(
+const CONFIGS_MAP = new Map<TaskConfigType, TaskConfigMinimal>(
   TASK_CONFIG_ENTRIES.map((c) => [c.taskType, c]),
 );
 

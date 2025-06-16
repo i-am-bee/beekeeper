@@ -1,14 +1,14 @@
-import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
+import { LLMCall, LLMCallInput } from "@/agents/supervisor-workflow/base/llm-call.js";
 import * as laml from "@/laml/index.js";
+import { Logger } from "beeai-framework";
 import { clone } from "remeda";
 import {
   AgentConfigInitializerInput,
   AgentConfigInitializerOutput,
 } from "./dto.js";
+import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { AgentConfigInitializerTool } from "./tool.js";
-import { prompt } from "./prompt.js";
-import { Logger } from "beeai-framework";
 
 /**
  * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
@@ -27,7 +27,7 @@ export class AgentConfigInitializer extends LLMCall<
 
   async processResult(
     result: laml.ProtocolResult<typeof protocol>,
-    context: { input: AgentConfigInitializerInput },
+    input: LLMCallInput<AgentConfigInitializerInput>,    
   ): Promise<AgentConfigInitializerOutput> {
     try {
       let toolCallResult;
@@ -50,7 +50,7 @@ export class AgentConfigInitializer extends LLMCall<
           });
           return {
             type: "SUCCESS",
-            agentConfig: {
+            result: {
               agentType: toolCallResult.result.data.agentType,
               description: toolCallResult.result.data.description,
               instructions: toolCallResult.result.data.instructions,
@@ -78,7 +78,7 @@ export class AgentConfigInitializer extends LLMCall<
           });
           return {
             type: "SUCCESS",
-            agentConfig: {
+            result: {
               agentType: toolCallResult.result.data.agentType,
               description: toolCallResult.result.data.description,
               instructions: toolCallResult.result.data.instructions,
@@ -94,20 +94,20 @@ export class AgentConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_SELECT_AGENT_CONFIG is missing`);
           }
 
-          const selected = context.input.existingAgentConfigs.find(
+          const selected = input.systemPrompt.existingAgentConfigs.find(
             (c) => c.agentType === response.agent_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${context.input.existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `Can't find selected agent config \`${response.agent_type}\` between existing \`${input.systemPrompt.existingAgentConfigs.map((c) => c.agentType).join(",")}\``,
             };
           }
 
           return {
             type: "SUCCESS",
-            agentConfig: clone(selected),
+            result: clone(selected),
           };
         }
 

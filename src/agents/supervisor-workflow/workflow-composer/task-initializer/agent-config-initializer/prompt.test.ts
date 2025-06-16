@@ -155,9 +155,11 @@ These two lines are **mandatory** and must appear first, each on its own line.
 2. **\`agent_type\`** – repeat the existing agent’s name **unchanged**.
 3. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the *Available agent tools* list**.
    ↳ If even one tool is missing, you must respond with \`AGENT_CONFIG_UNAVAILABLE\`.
-4. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
-5. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
-6. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.
+4. **\`description\`** – include this field *only* if it is being changed. Ensure it reflects any changes made to tools or instructions.
+5. **\`instructions\`** – include this field *only* if it is being changed. The content must align with all updated capabilities or tools.
+6. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
+7. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
+8. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.
 
 ### SELECT_AGENT_CONFIG — Rules
 1. **When to use** – choose this type **only** when an existing agent’s mission, instructions, and tool set **already cover the new task exactly as-is**. No structural edits are required.

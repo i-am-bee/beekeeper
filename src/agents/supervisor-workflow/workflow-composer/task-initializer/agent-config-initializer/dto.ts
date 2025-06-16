@@ -1,8 +1,9 @@
 import { AgentConfigSchema } from "@/agents/registry/dto.js";
+import { StepResultSchema } from "@/agents/supervisor-workflow/base/dto.js";
 import { AgentAvailableToolSchema } from "@/agents/supervisor-workflow/dto.js";
 import { z } from "zod";
 
-export const ExistingAgentConfigSchema = AgentConfigSchema.pick({
+export const AgentConfigMinimalSchema = AgentConfigSchema.pick({
   agentConfigId: true,
   agentConfigVersion: true,
   agentType: true,
@@ -10,10 +11,10 @@ export const ExistingAgentConfigSchema = AgentConfigSchema.pick({
   description: true,
   instructions: true,
 });
-export type ExistingAgentConfig = z.infer<typeof ExistingAgentConfigSchema>;
+export type AgentConfigMinimal = z.infer<typeof AgentConfigMinimalSchema>;
 
 export const AgentConfigInitializerInputSchema = z.object({
-  existingAgentConfigs: z.array(ExistingAgentConfigSchema),
+  existingAgentConfigs: z.array(AgentConfigMinimalSchema),
   availableTools: z.array(AgentAvailableToolSchema),
   task: z.string(),
 });
@@ -21,24 +22,9 @@ export type AgentConfigInitializerInput = z.infer<
   typeof AgentConfigInitializerInputSchema
 >;
 
-export const AgentConfigInitializerOutputTypeEnumSchema = z.enum([
-  "SUCCESS",
-  "ERROR",
-]);
-export type AgentConfigInitializerOutputTypeEnum = z.infer<
-  typeof AgentConfigInitializerOutputTypeEnumSchema
->;
-
-export const AgentConfigInitializerOutputSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal(AgentConfigInitializerOutputTypeEnumSchema.Values.SUCCESS),
-    agentConfig: ExistingAgentConfigSchema,
-  }),
-  z.object({
-    type: z.literal(AgentConfigInitializerOutputTypeEnumSchema.Values.ERROR),
-    explanation: z.string(),
-  }),
-]);
+export const AgentConfigInitializerOutputSchema = StepResultSchema(
+  AgentConfigMinimalSchema,
+);
 export type AgentConfigInitializerOutput = z.infer<
   typeof AgentConfigInitializerOutputSchema
 >;

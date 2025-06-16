@@ -9,6 +9,7 @@ export const FieldKindSchema = z.enum([
   "constant",
   "object",
   "array",
+  "list",
   "comment",
 ]);
 export type FieldKind = z.infer<typeof FieldKindSchema>;
@@ -25,7 +26,7 @@ export const BaseFieldSchema = z.object({
 });
 
 export const CommentFieldSchema = z.object({
-  kind: z.literal("comment"),
+  kind: z.literal(FieldKindSchema.Values.comment),
   comment: z.string(),
 });
 export type CommentField = z.infer<typeof CommentFieldSchema>;
@@ -71,13 +72,25 @@ export const ArrayFieldSchema = BaseRegularFieldSchema.extend({
 });
 export type ArrayField = z.infer<typeof ArrayFieldSchema>;
 
+export const ListFieldTypeSchema = z.enum(["numbered", "bullets"]);
+export type ListFieldType = z.infer<typeof ListFieldTypeSchema>;
+
+export const ListFieldSchema = BaseRegularFieldSchema.extend({
+  kind: z.literal(FieldKindSchema.Values.list),
+  type: z.union([
+    z.literal(ListFieldTypeSchema.Values.bullets),
+    z.literal(ListFieldTypeSchema.Values.numbered),
+  ]),
+});
+export type ListField = z.infer<typeof ListFieldSchema>;
+
 export const ConstantFieldOptionsSchema = BaseFieldOptionsSchema.extend({
   values: z.array(z.string()),
 });
 export type ConstantFieldOptions = z.infer<typeof ConstantFieldOptionsSchema>;
 
 export const ConstantFieldSchema = BaseRegularFieldSchema.extend({
-  kind: z.literal("constant"),
+  kind: z.literal(FieldKindSchema.Values.constant),
   values: z.array(z.string()),
 });
 export type ConstantField = z.infer<typeof ConstantFieldSchema>;
@@ -107,6 +120,7 @@ export type AnyField =
   | ConstantField
   | ObjectField
   | ArrayField
+  | ListField
   | CommentField;
 
 // Now define the schemas with lazy recursion
@@ -124,6 +138,7 @@ export const AnyFieldSchema: z.ZodType<AnyField> = z.lazy(() =>
     ConstantFieldSchema,
     ObjectFieldSchema,
     ArrayFieldSchema,
+    ListFieldSchema,
     CommentFieldSchema,
   ]),
 );
@@ -149,6 +164,15 @@ function fieldToSchema(field: AnyField): z.ZodTypeAny {
     case "array":
       return z
         .array(fieldToSchema({ ...field, kind: field.type } as AnyField))
+        .nonempty();
+    case "list":
+      return z
+        .array(
+          fieldToSchema({
+            ...field,
+            kind: FieldKindSchema.Values.text,
+          } as AnyField),
+        )
         .nonempty();
     case "object":
       return fieldsToObjectSchema(field.attributes);

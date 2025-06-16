@@ -1144,10 +1144,13 @@ export class TaskManager extends WorkspaceRestorable {
     this.persist();
   }
 
-  getAllTaskConfigs(actingAgentId: AgentIdValue) {
+  getAllTaskConfigs(
+    actingAgentId: AgentIdValue,
+    filter?: { kind: TaskKindEnum },
+  ) {
     this.logger.info({ actingAgentId }, "Getting all task configs");
 
-    const taskConfigs = Array.from(this.taskConfigs.values())
+    const all = Array.from(this.taskConfigs.values())
       .map((taskKindConfig) => Array.from(taskKindConfig.values()))
       .flat(2)
       .filter((taskConfig) =>
@@ -1158,11 +1161,11 @@ export class TaskManager extends WorkspaceRestorable {
         ),
       );
 
-    this.logger.debug(
-      { actingAgentId, count: taskConfigs.length },
-      "Retrieved task runs",
-    );
-    return taskConfigs;
+    if (filter) {
+      return all.filter((t) => t.taskKind === filter.kind);
+    }
+
+    return all;
   }
 
   createTaskRun(

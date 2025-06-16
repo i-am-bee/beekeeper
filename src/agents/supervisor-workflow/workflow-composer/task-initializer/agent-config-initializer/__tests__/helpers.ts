@@ -1,5 +1,5 @@
 import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
-import { ExistingAgentConfig } from "../dto.js";
+import { AgentConfigMinimal } from "../dto.js";
 import { protocol } from "../protocol.js";
 import * as laml from "@/laml/index.js";
 import { generateMatrixTests } from "@test/test-matrix/generate-matrix-tests.js";
@@ -14,7 +14,7 @@ export type AgentCase = TestCase<
   Partial<laml.ProtocolResult<typeof protocol>>,
   {
     availableTools?: AgentAvailableTool[];
-    existingConfigs?: ExistingAgentConfig[];
+    existingAgentConfigs?: AgentConfigMinimal[];
   },
   laml.ProtocolResult<typeof protocol>
 >;
@@ -31,7 +31,7 @@ export function runMatrix(matrix: TestMatrix<any, AgentCase>) {
     mapCaseToInput: ({ input, data: meta }) => ({
       task: input,
       availableTools: meta?.availableTools ?? [],
-      existingAgentConfigs: meta?.existingConfigs ?? [],
+      existingAgentConfigs: meta?.existingAgentConfigs ?? [],
     }),
   });
 }

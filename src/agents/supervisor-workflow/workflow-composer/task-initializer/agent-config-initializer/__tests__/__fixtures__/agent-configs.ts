@@ -1,5 +1,5 @@
 import { clone } from "remeda";
-import { ExistingAgentConfig } from "../../dto.js";
+import { AgentConfigMinimal } from "../../dto.js";
 
 export const AGENT_CONFIG_ENTRIES = [
   {
@@ -46,7 +46,7 @@ export const AGENT_CONFIG_ENTRIES = [
     agentType: "flight_price_tracker_weekly",
     description: "Weekly flight-deal monitor.",
     instructions:
-      "Once a week track round-trip fares on user-defined routes with " +
+      "Once a week on Monday at 6 AM track round-trip fares on user-defined routes with " +
       "flight_price_tracker and alert when the price drops below the user’s " +
       "target threshold.",
     tools: ["flight_price_tracker"],
@@ -122,12 +122,12 @@ News headlines matching “<keywords>” from the [time_window]:
     agentConfigId: "operator:weather_tornado_immediate:1",
     agentConfigVersion: 1,
   },
-] as const satisfies ExistingAgentConfig[];
+] as const satisfies AgentConfigMinimal[];
 
 export type AgentConfigType =
   (typeof AGENT_CONFIG_ENTRIES)[number]["agentType"];
 
-const CONFIGS_MAP = new Map<AgentConfigType, ExistingAgentConfig>(
+const CONFIGS_MAP = new Map<AgentConfigType, AgentConfigMinimal>(
   AGENT_CONFIG_ENTRIES.map((c) => [c.agentType, c]),
 );
 

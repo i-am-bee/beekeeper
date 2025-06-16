@@ -1,4 +1,7 @@
-import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
+import {
+  LLMCall,
+  LLMCallInput,
+} from "@/agents/supervisor-workflow/base/llm-call.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import { clone } from "remeda";
@@ -17,14 +20,22 @@ export class TaskConfigInitializer extends LLMCall<
 > {
   protected tool: TaskConfigInitializerTool;
 
+  get protocol() {
+    return protocol;
+  }
+
   constructor(logger: Logger) {
     super(logger);
     this.tool = new TaskConfigInitializerTool();
   }
 
+  protected systemPrompt(input: TaskConfigInitializerInput) {
+    return prompt(input);
+  }
+
   async processResult(
     result: laml.ProtocolResult<typeof protocol>,
-    context: { input: TaskConfigInitializerInput },
+    input: LLMCallInput<TaskConfigInitializerInput>,
   ): Promise<TaskConfigInitializerOutput> {
     try {
       let toolCallResult;
@@ -45,11 +56,11 @@ export class TaskConfigInitializer extends LLMCall<
               description: response.description,
               taskConfigInput: response.task_config_input,
             },
-            actingAgentId: context.input.actingAgentId,
+            actingAgentId: input.systemPrompt.actingAgentId,
           });
           return {
             type: "SUCCESS",
-            taskConfig: {
+            result: {
               agentType: toolCallResult.result.data.agentType,
               taskType: toolCallResult.result.data.taskType,
               description: toolCallResult.result.data.description,
@@ -71,11 +82,11 @@ export class TaskConfigInitializer extends LLMCall<
               description: response.description,
               taskConfigInput: response.task_config_input,
             },
-            actingAgentId: context.input.actingAgentId,
+            actingAgentId: input.systemPrompt.actingAgentId,
           });
           return {
             type: "SUCCESS",
-            taskConfig: {
+            result: {
               agentType: toolCallResult.result.data.agentType,
               taskType: toolCallResult.result.data.taskType,
               description: toolCallResult.result.data.description,
@@ -89,20 +100,20 @@ export class TaskConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_SELECT_TASK_CONFIG is missing`);
           }
 
-          const selected = context.input.existingTaskConfigs.find(
+          const selected = input.systemPrompt.existingTaskConfigs.find(
             (c) => c.taskType === response.task_type,
           );
 
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `Can't find selected task config \`${response.task_type}\` between existing \`${context.input.existingTaskConfigs.map((c) => c.agentType).join(",")}\``,
+              explanation: `Can't find selected task config \`${response.task_type}\` between existing \`${input.systemPrompt.existingTaskConfigs.map((c) => c.agentType).join(",")}\``,
             };
           }
 
           return {
             type: "SUCCESS",
-            taskConfig: clone(selected),
+            result: clone(selected),
           };
           break;
         }
@@ -132,13 +143,5 @@ export class TaskConfigInitializer extends LLMCall<
         explanation,
       };
     }
-  }
-
-  get protocol() {
-    return protocol;
-  }
-
-  protected systemPrompt(input: TaskConfigInitializerInput) {
-    return prompt(input);
   }
 }

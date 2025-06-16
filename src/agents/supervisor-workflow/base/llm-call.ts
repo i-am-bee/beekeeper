@@ -1,13 +1,15 @@
 import * as laml from "@/laml/index.js";
-import { ChatModel, Logger } from "beeai-framework";
 import {
   Message,
   SystemMessage,
   UserMessage,
 } from "beeai-framework/backend/message";
+import { Context } from "./context.js";
+import { Runnable } from "./runnable.js";
 
-export interface LLMCallInput {
-  task: string;
+export interface LLMCallInput<TInput> {
+  userMessage: string;
+  systemPrompt: TInput;
 }
 
 export interface LLMCallOutput<TParsed, TOutput> {
@@ -18,29 +20,24 @@ export interface LLMCallOutput<TParsed, TOutput> {
 
 export abstract class LLMCall<
   P extends laml.Protocol<any>,
-  TInput extends LLMCallInput = LLMCallInput,
+  TInput,
   TOutput = any,
+> extends Runnable<
+  LLMCallInput<TInput>,
+  LLMCallOutput<laml.ProtocolResult<P>, TOutput>
 > {
-  protected logger: Logger;
   protected abstract systemPrompt(input: TInput): string;
-
-  constructor(logger: Logger) {
-    this.logger = logger.child({
-      name: this.constructor.name,
-    });
-  }
 
   abstract get protocol(): P;
 
-  async run(
-    llm: ChatModel,
-    input: TInput,
-  ): Promise<LLMCallOutput<laml.ProtocolResult<P>, TOutput>> {
+  async run(input: LLMCallInput<TInput>, ctx: Context) {
     console.log(input, `run`);
 
+    const { llm } = ctx;
+
     const messages: Message[] = [
-      new SystemMessage(this.systemPrompt(input)),
-      new UserMessage(input.task),
+      new SystemMessage(this.systemPrompt(input.systemPrompt)),
+      new UserMessage(input.userMessage),
       // new CustomMessage("control", "thinking"),
     ];
 
@@ -57,7 +54,7 @@ export abstract class LLMCall<
     const parsed = this.protocol.parse(raw);
     console.log(`${JSON.stringify(parsed, null, " ")}\n\n`);
     console.log(`### OUTPUT`);
-    const output = await this.processResult(parsed, { input });
+    const output = await this.processResult(parsed, input, ctx);
     console.log(`${JSON.stringify(output, null, " ")}\n\n`);
 
     return {
@@ -69,6 +66,7 @@ export abstract class LLMCall<
 
   abstract processResult(
     result: laml.ProtocolResult<P>,
-    context: { input: TInput },
+    input: LLMCallInput<TInput>,
+    ctx: Context,
   ): Promise<TOutput>;
 }

@@ -51,7 +51,7 @@ export const TOOL_ENTRIES = [
   {
     toolName: "phrase_generator",
     description:
-      "Generate vocabulary lists and example sentences for supported languages.",
+      "Generate vocabulary lists and example sentences on chosen topics (e.g. inspiration, history etc.) and in chosen style for supported languages.",
   },
   {
     toolName: "podcast_search",
@@ -67,6 +67,11 @@ export const TOOL_ENTRIES = [
     toolName: "weather_alert_feed",
     description:
       "Stream National Weather Service alerts with geolocation filters.",
+  },
+  {
+    toolName: "google_maps",
+    description:
+      "Searches for geographic locations, businesses, and directions using Google Maps data.",
   },
 ] as const;
 

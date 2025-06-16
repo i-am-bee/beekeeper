@@ -1,10 +1,10 @@
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
 import * as laml from "@/laml/index.js";
-import { ExistingTaskConfig, TaskConfigInitializerInput } from "./dto.js";
+import { TaskConfigMinimal, TaskConfigInitializerInput } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
-import { ExistingAgentConfig } from "../agent-config-initializer/dto.js";
+import { AgentConfigMinimal } from "../agent-config-initializer/dto.js";
 
 const guidelines = BodyTemplateBuilder.new()
   .section({
@@ -85,8 +85,8 @@ interface ExampleInput {
   subtitle: string;
   user: string;
   context: {
-    existingTaskConfigs: ExistingTaskConfig[];
-    existingAgentConfigs: ExistingAgentConfig[];
+    existingTaskConfigs: TaskConfigMinimal[];
+    existingAgentConfigs: AgentConfigMinimal[];
   };
   example: laml.ProtocolResult<typeof protocol>;
 }
