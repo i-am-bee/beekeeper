@@ -1,6 +1,7 @@
 import { textSplitter } from "@/utils/text.js";
 import { Resources } from "../resources/dto.js";
-import { TaskStep, TaskStepResource } from "./dto.js";
+import { TaskStep, TaskStepInputParameter, TaskStepResource } from "./dto.js";
+import { isNonNull, isNonNullish } from "remeda";
 
 export class TaskStepResourceAssignError extends Error {
   get resourceType() {
@@ -22,23 +23,155 @@ export class TaskStepResourceAssignError extends Error {
 }
 
 export class TaskStepMapper {
-  public static parseInputDependencies(inputOutput: string): number[] {
+  static splitInputs(inputStr: string): string[] {
+    const inputs: string[] = [];
+    let current = "";
+    let bracketDepth = 0;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const [i, char] of [...inputStr].entries()) {
+      if (char === "[" || char === "(") {
+        bracketDepth++;
+      } else if (char === "]" || char === ")") {
+        bracketDepth--;
+      }
+
+      if (char === "," && bracketDepth === 0) {
+        inputs.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+
+    if (current.trim()) {
+      inputs.push(current.trim());
+    }
+
+    return inputs;
+  }
+
+  static parseInput(
+    input: string,
+  ): TaskStepInputParameter | TaskStepResourceAssignError | null {
     const deps = new Set<number>();
+    const stepRegex =
+      /\[from\s+Steps?\s+(\d+)(?:\s*[–-]\s*(\d+))?\]|\bSteps?\s+(\d+)(?:\s*[–-]\s*(\d+))?/gi;
+    const assumedRegex = /\[source:\s*assumed\]/i;
 
-    // "Step 3", "Steps 2–6" (en-dash or hyphen)
-    const stepRegex = /\bSteps?\s+(\d+)(?:\s*[–-]\s*(\d+))?/gi;
+    const bracketMatches = [...input.matchAll(/\[(.*?)\]/g)];
+    let hasAssumed = false;
+    let hasSteps = false;
+
+    for (const match of bracketMatches) {
+      const content = match[1];
+      if (/source:\s*assumed/i.test(content)) {
+        hasAssumed = true;
+      }
+      if (/steps?\s+\d+/i.test(content)) {
+        hasSteps = true;
+      }
+    }
+
+    if (hasSteps && hasAssumed) {
+      return new TaskStepResourceAssignError(
+        "Input cannot contain both [source: assumed] and [from Step ...] references.",
+        "task",
+        input,
+      );
+    }
+
+    // Reset step regex index for safety before use
+    stepRegex.lastIndex = 0;
+
     let match: RegExpExecArray | null;
-
-    while ((match = stepRegex.exec(inputOutput))) {
-      const start = Number(match[1]);
-      const end = match[2] ? Number(match[2]) : start;
-
+    while ((match = stepRegex.exec(input))) {
+      hasSteps = true;
+      let start: number, end: number;
+      if (match[1] !== undefined) {
+        start = Number(match[1]);
+        end = match[2] ? Number(match[2]) : start;
+      } else {
+        start = Number(match[3]);
+        end = match[4] ? Number(match[4]) : start;
+      }
       for (let i = start; i <= end; i++) {
         deps.add(i);
       }
     }
 
-    return [...deps].sort((a, b) => a - b);
+    if (hasAssumed && hasSteps) {
+      return new TaskStepResourceAssignError(
+        "Input cannot contain both [source: assumed] and [from Step ...] references.",
+        "task",
+        input,
+      );
+    }
+
+    let assumed = false;
+    if (hasAssumed) {
+      assumed = true;
+      input = input.replace(assumedRegex, "").trim();
+    }
+
+    const inputWithoutSteps = input.replace(stepRegex, "").trim();
+    const dependencies = [...deps].sort((a, b) => a - b);
+
+    if (
+      dependencies.length === 0 &&
+      !assumed &&
+      (inputWithoutSteps === "" || inputWithoutSteps === "none")
+    ) {
+      return null;
+    }
+
+    return {
+      value: inputWithoutSteps,
+      ...(dependencies.length > 0 ? { dependencies } : {}),
+      ...(assumed ? { assumed: true } : {}),
+    };
+  }
+
+  static parseInputOutput(inputOutput: string):
+    | {
+        inputs?: TaskStepInputParameter[];
+        output: string;
+        dependencies?: number[];
+      }
+    | TaskStepResourceAssignError {
+    const [inputRaw, outputRaw] = inputOutput
+      .split(";")
+      .map((part) => part.trim());
+
+    if (!inputRaw || !outputRaw) {
+      throw new Error(`Invalid input/output format: ${inputOutput}.`);
+    }
+
+    const inputStr = inputRaw.replace(/input:\s*/, "");
+    const output = outputRaw.replace(/output:\s*/, "");
+
+    const parsedInputs = TaskStepMapper.splitInputs(inputStr).map(
+      TaskStepMapper.parseInput,
+    );
+
+    const error = parsedInputs.find(
+      (input) => input instanceof TaskStepResourceAssignError,
+    );
+    if (error) {
+      return error;
+    }
+
+    const inputs = parsedInputs.filter(isNonNull) as TaskStepInputParameter[];
+    const dependencies = inputs
+      .map((input) => input.dependencies)
+      .flat()
+      .filter(isNonNullish);
+
+    return {
+      ...(inputs.length > 0 ? { inputs } : {}),
+      output,
+      ...(dependencies.length > 0 ? { dependencies } : {}),
+    };
   }
 
   static parse(
@@ -135,16 +268,58 @@ export class TaskStepMapper {
       throw new Error(`Invalid resource part: ${resourcePart}`);
     }
 
-    const dependencies = this.parseInputDependencies(inputOutputPart);
+    const parsedInputOutput = TaskStepMapper.parseInputOutput(inputOutputPart);
+    if (parsedInputOutput instanceof TaskStepResourceAssignError) {
+      return parsedInputOutput;
+    }
+
+    const dependencies =
+      parsedInputOutput.inputs
+        ?.map((input) => input.dependencies)
+        .flat()
+        .filter(isNonNullish) ?? [];
 
     return {
       no: taskNo,
       step: assignmentPart,
-      inputOutput: inputOutputPart,
+      ...parsedInputOutput,
       resource,
-
       dependencies,
     } satisfies TaskStep;
+  }
+
+  static formatInputOutput(taskStep: TaskStep) {
+    let inputOutput: string;
+    if (taskStep.inputs && taskStep.inputs.length > 0) {
+      const formattedInputs = taskStep.inputs
+        .map((input) => {
+          const details: string[] = [];
+
+          if (input.dependencies?.length) {
+            const [start, end] = [
+              input.dependencies[0],
+              input.dependencies[input.dependencies.length - 1],
+            ];
+            const rangeStr =
+              start === end ? `Step ${start}` : `Steps ${start}-${end}`;
+            details.push(`from ${rangeStr}`);
+          }
+
+          if (input.assumed) {
+            details.push("source: assumed");
+          }
+
+          return details.length > 0
+            ? `${input.value} [${details.join(", ")}]`
+            : input.value;
+        })
+        .join(", ");
+      inputOutput = `input: ${formattedInputs}; output: ${taskStep.output}`;
+    } else {
+      inputOutput = `output: ${taskStep.output}`;
+    }
+
+    return inputOutput;
   }
 
   static format(taskStep: TaskStep): string {
@@ -168,6 +343,8 @@ export class TaskStepMapper {
         break;
     }
 
-    return `${taskStep.step} (${taskStep.inputOutput}) [${resourceDescription}]`;
+    const inputOutput = TaskStepMapper.formatInputOutput(taskStep);
+
+    return `${taskStep.step} (${inputOutput}) [${resourceDescription}]`;
   }
 }

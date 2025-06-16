@@ -7,6 +7,7 @@ import toolsFixtures from "./tools.js";
 import agentsFixtures from "./agent-config.js";
 import tasksFixtures from "./task-config.js";
 import taskRunsFixtures from "./task-run.js";
+import { TaskStepMapper } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/task-step-mapper.js";
 
 type ToolName = FixtureName<typeof toolsFixtures>;
 
@@ -14,7 +15,9 @@ const ENTRIES = [
   {
     no: 1,
     step: "Scan each document to produce high-resolution images",
-    inputOutput: `input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"]; output: URLs of scanned images`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"]; output: URLs of scanned images`,
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -37,8 +40,9 @@ const ENTRIES = [
   {
     no: 2,
     step: "Extract text from each scanned image using OCR tuned for Latin script",
-    dependencies: [1],
-    inputOutput: `input: image URLs [from Step 1], language hint "lat"; output: extracted text with confidence scores`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: image URLs [from Step 1], language hint "lat"; output: extracted text with confidence scores`,
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -63,9 +67,9 @@ const ENTRIES = [
   {
     no: 3,
     step: "Verify the extracted text is in Latin",
-    dependencies: [2],
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       "input: extracted text [from Step 2]; output: language verification results",
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -88,8 +92,9 @@ const ENTRIES = [
   {
     no: 4,
     step: "Load the verified text into the vector search system",
-    dependencies: [3],
-    inputOutput: `input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"], verified text [from Step 3], chunk size  default 1000; output: confirmation of successful loading`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"], verified text [from Step 3], chunk size  default 1000; output: confirmation of successful loading`,
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",

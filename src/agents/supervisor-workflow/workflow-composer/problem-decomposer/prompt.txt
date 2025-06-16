@@ -76,7 +76,7 @@ If a required tool is missing, the problem is **UNSOLVABLE**.
 
 ---
 
-## Response Format
+**Response format:**
 
 All your responses **MUST** strictly adhere to the following template. Each line describes exactly what you must provide:
 

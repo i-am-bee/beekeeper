@@ -61,7 +61,7 @@ Response format: Present the itinerary day by day with activities and details.
 
 ---
 
-## Response Format
+**Response format:**
 
 All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
 <!required|optional; indent; type; human-readable hint>

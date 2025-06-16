@@ -3,9 +3,7 @@ import { countBy } from "remeda";
 import { Context } from "../../base/context.js";
 import { LLMCall, LLMCallInput } from "../../base/llm-call.js";
 import { FnResult } from "../../base/retry/types.js";
-import {
-  assertTaskSteps
-} from "../helpers/task-step/helpers/assert.js";
+import { assertTaskSteps } from "../helpers/task-step/helpers/assert.js";
 import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { ProblemDecomposerInput, ProblemDecomposerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
@@ -96,7 +94,7 @@ Please address these issues and provide the corrected response:`;
 
         // Invented parameters
         const stepsWithInventedParams = steps.filter(
-          (step) => step.inputOutput.indexOf("[source: assumed]") !== -1,
+          (step) => (step.inputs || []).filter((i) => i.assumed).length > 0,
         );
         if (stepsWithInventedParams.length > 0) {
           this.handleOnUpdate(onUpdate, {
@@ -104,9 +102,11 @@ Please address these issues and provide the corrected response:`;
             payload: { toJson: stepsWithInventedParams },
           });
           const explanation = `The response contains these steps with the assumed inputs:${laml.listFormatter(
-            "numbered",
+            "bullets",
           )(
-            stepsWithInventedParams.map((s) => s.inputOutput),
+            stepsWithInventedParams.map(
+              (s) => `Step ${s.no}: ${TaskStepMapper.formatInputOutput(s)}`,
+            ),
             "",
           )}
 Please corrected response type MISSING_INPUTS:`;

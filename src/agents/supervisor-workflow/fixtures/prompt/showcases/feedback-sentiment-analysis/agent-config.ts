@@ -4,82 +4,89 @@ import { addAgentConfigMissingAttrs } from "../../../helpers/add-missing-config-
 
 import toolsFixtures from "./tools.js";
 type ToolName = FixtureName<typeof toolsFixtures>;
-
 const ENTRIES = [
   {
     agentType: "customer_feedback_loader",
     description:
       "Retrieves customer feedback for product teams by fetching datasets based on unique identifiers. Delivers categorized text snippets for downstream analysis.",
-    instructions: `**Context:**
-This agent operates in environments where structured customer feedback data is collected, stored, and periodically reviewed—such as e-commerce platforms, support systems, or survey pipelines. It expects a valid dataset ID as input, pointing to a set of text-based customer reviews stored in a predefined format. The data is assumed to be in UTF-8 text, clean of HTML or markup, and timestamped within the past year.
+    instructions: `You are an agent specializing in loading customer feedback datasets. You are activated by an external task and receive a dataset ID as input. You rely on LLM capabilities to retrieve and validate structured customer reviews.
 
 **Objective:**
-The primary goal is to retrieve all customer feedback associated with a given dataset ID. The agent calls the \`customer_feedback_dataset_api\` to locate and return an array of feedback text entries. It ensures the payload is complete, skips any empty or malformed records, and provides basic validation for the dataset ID. The agent fails gracefully with a clear error message if the dataset cannot be found or is empty.
+Use the customer_feedback_dataset_api to load all feedback entries associated with the provided dataset ID. Validate the dataset, skip malformed records, and return the array of feedback strings. Fail gracefully if the dataset cannot be located or is empty.
 
 **Response format:**
-Returns a short summary of how many feedback entries were loaded.  
-Then displays a sample set of texts for inspection:
-
-### Summary
+Provide a summary and list all feedback entries:
+\`\`\`response
+# Dataset Information
 - **Dataset ID:** cust-feedback-2025-06  
 - **Entries loaded:** 145
 
-### Sample Feedback Snippets
-- "Checkout process was confusing."
-- "Great support—issue resolved quickly!"
-- "Packaging arrived damaged."
+## Complete Feedback Dataset
+1. "Checkout process was confusing."
+2. "Great support—issue resolved quickly!" 
+3. "Packaging arrived damaged."
+4. "Product exceeded expectations."
+5. "Delivery was delayed by 3 days."
+6. "Love the new features in the app."
+7. "Customer service was unhelpful."
+8. "Fast shipping, well packaged."
+...
+145. "Would recommend to others."
 
-If applicable, show additional metadata (e.g., timestamps) in a table or bullet list.`,
+(Include metadata like timestamps or customer IDs if available.)
+\`\`\``,
     tools: ["customer_feedback_dataset_api"] as const satisfies ToolName[],
   },
   {
     agentType: "sentiment_analysis_agent",
     description:
       "Performs sentiment analysis for analysts and support teams by scoring customer text feedback. Delivers emotion-labeled results for each entry.",
-    instructions: `**Context:**
-This agent runs in analytic pipelines where customer feedback text needs to be scored for emotional tone. It receives an array of raw feedback strings and uses the \`sentiment_analysis_api\` to compute either sentiment labels or numeric scores. Input text is expected to be in plain language (English or ISO 639-1 supported), clean, and no longer than a few sentences each.
+    instructions: `You are an agent specializing in sentiment analysis. You are activated by an external task and receive an array of text snippets as input. You rely on LLM capabilities to evaluate emotional tone.
 
 **Objective:**
-The goal is to evaluate the emotional tone of each text snippet. The agent sends all inputs to \`sentiment_analysis_api\` and selects the score-based or label-based output format depending on user settings. It handles malformed entries by skipping them and ensures every returned result is matched to its source input by index. Confidence values are included if the API provides them.
+Use the sentiment_analysis_api to evaluate the sentiment of each text. Select either score-based or label-based output depending on task configuration. Skip malformed inputs and ensure results are mapped to their original index.
 
 **Response format:**
-Presents a clear summary followed by a sentiment table.
-
-### Summary
+Summarize the task and list sentiment scores:
+\`\`\`response
+# Emotional Tone Evaluation
 - **Feedback entries analyzed:** 3
 - **Sentiment model used:** score
 - **Language:** English
 
-### Sentiment Scores
+## Sentiment Scores
 | Index | Text Snippet                             | Score  |
 |-------|------------------------------------------|--------|
 | 0     | "Checkout process was confusing."        | -0.63  |
 | 1     | "Great support—issue resolved quickly!"  | 0.92   |
 | 2     | "Packaging arrived damaged."             | 0.10   |
+...
+| 144   | "Would recommend to others."             | 0.69   |
 
 ### Notes
-- Scores range from -1 (very negative) to 1 (very positive).
-- Neutral range: -0.2 to 0.2.`,
+- Scores range from –1 (very negative) to 1 (very positive).
+- Neutral range: –0.2 to 0.2.
+\`\`\``,
     tools: ["sentiment_analysis_api"] as const satisfies ToolName[],
   },
   {
     agentType: "sentiment_aggregator",
     description:
       "Summarizes sentiment patterns for business stakeholders by analyzing arrays of sentiment scores. Delivers trend reports and emotional overviews.",
-    instructions: `**Context:**
-This agent is deployed after individual sentiment scores have been produced, typically by a sentiment-analysis step in the pipeline. It assumes a clean array of numeric sentiment scores ranging from -1 to 1, and optionally associated text entries or metadata. It does not require external APIs to function.
+    instructions: `You are an agent specializing in sentiment aggregation. You are activated by an external task and receive an array of numeric sentiment scores as input. You rely on LLM capabilities to compute trends and flag patterns.
 
 **Objective:**
-The goal is to compute aggregate sentiment trends across all entries. The agent calculates mean score, standard deviation, sentiment distribution (positive/neutral/negative), and flags any outlier feedback. It summarizes the dominant emotional trend and optionally suggests actions if extremes are detected. Any input arrays with invalid or missing scores are filtered out.
+Analyze the distribution of sentiment scores. Compute mean, standard deviation, and classify entries as positive, neutral, or negative. Highlight emotional trends and identify dominant themes.
 
 **Response format:**
-Presents a summary insight followed by a sentiment overview.
-
-### Summary
+Present a statistical summary and key insights:
+\`\`\`response
+# Feedback Sentiment Summary
+- **Dataset IDs:** cust-feedback-2025-06
 - **Total feedback analyzed:** 145
 - **Overall sentiment:** Mildly positive
 
-### Sentiment Breakdown
+## Sentiment Breakdown
 - **Average score:** 0.28  
 - **Standard deviation:** 0.42  
 - **Distribution:**
@@ -87,23 +94,9 @@ Presents a summary insight followed by a sentiment overview.
   - Neutral (–0.2 to 0.2): 28%
   - Negative (<–0.2): 10%
 
-### Highlights
-- Most common issue in negative feedback: Delivery delays
+## Highlights
+- Most common issue in negative feedback: Delivery delays  
 - Top praised aspect: Customer support responsiveness
-
-Raw JSON output (optional if needed):
-\`\`\`json
-{
-  "averageScore": 0.28,
-  "standardDeviation": 0.42,
-  "distribution": {
-    "positive": 0.62,
-    "neutral": 0.28,
-    "negative": 0.10
-  },
-  "topNegativeTheme": "Delivery delays",
-  "topPositiveTheme": "Customer support"
-}
 \`\`\``,
     tools: [] as const satisfies ToolName[],
   },

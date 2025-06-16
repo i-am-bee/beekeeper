@@ -20,6 +20,7 @@ import {
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { TaskConfigInitializerTool } from "./tool.js";
+import { TaskStepInputParameter } from "../../helpers/task-step/dto.js";
 
 export class TaskConfigInitializer extends LLMCall<
   typeof protocol,
@@ -77,13 +78,30 @@ export class TaskConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_CREATE_TASK_CONFIG is missing`);
           }
 
+          const sanitizeTaskConfigInput = (
+            input: string,
+            parameters: TaskStepInputParameter[],
+          ) => {
+            // Remove empty json object
+            input = input.trim().replace(/^\{\s*\}$/, "");
+
+            // No input or all parameters have dependencies
+            if (!input || !input.length || parameters.every((p) => p.dependencies?.length)) {
+              return "";
+            }
+            return input;
+          };
+
           const config = {
             agentKind: "operator",
             agentType: response.agent_type,
             taskKind: "operator",
             taskType: response.task_type,
             description: response.description,
-            taskConfigInput: response.task_config_input,
+            taskConfigInput: sanitizeTaskConfigInput(
+              response.task_config_input,
+              input.data.taskStep.inputs || [],
+            ),
           } as const;
 
           this.handleOnUpdate(onUpdate, {

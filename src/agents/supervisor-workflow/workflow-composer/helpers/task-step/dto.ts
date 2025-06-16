@@ -51,10 +51,20 @@ export const TaskStepResourceSchema = z.discriminatedUnion("type", [
 ]);
 export type TaskStepResource = z.infer<typeof TaskStepResourceSchema>;
 
+export const TaskStepInputParameterSchema = z.object({
+  value: z.string(),
+  assumed: z.boolean().optional(),
+  dependencies: z.array(z.number()).optional(),
+});
+export type TaskStepInputParameter = z.infer<
+  typeof TaskStepInputParameterSchema
+>;
+
 export const TaskStepSchema = z.object({
   no: z.number(),
   step: z.string(),
-  inputOutput: z.string(),
+  inputs: z.array(TaskStepInputParameterSchema).optional(),
+  output: z.string().optional(),
   resource: TaskStepResourceSchema,
   dependencies: z.array(z.number()).optional(),
 });

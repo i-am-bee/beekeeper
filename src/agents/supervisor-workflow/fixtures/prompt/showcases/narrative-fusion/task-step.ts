@@ -1,3 +1,4 @@
+import { TaskStepMapper } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/task-step-mapper.js";
 import { createFixtures } from "../../../base/fixtures.js";
 import {
   createResourceFixtures,
@@ -13,7 +14,9 @@ const ENTRIES = [
   {
     no: 1,
     step: "Write a short story based on the concept of time travel",
-    inputOutput: 'input: story concept "time travel"; output: short story',
+    ...TaskStepMapper.parseInputOutput(
+      'input: story concept "time travel"; output: short story',
+    ),
     resource: createResourceFixtures(
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
@@ -27,8 +30,9 @@ const ENTRIES = [
   {
     no: 2,
     step: "Write a short story based on the concept of bioluminescent fungi",
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       'input: story concept "bioluminescent fungi"; output: short story',
+    ),
     resource: createResourceFixtures(
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
@@ -42,8 +46,9 @@ const ENTRIES = [
   {
     no: 3,
     step: "Write a short story based on the concept of ancient desert rituals",
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       'input: story concept "ancient desert rituals"; output: short story',
+    ),
     resource: createResourceFixtures(
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
@@ -57,7 +62,9 @@ const ENTRIES = [
   {
     no: 4,
     step: "Write a short story based on the concept of urban foxes",
-    inputOutput: 'input: story concept "urban foxes"; output: short story',
+    ...TaskStepMapper.parseInputOutput(
+      'input: story concept "urban foxes"; output: short story',
+    ),
     resource: createResourceFixtures(
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("short_story_generator") },
@@ -71,9 +78,9 @@ const ENTRIES = [
   {
     no: 5,
     step: "Create a screenplay scene that merges all four stories",
-    dependencies: [1, 2, 3, 4],
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       "input: short story [from Steps 1], short story [from Steps 2], short story [from Steps 3], short story [from Steps 4]; output: screenplay scene",
+    ),
     resource: createResourceFixtures(
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("screenplay_scene_creator") },
@@ -92,9 +99,9 @@ const ENTRIES = [
   {
     no: 6,
     step: "Provide an analytical breakdown of how the narratives converge in the screenplay scene",
-    dependencies: [5],
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       "input: screenplay scene [from Step 5]; output: analytical breakdown",
+    ),
     resource: createResourceFixtures(
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get("screenplay_scene_analyst") },

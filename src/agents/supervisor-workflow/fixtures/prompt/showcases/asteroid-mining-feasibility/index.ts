@@ -33,25 +33,7 @@ const choiceExplanations = {
       agentConfig: `The task involves compiling a mining viability report by integrating technical findings from mineral analysis and orbital mechanics. This task can be accomplished using LLM capabilities for text processing, analysis, and report generation without the need for external tools.`,
       taskConfig: `The task requires compiling a mining viability report by integrating mineral composition data and cross-referenced orbital mechanics data. This matches the purpose of the existing agent type 'mining_viability_report_compiler', but there is no existing task config for this purpose. Therefore, a new task config needs to be created.`,
       taskRun: `The task config for "compile_mining_viability_report" exists, and the input can be completed using non-dependent fields. The inputs required for the task run are marked as [from Step X], which will be automatically filled by the runtime engine.`,
-    },
-    {
-      no: 4,
-      agentConfig: `TBD`,
-      taskConfig: `TBD`,
-      taskRun: `TBD`,
-    },
-    {
-      no: 5,
-      agentConfig: `TBD`,
-      taskConfig: `TBD`,
-      taskRun: `TBD`,
-    },
-    {
-      no: 6,
-      agentConfig: `TBD`,
-      taskConfig: `TBD`,
-      taskRun: `TBD`,
-    },
+    },   
   ],
 } satisfies ChoiceExplanations;
 

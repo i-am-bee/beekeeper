@@ -29,7 +29,7 @@ export default defineConfig({
     ],
     environment: "node",
     globals: true,
-    setupFiles: ['tests/setup.ts'],
+    // setupFiles: ['tests/setup.ts'],
     passWithNoTests: true,
     testTimeout: 120 * 1000,
     printConsoleTrace: true,

@@ -11,6 +11,7 @@ import { TaskRunInitializerInput, TaskRunInitializerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { TaskRunInitializerTool } from "./tool.js";
+import { task } from "@/ui/config.js";
 
 export class TaskRunInitializer extends LLMCall<
   typeof protocol,
@@ -79,11 +80,20 @@ export class TaskRunInitializer extends LLMCall<
             });
           };
 
+          const sanitizeTaskRunInput = (taskRunInput: string, taskConfigInput: string) => {
+            if(!taskConfigInput.length){
+              // Prevent hallucination
+              return "";
+            }
+
+            return taskRunInput;
+          }
+
           const toolInput = {
             method: "createTaskRun",
             taskType: taskConfig.taskType,
             actingAgentId: this.agentId,
-            taskRunInput: response.task_run_input,
+            taskRunInput: sanitizeTaskRunInput(response.task_run_input, taskConfig.taskConfigInput),
             originTaskRunId: input.data.originTaskRunId,
             blockedByTaskRunIds: collectBlockedByTaskRunIds(
               taskStep,

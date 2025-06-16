@@ -34,24 +34,6 @@ const choiceExplanations = {
       taskConfig: `The task of aggregating sentiment scores into a report aligns with the capabilities of the existing \`sentiment_aggregator\` agent. However, there is no existing task config for this operation, so a new task config needs to be created.`,
       taskRun: `The task config "aggregate_sentiment_scores" exists, and the input can be completed using non-dependent fields. The input only contains dependent fields marked [from Step X], so the task_run_input will be left empty.`,
     },
-    {
-      no: 4,
-      agentConfig: `TBD`,
-      taskConfig: `TBD`,
-      taskRun: `TBD`,
-    },
-    {
-      no: 5,
-      agentConfig: `TBD`,
-      taskConfig: `TBD`,
-      taskRun: `TBD`,
-    },
-    {
-      no: 6,
-      agentConfig: `TBD`,
-      taskConfig: `TBD`,
-      taskRun: `TBD`,
-    },
   ],
 } satisfies ChoiceExplanations;
 

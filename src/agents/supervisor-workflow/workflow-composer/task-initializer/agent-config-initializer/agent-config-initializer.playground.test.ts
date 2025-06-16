@@ -8,7 +8,6 @@ import { getChatLLM } from "@/helpers/llm.js";
 import { Logger } from "beeai-framework";
 import { describe, expect, it } from "vitest";
 import boston_trip_fixtures from "@agents/supervisor-workflow/fixtures/__test__/boston-trip/index.js";
-import flight_prague_madrid_fixtures from "@agents/supervisor-workflow/fixtures/__test__/flight-prague-madrid/index.js";
 import narrative_fusion_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/narrative-fusion/index.js";
 import smart_farm_harvest_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import micro_grid_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/micro-grid-load-balancing/index.js";

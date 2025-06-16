@@ -7,6 +7,7 @@ import agentsFixtures from "./agent-config.js";
 import toolsFixtures from "./tools.js";
 import tasksFixtures from "./task-config.js";
 import taskRunsFixtures from "./task-run.js";
+import { TaskStepMapper } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/task-step-mapper.js";
 
 type ToolName = FixtureName<typeof toolsFixtures>;
 // { type: "agent", agent: agentsFixtures.get("TBD") },
@@ -20,8 +21,9 @@ const ENTRIES = [
   {
     no: 1,
     step: "Conduct basic sonar mapping to identify underwater terrain features in the Mariana Trench",
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       'input: zone_name: "Mariana Trench", scan_resolution: "standard", depth_range: "full"; output: terrain sonar data',
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -41,8 +43,9 @@ const ENTRIES = [
   {
     no: 2,
     step: "Conduct basic sonar mapping to identify underwater terrain features in the Puerto Rico Trench",
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       'input: zone_name: "Puerto Rico Trench", scan_resolution: "standard", depth_range: "full"; output: terrain sonar data',
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -62,8 +65,9 @@ const ENTRIES = [
   {
     no: 3,
     step: "Enhance sonar mapping by including marine life detection alongside terrain analysis at Mariana Trench",
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       'input: zone_name: "Mariana Trench", scan_resolution: "standard", depth_range: "full", bio_frequency_range: "medium", organism_filter: "all"; output: integrated terrain and biological sonar data',
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -83,8 +87,9 @@ const ENTRIES = [
   {
     no: 4,
     step: "Enhance sonar mapping by including marine life detection alongside terrain analysis at Puerto Rico Trench",
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       'input: zone_name: "Puerto Rico Trench", scan_resolution: "standard", depth_range: "full", bio_frequency_range: "medium", organism_filter: "all"; output: integrated terrain and biological sonar data',
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -104,8 +109,9 @@ const ENTRIES = [
   {
     no: 5,
     step: "Generate comprehensive comparison report for both zones",
-    inputOutput:
+    ...TaskStepMapper.parseInputOutput(
       "input: terrain and biological sonar data [from Steps 3 and 4]; output: comprehensive exploration report",
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -123,10 +129,12 @@ const ENTRIES = [
         type: "task",
         task: tasksFixtures.get("generate_comprehensive_comparison_report"),
       },
-      // {
-      //   type: "task_run",
-      //   taskRun: taskRunsFixtures.get("compare_trench_sonar_data_1"),
-      // },
+      {
+        type: "task_run",
+        taskRun: taskRunsFixtures.get(
+          "generate_comprehensive_comparison_report_1",
+        ),
+      },
     ),
   },
 ] as const satisfies TaskStepWithVariousResource[];

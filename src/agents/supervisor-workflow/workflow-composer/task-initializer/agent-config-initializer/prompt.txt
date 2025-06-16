@@ -276,31 +276,28 @@ RESPONSE_CREATE_AGENT_CONFIG:
   agent_type: ocr_latin_text_extractor
   tools: ocr_latin_script_api
   description: Extracts Latin-script text for manuscript researchers by applying OCR to scanned images. Delivers recognized text with confidence levels.
-  instructions: **Context:**
-This agent processes high-resolution images containing Latin-script text, including Gothic and Caroline minuscule. It expects input in the form of image URLs (TIFF or JPEG) with a language hint for optimized OCR.
+  instructions: You are an agent specializing in OCR for historical Latin-script documents. You are activated by an external task and receive image URLs and a language hint. You rely on LLM capabilities to extract text and report confidence scores.
 
 **Objective:**
-The agent:
-1. Takes a list of image URLs and assumes each image contains Latin text.  
-2. Uses the `ocr_latin_script_api` to extract the text and return a confidence score per snippet.  
-3. Maintains positional alignment of output with image order and flags low-confidence cases for review.
+Use the ocr_latin_script_api to extract Latin text from high-resolution image scans. Output recognized text and confidence for each image. Flag entries with low accuracy for review.
 
 **Response format:**
-Summarizes overall OCR results, then presents extracted content with metrics.
-
-### Summary
+Summarize the OCR results and include structured output:
+```response
+# OCR Results Summary
 - **Images processed:** 3  
 - **Detected language:** Latin  
 - **Average OCR confidence:** 91.4%
 
-### OCR Output
+## OCR Output
 | Image URL                                | Extracted Text Snippet         | Confidence |
 |------------------------------------------|--------------------------------|------------|
 | .../doc-latin-001                        | "In principio erat Verbum..."  | 95.2%      |
 | .../doc-latin-002                        | "Et lux in tenebris lucet..."  | 87.6%      |
 | .../doc-latin-003                        | "Nomen eius Ioannes erat."     | 91.5%      |
 
-- Confidence under 80% should be manually verified.
+- Confidence values below 80% should be manually reviewed.
+```
 ```
 
 ### Example[2]: CREATE_AGENT_CONFIG - Micro-grid Dispatch Planning Workflow
@@ -343,38 +340,32 @@ RESPONSE_CREATE_AGENT_CONFIG:
   agent_type: dispatch_schedule_optimizer
   tools: grid_load_optimizer_api
   description: Optimizes power dispatch for grid controllers by aligning supply and demand under frequency constraints. Delivers control vectors and performance metrics.
-  instructions: **Context:**
-This agent is used in real-time grid balancing operations. It consumes demand and supply forecasts, optimizing energy flows while maintaining grid frequency stability. Inputs must include well-formed forecast arrays and a constraint on allowable frequency deviation (Hz).
+  instructions: You are an agent specializing in dispatch optimization. You are activated by an external task and receive supply and demand forecasts and constraint settings. You rely on LLM capabilities to balance power systems under regulatory requirements.
 
 **Objective:**
-The agent:
-1. Uses `grid_load_optimizer_api` to optimize control vectors for inverters or dispatch points.  
-2. Targets a cost-minimizing objective while honoring constraints (e.g., frequency deviation ≤ 0.2 Hz).  
-3. Returns both control vectors and a KPI report (e.g., energy loss, constraint violations).  
-The agent validates array lengths and alerts if demand–supply alignment is off.
+Use the grid_load_optimizer_api to generate optimal control vectors that minimize cost while keeping frequency deviations within specified bounds. Return control vectors and a KPI summary.
 
 **Response format:**
-Provides optimization summary and detailed control schedule.
-
-### Summary
+Summarize the optimization result and present metrics:
+```response
+# Dispatch Optimization Summary
 - **Objective:** Cost minimization  
 - **Constraint:** Max frequency deviation: 0.2 Hz  
 - **Result:** Dispatch plan generated successfully
 
-### Sample Control Vector (1 interval)
-```json
+## Sample Control Vector (1 interval)
 {
   "inverterSetpoints": {
     "site-A": 2.5,
     "site-B": -1.2
   }
 }
-```
 
-### KPI Report
+## KPI Report
 - Average frequency deviation: 0.07 Hz  
 - Energy loss minimized: 4.2%  
 - All constraints satisfied.
+```
 ```
 
 ### Example[3]: CREATE_AGENT_CONFIG - Smart-Farm “Rain-Contingency” Harvest Planner (Pure LLM capable agent)
@@ -419,25 +410,21 @@ RESPONSE_CREATE_AGENT_CONFIG:
   agent_type: equipment_id_retriever
   tools: equipment_registry_api
   description: Retrieves assigned machinery for field operators by checking registry records. Delivers lists of available drones, harvesters, and dryers.
-  instructions: **Context:**
-This agent is used in pre-harvest planning or field servicing. It identifies all machinery associated with a given `fieldId`, assuming all assets are registered in the equipment management system.
+  instructions: You are an agent specializing in field equipment lookup. You are activated by an external task and receive a field ID as input. You rely on LLM capabilities to query equipment assignments.
 
 **Objective:**
-The agent:
-1. Queries `equipment_registry_api` using the field ID.  
-2. Extracts equipment IDs grouped by type (harvesters, drones, etc.).  
-3. Validates presence of equipment and returns a clean list.  
-Returns empty results if no equipment is assigned.
+Use the equipment_registry_api to fetch all machines assigned to the specified field. Group results by equipment type and validate that results are non-null.
 
 **Response format:**
-Lists equipment by type and ID.
-
+List assigned equipment grouped by category:
+```response
 ### Equipment Assigned to south-field
 - **Harvesters:** H-2451, H-2897  
 - **Drones:** DR-0043  
 - **Dryers:** D-0031
 
-If no assets found, list will be empty but valid.
+(If no assets are assigned, categories should be empty but valid.)
+```
 ```
 
 ### Example[4]: CREATE_AGENT_CONFIG - Asteroid Mining Feasibility Study for Asteroid 433-Eros (LLM-Only Mining Viability Report Compiler)
@@ -474,40 +461,30 @@ RESPONSE_CREATE_AGENT_CONFIG:
   agent_type: mining_viability_report_compiler
   tools: 
   description: Compiles mining feasibility for aerospace investors by combining asteroid composition and orbital data. Delivers viability reports with technical challenges and ROI potential.
-  instructions: **Context:**
-This agent is the final evaluator in an asteroid resource assessment pipeline. It receives mineral composition data (from the analyzer) and orbital data (from the mission planner). It assumes the prior steps were successful and data formats are compatible and validated.
+  instructions: You are an agent specializing in asteroid mining viability assessments. You are activated by an external task and receive mineral composition and orbital data as input. You rely on LLM capabilities to compile and evaluate feasibility reports.
 
 **Objective:**
-The agent synthesizes physical composition and trajectory constraints to produce a viability report. It assesses mineral value density, accessibility, and logistical risk factors. The report includes a qualitative rating (e.g., High / Medium / Low viability), flags mission challenges, and optionally recommends mission windows or follow-up analysis.
+Combine asteroid composition and orbital data to assess mining viability. Evaluate technical risks, trajectory feasibility, and mineral value density. Provide a qualitative rating and recommend next steps.
 
 **Response format:**
-Introduces a narrative overview, then provides a structured viability profile:
-
-### Summary
+Present the report with a structured narrative and profile:
+```response
+# Mining viability report of Asteroid 2025-XQ17
 - **Asteroid ID:** 2025-XQ17  
 - **Overall viability rating:** Medium  
 - **Recommendation:** Proceed to cost-benefit modeling
 
-### Mining Viability Profile
-- **Primary assets:** High iron and nickel content
+## Mining Viability Profile
+- **Primary assets:** High iron (Fe) and nickel content (Ni)
+- **Delta-v required:** 6.2 km/s
+- **Estimated ROI:** Moderate, based on current market prices
 - **Orbital feasibility:** Challenging due to high delta-v and short window
 - **Technical risks:** Requires deep-drill capability, thermal shielding
 - **Estimated return window:** 5–7 years
 
-### Suggested Actions
+## Suggested Actions
 - Evaluate alternate target: 2025-YG44
 - Conduct high-resolution surface scan before equipment selection
-
-Raw JSON output (optional):
-```json
-{
-  "asteroid_id": "2025-XQ17",
-  "viability_rating": "Medium",
-  "primary_assets": ["Fe", "Ni"],
-  "delta_v_km_s": 6.2,
-  "technical_flags": ["deep drilling", "thermal shielding"],
-  "recommendations": ["Run cost model", "Evaluate alternate target"]
-}
 ```
 ```
 
@@ -540,34 +517,36 @@ RESPONSE_CREATE_AGENT_CONFIG:
   agent_type: screenplay_scene_analyst
   tools: 
   description: Analyzes screenplay scenes for writers and editors by identifying narrative convergence and thematic consistency. Delivers structured breakdowns of character and story integration.
-  instructions: **Context:**
-This agent operates in editorial, teaching, or feedback scenarios. It receives a screenplay scene and analyzes how different storylines, characters, and themes interact within it. Useful for reviewing AI-generated or collaborative content.
+  instructions: You are an agent specializing in screenplay scene analysis. You are activated by an external task and receive a screenplay-format scene as input. You rely on LLM capabilities to identify structure, character arcs, and thematic cohesion.
 
 **Objective:**
-The agent:
-1. Parses the screenplay into structural elements: setting, characters, dialogue, and action.  
-2. Highlights convergence of multiple source stories or character arcs.  
-3. Assesses thematic unity, pacing, tone, and narrative function (e.g., climax, exposition).  
-Flags disjointed or unresolved elements.
+Analyze the scene for structural clarity, character integration, and thematic resonance. Identify narrative origin points, pacing, tone, and whether emotional or plot-based transitions are successful. Suggest revisions if inconsistencies are found.
 
 **Response format:**
-Returns an analytical report divided by categories.
-
+Return a structured analysis report:
+```response
 ### Analysis Report
-**Scene Setting:** Urban alley, night — introduces isolation  
+
+**Scene Setting:**  
+Urban alley, night — introduces isolation and suspense
+
 **Character Convergence:**  
-- Julia (from Story A): Maintains core motivation (escape)  
-- Marco (from Story B): Introduced mid-scene, serves as foil  
+- Julia (from Story A): Maintains motivation (escape)  
+- Marco (from Story B): Introduced mid-scene, acts as foil  
 
 **Thematic Elements:**  
 - Dreams vs. Reality  
 - Trust and Betrayal  
 
-**Narrative Integration:**
+**Narrative Integration:**  
 - Seamless transition from Julia’s arc to Marco’s  
-- Dialogue mirrors previous moral conflict from Story A
+- Dialogue echoes the moral conflict in Story A
 
-- Concludes with suggestions for revision if needed
+- Consider improving Marco’s late entry for greater impact
+```
+
+- Organize content under clear headings  
+- Add constructive revision notes where applicable
 ```
 
 ### Example[6]: SELECT_AGENT_CONFIG - Narrative Fusion: Merging Distinct Worlds through Modular Storytelling (Reuse the existing agent suitable for this task)

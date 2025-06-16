@@ -7,6 +7,7 @@ import agentsFixtures from "./agent-config.js";
 import toolsFixtures from "./tools.js";
 import tasksFixtures from "./task-config.js";
 import taskRunsFixtures from "./task-run.js";
+import { TaskStepMapper } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/task-step-mapper.js";
 
 type ToolName = FixtureName<typeof toolsFixtures>;
 
@@ -14,7 +15,9 @@ const ENTRIES = [
   {
     no: 1,
     step: `Analyze the mineral composition data of Asteroid 433-Eros`,
-    inputOutput: `input: asteroid_id: "433-Eros", analysis_depth: "deep"; output: mineral composition data`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: asteroid_id: "433-Eros", analysis_depth: "deep"; output: mineral composition data`,
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -37,7 +40,9 @@ const ENTRIES = [
   {
     no: 2,
     step: `Cross-reference the mineral composition findings with orbital mechanics calculations`,
-    inputOutput: `input: asteroid_id: "433-Eros", mineral_composition: mineral composition data [from Step 1]; output: cross-referenced data`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: asteroid_id: "433-Eros", mineral_composition: mineral composition data [from Step 1]; output: cross-referenced data`,
+    ),
     resource: createResourceFixtures(
       {
         type: "tools",
@@ -64,7 +69,9 @@ const ENTRIES = [
   {
     no: 3,
     step: `Compile a mining viability report that integrates the technical findings from the mineral analysis and orbital mechanics`,
-    inputOutput: `input: mineral composition data [from Step 1], cross-referenced data [from Step 2]; output: comprehensive mining viability report`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: mineral composition data [from Step 1], cross-referenced data [from Step 2]; output: comprehensive mining viability report`,
+    ),
     resource: createResourceFixtures(
       {
         type: "llm",
@@ -75,15 +82,11 @@ const ENTRIES = [
       },
       {
         type: "task",
-        task: tasksFixtures.get(
-          `compile_mining_viability_report`,
-        ),
+        task: tasksFixtures.get(`compile_mining_viability_report`),
       },
       {
         type: "task_run",
-        taskRun: taskRunsFixtures.get(
-          "compile_mining_viability_report_1",
-        ),
+        taskRun: taskRunsFixtures.get("compile_mining_viability_report_1"),
       },
     ),
   },

@@ -1,12 +1,13 @@
+import { TaskStepMapper } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/task-step-mapper.js";
 import { createFixtures, FixtureName } from "../../../base/fixtures.js";
 import {
   createResourceFixtures,
   TaskStepWithVariousResource,
 } from "../../../base/resource-fixtures.js";
 import agentsFixtures from "./agent-config.js";
-import toolsFixtures from "./tools.js";
 import tasksFixtures from "./task-config.js";
 import taskRunsFixtures from "./task-run.js";
+import toolsFixtures from "./tools.js";
 
 type ToolName = FixtureName<typeof toolsFixtures>;
 
@@ -14,7 +15,9 @@ const ENTRIES = [
   {
     no: 1,
     step: `Load the customer feedback dataset`,
-    inputOutput: `input: datasetId: "cust-feedback-2025-06"; output: array of feedback texts`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: datasetId: "cust-feedback-2025-06"; output: array of feedback texts`,
+    ),
     resource: createResourceFixtures(
       { type: "tools", tools: ["customer_feedback_dataset_api"] as ToolName[] },
       {
@@ -34,8 +37,9 @@ const ENTRIES = [
   {
     no: 2,
     step: `Perform sentiment analysis on the feedback texts`,
-    dependencies: [1],
-    inputOutput: `input: texts [from Step 1]; output: sentiment scores for each text`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: texts [from Step 1]; output: sentiment scores for each text`,
+    ),
     resource: createResourceFixtures(
       { type: "tools", tools: ["sentiment_analysis_api"] as ToolName[] },
       { type: "agent", agent: agentsFixtures.get(`sentiment_analysis_agent`) },
@@ -49,8 +53,9 @@ const ENTRIES = [
   {
     no: 3,
     step: `Aggregate sentiment scores`,
-    dependencies: [2],
-    inputOutput: `input: sentiment scores [from Step 2]; output: aggregated sentiment report`,
+    ...TaskStepMapper.parseInputOutput(
+      `input: sentiment scores [from Step 2]; output: aggregated sentiment report`,
+    ),
     resource: createResourceFixtures(
       { type: "llm" },
       { type: "agent", agent: agentsFixtures.get(`sentiment_aggregator`) },

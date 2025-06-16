@@ -1245,7 +1245,7 @@ export class TaskManager extends WorkspaceRestorable {
     ).length;
     const input = serializeTaskRunInput(
       {
-        context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
+        context: config.description, // context: `You are acting on behalf of task \`${taskRunId}\`:\n${config.description}`,
         input: taskRunInput,
         options: {
           hasUnfinishedBlockingTasks,

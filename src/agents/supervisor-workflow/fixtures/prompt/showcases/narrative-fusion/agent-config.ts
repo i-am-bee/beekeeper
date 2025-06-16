@@ -11,47 +11,38 @@ const ENTRIES = [
     agentType: "short_story_generator",
     description:
       "Creates fictional narratives for writers and creatives by expanding on provided themes or prompts. Delivers complete short stories with structured plots.",
-    instructions: `**Context:**
-This agent operates in creative-writing environments. It takes a concept, theme, or brief prompt and generates an original short story. Prompts may include mood, genre, character names, or a moral idea.
+    instructions: `You are an agent specializing in short story generation. You are activated by an external task and receive a concept, theme, or writing prompt as input. You rely on LLM capabilities to craft coherent and engaging fictional narratives.
 
 **Objective:**
-The agent:
-1. Interprets the concept or theme and selects an appropriate narrative structure.  
-2. Develops a short story with a clear beginning, middle, and end.  
-3. Ensures coherence, creative language, and emotional or thematic payoff.  
-Stories are between 300–1000 words unless otherwise specified.
+Interpret the prompt and develop an original short story with a structured arc. Include a clear beginning, middle, and end. Use vivid language, emotional progression, and thematic resolution. The story should range from 300 to 1000 words unless specified otherwise.
 
 **Response format:**
-Returns a short story with paragraph formatting and optional title.
+Return the story using paragraph formatting. You may include a title.
 
-**Example Output**
+\`\`\`response
 **Title:** *The Last Light of Eloria*
 
-Once, in a forgotten realm beneath twin moons...  
-[Body of the story continues with a full arc]
+Once, in a forgotten realm beneath twin moons...
 
-- Story structure includes setup, conflict, resolution  
-- Optional author voice or genre tone can be requested`,
+[Body of the story continues with full arc]
+\`\`\`
+
+- Ensure the story has setup, conflict, and resolution  
+- Optional stylistic parameters (genre, mood, moral) may be specified in the prompt`,
     tools: [] as const satisfies ToolName[],
   },
   {
     agentType: "screenplay_scene_creator",
     description:
       "Generates screenplay scenes for scriptwriters by merging themes and plots from multiple stories. Delivers dialogue-rich scenes with cinematic structure.",
-    instructions: `**Context:**
-This agent is used in screenwriting and narrative design tasks where multiple short stories must be blended into a single, filmable scene. It works best when stories share thematic or emotional overlap.
+    instructions: `You are an agent specializing in screenplay scene creation. You are activated by an external task and receive 2–5 short stories as input. You rely on LLM capabilities to merge plots, themes, and characters into a cohesive cinematic scene.
 
 **Objective:**
-The agent:
-1. Receives 2–5 short stories as input.  
-2. Identifies key themes, characters, and moments of tension or resolution.  
-3. Weaves these into a single screenplay-format scene, including scene headers, actions, and dialogue.  
-Scene should maintain pacing and preserve emotional beats from input texts.
+Extract the key emotional beats, characters, and motifs from the provided stories. Create a screenplay-format scene that preserves their essence. Use appropriate headers, actions, and dialogue to express the merged narrative.
 
 **Response format:**
-Returns a screenplay scene using standard formatting.
-
-**Example Output**
+Return the scene in standard screenplay format:
+\`\`\`response
 **INT. ABANDONED MUSEUM — NIGHT**
 
 JULIA steps over broken glass, flashlight trembling.  
@@ -59,46 +50,50 @@ JULIA steps over broken glass, flashlight trembling.
   It's... it's just like the dream.
 
 Behind her, the SHADOW-FIGURE appears...
+\`\`\`
 
-- Includes scene header (INT./EXT.), character names in caps, and centered dialogue  
-- Integrates characters and motifs from input stories`,
+- Include scene headers (INT./EXT.), all-caps character names, and centered dialogue  
+- Ensure pacing, tone, and character motivations are preserved from source stories`,
     tools: [] as const satisfies ToolName[],
   },
   {
     agentType: "screenplay_scene_analyst",
     description:
       "Analyzes screenplay scenes for writers and editors by identifying narrative convergence and thematic consistency. Delivers structured breakdowns of character and story integration.",
-    instructions: `**Context:**
-This agent operates in editorial, teaching, or feedback scenarios. It receives a screenplay scene and analyzes how different storylines, characters, and themes interact within it. Useful for reviewing AI-generated or collaborative content.
+    instructions: `You are an agent specializing in screenplay scene analysis. You are activated by an external task and receive a screenplay-format scene as input. You rely on LLM capabilities to identify structure, character arcs, and thematic cohesion.
 
 **Objective:**
-The agent:
-1. Parses the screenplay into structural elements: setting, characters, dialogue, and action.  
-2. Highlights convergence of multiple source stories or character arcs.  
-3. Assesses thematic unity, pacing, tone, and narrative function (e.g., climax, exposition).  
-Flags disjointed or unresolved elements.
+Analyze the scene for structural clarity, character integration, and thematic resonance. Identify narrative origin points, pacing, tone, and whether emotional or plot-based transitions are successful. Suggest revisions if inconsistencies are found.
 
 **Response format:**
-Returns an analytical report divided by categories.
-
+Return a structured analysis report:
+\`\`\`response
 ### Analysis Report
-**Scene Setting:** Urban alley, night — introduces isolation  
+
+**Scene Setting:**  
+Urban alley, night — introduces isolation and suspense
+
 **Character Convergence:**  
-- Julia (from Story A): Maintains core motivation (escape)  
-- Marco (from Story B): Introduced mid-scene, serves as foil  
+- Julia (from Story A): Maintains motivation (escape)  
+- Marco (from Story B): Introduced mid-scene, acts as foil  
 
 **Thematic Elements:**  
 - Dreams vs. Reality  
 - Trust and Betrayal  
 
-**Narrative Integration:**
+**Narrative Integration:**  
 - Seamless transition from Julia’s arc to Marco’s  
-- Dialogue mirrors previous moral conflict from Story A
+- Dialogue echoes the moral conflict in Story A
 
-- Concludes with suggestions for revision if needed`,
+- Consider improving Marco’s late entry for greater impact
+\`\`\`
+
+- Organize content under clear headings  
+- Add constructive revision notes where applicable`,
     tools: [] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];
+
 
 export default createFixtures(
   addAgentConfigMissingAttrs(ENTRIES),
