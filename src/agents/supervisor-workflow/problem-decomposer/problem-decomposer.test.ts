@@ -44,8 +44,29 @@ const llm = getChatLLM("supervisor");
 describe("Problem decomposer", () => {
   testGenerator([
     {
-      input:
-        `{
+      name: `Create a dashboard showcasing quarterly revenue trends and customer churn from the provided sales data`,
+      input: `{
+  "requestType": "data_analysis_and_visualization",
+  "primaryGoal": "Create a dashboard showcasing quarterly revenue trends and customer churn from the provided sales data",
+  "userParameters": {
+    "dataFormat": "CSV",
+    "analysisFocus": ["quarterly revenue trends", "customer churn"]
+  },
+  "requiredComponents": [
+    "load and process CSV sales data",
+    "perform quarterly revenue trend analysis",
+    "calculate customer churn rate",
+    "design and generate a dashboard with visualizations"
+  ],
+  "expectedDeliverables": "An interactive dashboard with charts illustrating quarterly revenue trends and customer churn rates"
+}`,
+      expected: {
+        type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
+      },
+    },
+    {
+      name: "Poems composing",
+      input: `{
   "requestType": "creative_content_generation",
   "primaryGoal": "Compose four unique poems on the topics: Vikings, neutrinos, marshmallows, and cats",
   "userParameters": {
@@ -62,72 +83,50 @@ describe("Problem decomposer", () => {
         type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
       },
     },
-    // {
-    //   input:
-    //     `Create four distinct poems on these topics: vikings, neutrinos, marshmallows, and cats.`,
-    //   expected: {
-    //     type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
-    //   },
-    // },
-//     {
-//       input:
-//         `{
-//   "requestType": "travel_planning",
-//   "primaryGoal": "Organize a 5-day trip to Rome from Prague in September",
-//   "userParameters": {
-//     "departureCity": "Prague",
-//     "destination": "Rome",
-//     "duration": "5 days",
-//     "timeframe": "September",
-//     "accommodationRequirements": ["4-star", "walking distance to Colosseum"],
-//     "itineraryDetails": "daily sightseeing"
-//   },
-//   "requiredComponents": [
-//     "flight booking from Prague to Rome for September",
-//     "hotel reservation at a 4-star establishment within walking distance to the Colosseum",
-//     "daily sightseeing itinerary for Rome",
-//     "cost estimation for flights, accommodation, and daily activities"
-//   ],
-//   "expectedDeliverables": "Comprehensive travel plan including flight details, hotel booking, a 5-day sightseeing itinerary, and a cost breakdown"
-// }`,
-//       expected: {
-//         type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
-//       },
-//     },
-    // {
-    //   input:
-    //     "Analyze the attached CSV of sales data and produce a dashboard highlighting quarterly revenue trends and customer churn.",
-    //   expected: {
-    //     type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
-    //   },
-    // },
-//     {
-//       input:
-//         `{
-//   "requestType": "data_visualization",
-//   "primaryGoal": "Create a dashboard showcasing quarterly revenue trends and customer churn from the provided sales data",
-//   "dataDetails": {
-//     "type": "sales data",
-//     "format": "CSV"
-//   },
-//   "analysisRequirements": [
-//     "calculate quarterly revenue",
-//     "identify and visualize revenue trends",
-//     "determine customer churn rate",
-//     "present findings in a dashboard format"
-//   ],
-//   "expectedDeliverables": "Interactive dashboard with visualizations of quarterly revenue trends and customer churn"
-// }`,
-//       expected: {
-//         type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
-//       },
-//     },
-//     {
-//       input:
-//         "Who is the president of Czechia?",
-//       expected: {
-//         type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
-//       },
-//     },
+    {
+      name: "Quantum computing slide deck",
+      input: `{
+  "requestType": "research_aggregation_and_presentation",
+  "primaryGoal": "Create a slide deck summarizing the latest peer-reviewed papers on quantum computing from arXiv",
+  "userParameters": {
+    "topic": "quantum computing",
+    "source": "arXiv",
+    "count": 10,
+    "outputFormat": "slide deck"
+  },
+  "requiredComponents": [
+    "search and retrieve the ten most recent peer-reviewed papers on quantum computing from arXiv",
+    "extract key findings, methodologies, and conclusions from each paper",
+    "synthesize the information into a concise summary",
+    "design and create a professional slide deck for an executive briefing"
+  ],
+  "expectedDeliverables": "A slide deck summarizing the ten latest peer-reviewed quantum computing papers from arXiv, tailored for an executive audience"
+}`,
+      expected: {
+        type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
+      },
+    },
+    {
+      name: "Sentiment dashboard",
+      input: `{
+  "requestType": "sentiment_dashboard_creation",
+  "primaryGoal": "Develop and schedule an hourly refreshing sentiment analysis dashboard for #AI tweets from the past 24 hours",
+  "userParameters": {
+    "topic": "#AI",
+    "timeframe": "last 24 hours",
+    "dashboardType": "sentiment analysis"
+  },
+  "requiredComponents": [
+    "collect #AI tweets from the last 24 hours",
+    "perform sentiment analysis on the collected tweets",
+    "design and build a dashboard",
+    "set up an hourly refresh schedule"
+  ],
+  "expectedDeliverables": "A functioning sentiment analysis dashboard that updates every hour with data from #AI tweets over the past 24 hours"
+}}`,
+      expected: {
+        type: ProblemDecomposerOutputTypeEnumSchema.Values.STEP_SEQUENCE,
+      },
+    },
   ]);
 });

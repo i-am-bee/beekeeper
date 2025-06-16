@@ -1,13 +1,13 @@
 import { ChatModel } from "beeai-framework";
-import {
-    Message,
-    SystemMessage
-} from "beeai-framework/backend/message";
+import { Message, SystemMessage } from "beeai-framework/backend/message";
 import { ZodParserField } from "beeai-framework/parsers/field";
 import { LinePrefixParser } from "beeai-framework/parsers/linePrefix";
 import { z } from "zod";
 import { mapWorkflowMessage } from "../dto.js";
-import { ProblemDecomposerInput, ProblemDecomposerOutputTypeEnumSchema } from "./dto.js";
+import {
+  ProblemDecomposerInput,
+  ProblemDecomposerOutputTypeEnumSchema,
+} from "./dto.js";
 
 const systemPrompt = () => {
   return `You are a **ProblemDecomposer** — a reasoning module in a multi‑agent workflow.  

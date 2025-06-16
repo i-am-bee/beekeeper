@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AssistantWorkflowMessageSchema, UserWorkflowMessageSchema } from "../dto.js";
+import { UserWorkflowMessageSchema } from "../dto.js";
 
 export const ProblemDecomposerInputSchema = z.object({
   message: UserWorkflowMessageSchema,
@@ -12,12 +12,16 @@ export const ProblemDecomposerOutputTypeEnumSchema = z.enum([
   "STEP_SEQUENCE",
   "UNSOLVABLE",
 ]);
-export type ProblemDecomposerOutputTypeEnum = z.infer<typeof ProblemDecomposerOutputTypeEnumSchema>;
+export type ProblemDecomposerOutputTypeEnum = z.infer<
+  typeof ProblemDecomposerOutputTypeEnumSchema
+>;
 
 export const ProblemDecomposerOutputSchema = z.object({
   type: ProblemDecomposerOutputTypeEnumSchema,
   explanation: z.string(),
-  message: AssistantWorkflowMessageSchema,
+  plan: z.array(z.string()),
   raw: z.string(),
 });
-export type ProblemDecomposerOutput = z.infer<typeof ProblemDecomposerOutputSchema>;
+export type ProblemDecomposerOutput = z.infer<
+  typeof ProblemDecomposerOutputSchema
+>;

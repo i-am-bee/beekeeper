@@ -7,30 +7,11 @@ import {
 } from "beeai-framework/backend/message";
 import { DateStringSchema } from "@/base/dto.js";
 
-export const RouterResponseAgentHandoff = z.object({
-  agent: z.string(),
+export const AgentAvailableToolSchema = z.object({
+  name: z.string(),
+  description: z.string(),
 });
-
-export const RouterResponseAnswerSchema = z.object({
-  answer: z.string(),
-});
-
-export const RouterResponseTaskHandoff = z.object({
-  task: z.string(),
-});
-
-export const RouterResponseWorkflowBuilderHandoff = z.object({
-  assignment: z.string(),
-});
-
-export const RouterResponseSchema = z.union([
-  RouterResponseAgentHandoff,
-  RouterResponseTaskHandoff,
-  // RouterResponseAnswerSchema,
-  // RouterResponseWorkflowBuilderHandoff,
-]);
-
-export type RouterResponse = z.infer<typeof RouterResponseSchema>;
+export type AgentAvailableTool = z.infer<typeof AgentAvailableToolSchema>;
 
 export const UserWorkflowMessageSchema = z.object({
   kind: z.literal("user"),
