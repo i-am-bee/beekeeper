@@ -32,8 +32,7 @@ export abstract class LLMCall<
 
   async run(input: LLMCallInput<TInput>, ctx: Context) {
     this.logger.debug(input, `run`);
-    const { llm, onUpdate } = ctx;
-    this.handleOnUpdate(onUpdate, "Run...");
+    const { llm } = ctx;
 
     const messages: Message[] = [
       new SystemMessage(this.systemPrompt(input.data)),
@@ -51,7 +50,12 @@ export abstract class LLMCall<
     this.logger.debug(`### RESPONSE`);
     this.logger.debug(`${raw}\n\n`);
     this.logger.debug(`### PARSED`);
-    const parsed = this.protocol.parse(raw);
+    const parsed = this.protocol.parse(
+      laml.unwrapString(raw, {
+        envelops: [["`", "`"]],
+        greedy: true,
+      }),
+    );
     this.logger.debug(`${JSON.stringify(parsed, null, " ")}\n\n`);
     this.logger.debug(`### OUTPUT`);
     const output = await this.processResult(parsed, input, ctx);

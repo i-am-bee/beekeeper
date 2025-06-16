@@ -30,9 +30,9 @@ export class TavilySearchToolOutput extends SearchToolOutput<TavilySearchToolRes
 }
 
 export class TavilySearchTool extends Tool<TavilySearchToolOutput> {
-  name = "TavilySearch";
+  name = "web_search";
   description =
-    "Powerful web search API. Execute a search query using Tavily Search.";
+    "A versatile web-search endpoint that lets the model issue live internet queries to obtain up-to-date facts, breaking news, niche or location-specific information, images, prices, weather, sports data, and other content that may lie outside its training data; use it whenever (a) the user explicitly asks for the “latest,” “current,” or “live” details, (b) the topic is time-sensitive (politics, markets, scientific developments, schedules, local recommendations, etc.), (c) accuracy is critical and stale knowledge could mislead, or (d) the user’s request cannot be fully answered from internal knowledge—while avoiding it if the user forbids browsing, if the answer is static and well-known (e.g., basic math), or if frequent calls would add no value; supply a JSON object with at minimum the string field q (the search text), and optionally recency (days to restrict freshness) and domains (array of preferred sources), then interpret the ranked results, cite them, and prefer a single, comprehensive search call over many piecemeal ones.";
 
   static {
     this.register();
@@ -42,7 +42,7 @@ export class TavilySearchTool extends Tool<TavilySearchToolOutput> {
     ToolInput<this>,
     TavilySearchToolOutput
   > = Emitter.root.child({
-    namespace: ["tool", "tavilySearch"],
+    namespace: ["tool", "web_search"],
     creator: this,
   });
 

@@ -59,7 +59,7 @@ import {
 import {
   extendBlockingTaskRunOutput,
   taskRunError,
-  taskRunOutput
+  taskRunOutput,
 } from "./helpers.js";
 
 export type TaskRunRuntime = TaskRun & {

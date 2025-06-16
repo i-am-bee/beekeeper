@@ -78,15 +78,16 @@ News headlines matching “<keywords>” from the past 24 hours:
 
 All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
 <!required|optional; indent; type; human-readable hint>
-- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).  
+- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).
 - type - One of the following:
-  - text – single-line string  
-  - number – floating-point value (e.g., 3.14)  
-  - integer – whole number  
-  - boolean - true / false  
-  - constant – one literal chosen from the values listed in the protocol  
-  - array – list of items of the specified item-type (comma-separated or JSON-style)  
-  - object – nested attributes, each described by its own metadata tag  
+  - text – single-line string
+  - number – floating-point value (e.g., 3.14)
+  - integer – whole number
+  - boolean - true / false
+  - constant – one literal chosen from the values listed in the protocol
+  - array – list of items of the specified item-type (comma-separated or JSON-style)
+  - list - human readable list of items numbered or with bullet points
+  - object – nested attributes, each described by its own metadata tag
 - indent – integer; the key’s left-margin offset in spaces (0 = column 0)
 - human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
 
@@ -193,6 +194,7 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
 
 **Context:**
 ---
+
 ### Existing agent configs
 There is no existing agent configs yet.
 
@@ -226,6 +228,7 @@ Response format: Begin with a summary of the search query and time frame. Then l
 
 **Context:**
 ---
+
 ### Existing agent configs
 There is no existing agent configs yet.
 
@@ -248,6 +251,7 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
 
 **Context:**
 ---
+
 ### Existing agent configs
 1. restaurant_recommender:
   agent_type: restaurant_recommender
@@ -287,6 +291,7 @@ Response format: Present the information in a list format with each restaurant h
 
 **Context:**
 ---
+
 ### Existing agent configs
 1. weather_lookup:
   agent_type: weather_lookup
@@ -326,10 +331,11 @@ RESPONSE_SELECT_AGENT_CONFIG:
 
 **Context:**
 ---
+
 ### Existing agent configs
 1. restaurant_recommender:
   agent_type: restaurant_recommender
-  tools: tavily_search
+  tools: web_search
   instructions: Context: You are an agent specialized in recommending restaurants in a given city. You have access to web search tools to gather information about popular dining spots, including Italian, Chinese, and French cuisines. Users will provide the city and any specific dining preferences they have. 
 
 Objective: Provide a list of recommended restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
@@ -338,7 +344,7 @@ Response format: Present the information in a list format with each restaurant h
   description: Agent for recommending restaurants in a city.
 
 ### Available agent tools
-1. tavily_search:
+1. web_search:
   description: An API wrapper for Tavily’s vertical-search engine that prints a focused, relevance-ranked list of results (title, URL, brief excerpt, and score) in JSON. Great for LLMs that need domain-specific answers—especially tech, science, and developer content—without wading through the noise of general web search.
 2. sound_generator:
   description: Create sound from natural-language prompts.
@@ -358,6 +364,7 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
 
 **Context:**
 ---
+
 ### Existing agent configs
 There is no existing agent configs yet.
 

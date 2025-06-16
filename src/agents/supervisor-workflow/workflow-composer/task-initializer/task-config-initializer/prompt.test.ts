@@ -39,15 +39,16 @@ Your mission is to select, or—if none exists—create new task config to accom
 
 All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
 <!required|optional; indent; type; human-readable hint>
-- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).  
+- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).
 - type - One of the following:
-  - text – single-line string  
-  - number – floating-point value (e.g., 3.14)  
-  - integer – whole number  
-  - boolean - true / false  
-  - constant – one literal chosen from the values listed in the protocol  
-  - array – list of items of the specified item-type (comma-separated or JSON-style)  
-  - object – nested attributes, each described by its own metadata tag  
+  - text – single-line string
+  - number – floating-point value (e.g., 3.14)
+  - integer – whole number
+  - boolean - true / false
+  - constant – one literal chosen from the values listed in the protocol
+  - array – list of items of the specified item-type (comma-separated or JSON-style)
+  - list - human readable list of items numbered or with bullet points
+  - object – nested attributes, each described by its own metadata tag
 - indent – integer; the key’s left-margin offset in spaces (0 = column 0)
 - human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
 
@@ -69,7 +70,7 @@ RESPONSE_UPDATE_TASK_CONFIG: <!optional;object;0>
 RESPONSE_SELECT_TASK_CONFIG: <!optional;object;0>
   task_type: <!required;text;2;Name of the selected task config type>
 RESPONSE_TASK_CONFIG_UNAVAILABLE: <!optional;object;0>
-  explanation: <!required;text;2;Brief reason you are not able to create, update or select an existing task config>
+  explanation: <!required;text;2;Brief reason why you are unable to create, update, or select an existing task config>
 \`\`\`<STOP HERE>
 
 ---

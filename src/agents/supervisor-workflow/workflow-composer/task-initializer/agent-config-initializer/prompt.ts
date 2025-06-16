@@ -1,7 +1,11 @@
 import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body.js";
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
 import * as laml from "@/laml/index.js";
-import { AgentAvailableTool, AgentConfigInitializerInput, AgentConfigMinimal } from "./dto.js";
+import {
+  AgentAvailableTool,
+  AgentConfigInitializerInput,
+  AgentConfigTiny,
+} from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
 
@@ -109,7 +113,7 @@ interface ExampleInput {
   subtitle: string;
   user: string;
   context: {
-    existingAgentConfigs: AgentConfigMinimal[];
+    existingAgentConfigs: AgentConfigTiny[];
     availableTools: AgentAvailableTool[];
   };
   example: laml.ProtocolResult<typeof protocol>;
@@ -211,8 +215,6 @@ Response format: Begin with a summary of the search query and time frame. Then l
 Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information.
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
-          agentConfigId: "operator:restaurant_recommender:1",
-          agentConfigVersion: 1,
         },
       ],
       availableTools: [
@@ -265,8 +267,6 @@ Current Weather in [Location] on [Date]:
 - Temperature: [temperature]
 - Conditions: [conditions]
 - Notable Patterns: [patterns]`,
-          agentConfigId: "operator:weather_lookup:1",
-          agentConfigVersion: 1,
         },
       ],
       availableTools: [
@@ -304,20 +304,18 @@ Current Weather in [Location] on [Date]:
       existingAgentConfigs: [
         {
           agentType: "restaurant_recommender",
-          tools: ["tavily_search"],
+          tools: ["web_search"],
           description: "Agent for recommending restaurants in a city.",
           instructions: `Context: You are an agent specialized in recommending restaurants in a given city. You have access to web search tools to gather information about popular dining spots, including Italian, Chinese, and French cuisines. Users will provide the city and any specific dining preferences they have. 
 
 Objective: Provide a list of recommended restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
-          agentConfigId: "operator:restaurant_recommender:1",
-          agentConfigVersion: 1,
         },
       ],
       availableTools: [
         {
-          toolName: "tavily_search",
+          toolName: "web_search",
           description:
             "An API wrapper for Tavily’s vertical-search engine that prints a focused, relevance-ranked list of results (title, URL, brief excerpt, and score) in JSON. Great for LLMs that need domain-specific answers—especially tech, science, and developer content—without wading through the noise of general web search.",
         },
@@ -382,7 +380,7 @@ Your mission is to select, or—if none exists—create new agent configs to acc
       },
       newLines: {
         start: 1,
-        contentStart: 1,
+        contentStart: 0,
         contentEnd: 0,
       },
       delimiter: {

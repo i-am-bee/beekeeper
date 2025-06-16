@@ -6,6 +6,11 @@ import { SupervisorWorkflowInput } from "./dto.js";
 import { RequestHandler } from "./request-handler/request-handler.js";
 import { WorkflowComposer } from "./workflow-composer/workflow-composer.js";
 
+// Tady jsem skoncil:
+// - problem decomposer neuvadi detaily, ktere dostane v inputu, takze zahodi hromadu cennych informaci
+// - problem decomposer v kazdem radku uvadi uzivani toolu, ikdyz by ten task mel prijimat vystup z predchoziho agenta. Ten tool by mel pouzit jen kdyz by to potreboval nejak obohatit. 
+// - task config initialize vyrobi vzdy jen jeden task, ikdyz ma vic radku na vstupu
+
 export class SupervisorWorkflow extends Runnable<
   SupervisorWorkflowInput,
   string
@@ -21,14 +26,15 @@ export class SupervisorWorkflow extends Runnable<
     this.workflowComposer = new WorkflowComposer(this.logger, agentId);
   }
 
-  async run({ prompt: input, onUpdate }: SupervisorWorkflowInput): Promise<string> {
+  async run({
+    prompt: input,
+    onUpdate,
+  }: SupervisorWorkflowInput): Promise<string> {
     const ctx = {
       agentId: this.agentId,
       llm: this.llm,
       onUpdate,
     } satisfies Context;
-
-    this.handleOnUpdate(onUpdate, 'run');
 
     const { output: requestHandlerOutput } = await this.requestHandler.run(
       {

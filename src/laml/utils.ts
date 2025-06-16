@@ -1,4 +1,4 @@
-import { LAMLObject } from "./dto.js";
+import { LAMLObject, LAMLPrimitiveValue, ListFieldType } from "./dto.js";
 import { DEFAULT_INDENT } from "./protocol.js";
 
 export function truncateText(text: string, maxLength: number): string {
@@ -12,58 +12,152 @@ export function pathStr(path: string[]) {
   return path.join(".");
 }
 
+export type UnwrapEnvelope = [string, string];
+
 export function unwrapString(
   value: string,
   options: {
+    envelops?: UnwrapEnvelope[];
     start?: string | string[];
     end?: string | string[];
     greedy?: boolean;
   },
 ) {
-  const { start, end, greedy } = options;
-  const endValue = end === undefined ? start : end;
+  const { envelops, start, end, greedy } = options;
 
-  if (start != null) {
-    while (
-      (Array.isArray(start) ? start : [start]).some((s) => value.startsWith(s))
-    ) {
-      value = value.substring(1);
+  if (envelops) {
+    do {
+      const found = envelops.find(
+        ([s, e]) => value.startsWith(s) && value.endsWith(e),
+      );
+      if (!found) {
+        break;
+      }
+      const [s, e] = found;
+      value = value.substring(s.length);
+      if (value.length > 1) {
+        value = value.substring(0, value.length - e.length);
+      }
 
       if (!greedy) {
         break;
       }
-    }
+      // eslint-disable-next-line no-constant-condition
+    } while (1 == 1);
   }
 
-  if (endValue != null) {
-    while (
-      (Array.isArray(endValue) ? endValue : [endValue]).some((s) =>
-        value.endsWith(s),
-      )
-    ) {
-      value = value.substring(0, value.length - 1);
+  if (start != null) {
+    const _starts = Array.isArray(start) ? start : [start];
+    do {
+      const found = _starts.find((s) => value.startsWith(s));
+      if (!found) {
+        break;
+      }
+      value = value.substring(found.length);
+
       if (!greedy) {
         break;
       }
-    }
+      // eslint-disable-next-line no-constant-condition
+    } while (1 == 1);
+  }
+
+  if (end != null) {
+    const _ends = Array.isArray(end) ? end : [end];
+    do {
+      const found = _ends.find((e) => value.endsWith(e));
+      if (!found) {
+        break;
+      }
+      value = value.substring(0, value.length - 1);
+
+      if (!greedy) {
+        break;
+      }
+      // eslint-disable-next-line no-constant-condition
+    } while (1 == 1);
+    // while (
+    //   (Array.isArray(endValue) ? endValue : [endValue]).some((s) =>
+    //     value.endsWith(s),
+    //   )
+    // ) {
+    //   value = value.substring(0, value.length - 1);
+    //   if (!greedy) {
+    //     break;
+    //   }
+    // }
   }
   return value;
 }
 
+export type LAMLPrimitiveValueFormatterFn = (
+  val: LAMLPrimitiveValue,
+  indentValue: string,
+) => string;
+
+export interface LAMLPrimitiveValueFormatter {
+  path: string[];
+  fn: LAMLPrimitiveValueFormatterFn;
+}
+
+export const listFormatter = (type: ListFieldType) =>
+  ((val: LAMLPrimitiveValue, indent: string = DEFAULT_INDENT) =>
+    (val as string[])
+      .map((v, index) => {
+        let bullet;
+        switch (type) {
+          case "numbered":
+            bullet = `${indent}${index + 1}.`;
+            break;
+          case "bullets":
+            bullet = `-`;
+            break;
+        }
+        return `${index === 0 ? "\n" : ""}${bullet} ${v}`;
+      })
+      .join("\n")) satisfies LAMLPrimitiveValueFormatterFn;
+
 export function printLAMLObject(
   obj: LAMLObject,
-  indent = DEFAULT_INDENT,
-  depth = 0,
+  options?: {
+    indent?: string;
+    depth?: number;
+    formatters?: LAMLPrimitiveValueFormatter[];
+  },
+  path?: string[],
 ) {
+  const _path = path ?? [];
+  const _formatters = options?.formatters ?? [];
+  const depth = options?.depth ?? 0;
+  const indent = options?.indent ?? DEFAULT_INDENT;
+  const indentValue = indent.repeat(depth);
   let output = "";
   for (const attr in obj) {
-    const val = obj[attr];
-    const valToPrint = Array.isArray(val)
-      ? ` ${val.join(", ")}\n`
-      : typeof val === "object"
-        ? `\n${printLAMLObject(val as LAMLObject, indent, depth + 1)}`
-        : ` ${val}\n`;
-    output += `${indent.repeat(depth)}${attr}:${valToPrint}`;
+    let val = obj[attr];
+    const attrPath = _path.concat(attr);
+    const attrPathStr = pathStr(attrPath);
+
+    const attrFormatters = _formatters
+      .filter((v) => pathStr(v.path) === attrPathStr)
+      .map(({ fn }) => fn);
+    if (attrFormatters.length > 1) {
+      throw new Error(
+        `\`${attrPathStr}\` has registered multiple formatters, but can have just one`,
+      );
+    }
+    const attrFormatter = attrFormatters.length ? attrFormatters[0] : undefined;
+
+    let valToPrint;
+    if (Array.isArray(val)) {
+      valToPrint = `${attrFormatter ? attrFormatter(val, indent.repeat(depth + 1)) : ` ${val.join(", ")}`}\n`;
+    } else if (typeof val === "object") {
+      valToPrint = `\n${printLAMLObject(val as LAMLObject, { indent, depth: depth + 1, formatters: options?.formatters }, (_path || []).concat(attr))}`;
+    } else {
+      val = attrFormatter ? attrFormatter(val, indentValue) : val;
+      valToPrint = ` ${val}\n`;
+    }
+
+    output += `${indentValue}${attr}:${valToPrint}`;
   }
 
   if (depth === 0) {

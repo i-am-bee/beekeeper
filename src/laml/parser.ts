@@ -301,8 +301,11 @@ export class Parser<TResult> {
       }
       case "array": {
         value = unwrapString(value.trim(), {
-          start: ["[", "(", "<"],
-          end: ["]", ")", ">"],
+          envelops: [
+            ["[", "]"],
+            ["(", ")"],
+            ["<", ">"],
+          ],
         }).trim();
 
         const usedBulletSign = BULLET_SIGNS.find((s) =>

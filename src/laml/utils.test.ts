@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LAMLObject } from "./dto.js";
-import { printLAMLObject, splitArrayString } from "./utils.js";
+import { listFormatter, printLAMLObject, splitArrayString } from "./utils.js";
 
 describe("Print LAML object", () => {
   it("Simple", () => {
@@ -34,6 +34,37 @@ News headlines matching “<keywords>” from the past 24 hours:
 1. URL: [headline_url_1] — Summary: [headline_summary_1]  
 2. URL: [headline_url_2] — Summary: [headline_summary_2]
   tools: news_search, wikipedia`);
+  });
+});
+
+describe("Print LAML object > Formatters", () => {
+  it("String", () => {
+    const obj = {
+      greeting: "Hi",
+    } satisfies LAMLObject;
+    expect(
+      printLAMLObject(obj, {
+        formatters: [
+          {
+            path: ["greeting"],
+            fn: (val) => String(val).toLocaleUpperCase() + "!",
+          },
+        ],
+      }),
+    ).toEqual("greeting: HI!");
+  });
+  it("List", () => {
+    const obj = {
+      tools: ["news_search", "wikipedia"],
+    } satisfies LAMLObject;
+
+    expect(
+      printLAMLObject(obj, {
+        formatters: [{ path: ["tools"], fn: listFormatter("numbered") }],
+      }),
+    ).toEqual(`tools:
+  1. news_search
+  2. wikipedia`);
   });
 });
 

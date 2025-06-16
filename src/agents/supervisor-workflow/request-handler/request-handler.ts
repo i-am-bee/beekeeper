@@ -23,12 +23,18 @@ export class RequestHandler extends LLMCall<
     { onUpdate }: Context,
   ): Promise<RequestHandlerOutput> {
     let response;
+    const type = result.RESPONSE_TYPE;
+    const explanation = result.RESPONSE_CHOICE_EXPLANATION;
     switch (result.RESPONSE_TYPE) {
       case "DIRECT_ANSWER": {
         response = result.RESPONSE_DIRECT_ANSWER;
         if (!response) {
           throw new Error(`RESPONSE_DIRECT_ANSWER is missing`);
         }
+        this.handleOnUpdate(onUpdate, {
+          type,
+          value: `There is no need to create a workflow I can answer directly.`,
+        });
         break;
       }
       case "CLARIFICATION": {
@@ -36,6 +42,10 @@ export class RequestHandler extends LLMCall<
         if (!response) {
           throw new Error(`RESPONSE_CLARIFICATION is missing`);
         }
+        this.handleOnUpdate(onUpdate, {
+          type,
+          value: `There is missing some information that need to be clarify.`,
+        });
         break;
       }
       case "COMPOSE_WORKFLOW": {
@@ -43,13 +53,14 @@ export class RequestHandler extends LLMCall<
         if (!response) {
           throw new Error(`COMPOSE_WORKFLOW is missing`);
         }
+        this.handleOnUpdate(onUpdate, {
+          type,
+          value: `I have all information to try to compose workflow`,
+        });
         break;
       }
     }
 
-    const type = result.RESPONSE_TYPE;
-    const explanation = result.RESPONSE_CHOICE_EXPLANATION;
-    this.handleOnUpdate(onUpdate, { type, value: explanation });
     this.handleOnUpdate(onUpdate, { value: response });
 
     return {

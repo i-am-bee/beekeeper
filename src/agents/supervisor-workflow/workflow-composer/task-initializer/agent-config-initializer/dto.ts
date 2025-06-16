@@ -18,6 +18,14 @@ export const AgentConfigMinimalSchema = AgentConfigSchema.pick({
 });
 export type AgentConfigMinimal = z.infer<typeof AgentConfigMinimalSchema>;
 
+export const AgentConfigTinySchema = AgentConfigSchema.pick({
+  agentType: true,
+  tools: true,
+  description: true,
+  instructions: true,
+});
+export type AgentConfigTiny = z.infer<typeof AgentConfigTinySchema>;
+
 export const AgentConfigInitializerInputSchema = z.object({
   existingAgentConfigs: z.array(AgentConfigMinimalSchema),
   availableTools: z.array(AgentAvailableToolSchema),
