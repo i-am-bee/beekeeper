@@ -80,7 +80,7 @@ export const TASK_CONFIG_ENTRIES = [
       airlines_top: 3,
     }),
   },
-    {
+  {
     agentType: "historical_sites_search" satisfies AgentConfigType,
     taskType: "kyoto_hidden_sites",
     description:

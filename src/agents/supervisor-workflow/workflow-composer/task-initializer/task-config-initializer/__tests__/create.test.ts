@@ -182,7 +182,7 @@ const testCases: {
   },
 
   /* ─────────────────────── ENTANGLED ROW ─────────────────────── */
-  // NOTE: All these tests fails currently and honestly I'm not sure if 
+  // NOTE: All these tests fails currently and honestly I'm not sure if
   {
     ec: EC.ENTANGLED,
     pd: PD.L1,
