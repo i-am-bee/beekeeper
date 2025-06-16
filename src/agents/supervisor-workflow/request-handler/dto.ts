@@ -20,6 +20,7 @@ export type RequestOutputTypeEnum = z.infer<typeof RequestOutputTypeEnumSchema>;
 
 export const RequestHandlerOutputSchema = z.object({
   type: RequestOutputTypeEnumSchema,
+  explanation: z.string(),
   message: AssistantWorkflowMessageSchema,
 });
 export type RequestHandlerOutput = z.infer<typeof RequestHandlerOutputSchema>;
