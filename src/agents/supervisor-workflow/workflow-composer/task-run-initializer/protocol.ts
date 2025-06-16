@@ -20,7 +20,8 @@ export const protocol = laml.ProtocolBuilder.new()
     isOptional: true,
     attributes: laml.ProtocolBuilder.new().text({
       name: "task_run_input",
-      description: "Task inputs specific for the run. ⚠️ Your task_run_input must exclude any input values that are marked as [from Step X]",      
+      description:
+        "Task inputs specific for the run. ⚠️ Your task_run_input must exclude any input values that are marked as [from Step X]",
     }),
   })
   .object({

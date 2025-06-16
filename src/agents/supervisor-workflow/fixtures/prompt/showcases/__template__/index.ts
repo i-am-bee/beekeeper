@@ -70,4 +70,3 @@ const fixtures = new WorkflowComposeFixture(
 );
 
 export default fixtures;
-

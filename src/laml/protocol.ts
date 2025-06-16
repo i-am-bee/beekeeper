@@ -314,7 +314,7 @@ export class Protocol<TResult> {
         const text =
           field.kind === "comment"
             ? `<${field.comment}>`
-            : `${field.name}: <${[field.isOptional ? "!optional" : "!required", field.kind === 'list' ? `${field.type}-${field.kind}`: field.kind, path.length * INDENT_LENGTH, field.description].filter(isNonNullish).join(";")}>`;
+            : `${field.name}: <${[field.isOptional ? "!optional" : "!required", field.kind === "list" ? `${field.type}-${field.kind}` : field.kind, path.length * INDENT_LENGTH, field.description].filter(isNonNullish).join(";")}>`;
         output += `${_indent}${text}\n`;
         return "CONTINUE";
       },

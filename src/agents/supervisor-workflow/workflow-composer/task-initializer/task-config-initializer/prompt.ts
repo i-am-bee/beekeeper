@@ -312,9 +312,11 @@ Response format: The agent will output either nectar suitability data or butterf
         return original.slice(0, -1);
       },
     },
-    note: 'Missing related agent config',
-    responseChoiceExplanation: "The specified agent type 'flora_butterfly_host_analysis' does not appear in the list of existing agent configs. Therefore, the task configuration cannot proceed.",
-    explanation: "Agent type 'flora_butterfly_host_analysis' not found in existing agent configs.",
+    note: "Missing related agent config",
+    responseChoiceExplanation:
+      "The specified agent type 'flora_butterfly_host_analysis' does not appear in the list of existing agent configs. Therefore, the task configuration cannot proceed.",
+    explanation:
+      "Agent type 'flora_butterfly_host_analysis' not found in existing agent configs.",
   }),
   //   {
   //     title: "UPDATE_TASK_CONFIG",

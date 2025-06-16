@@ -26,7 +26,7 @@ describe("TextUtils", () => {
     });
     it("should split text backward", () => {
       const text = "Hel[lo,] (world!) How (are)[you?]";
-      const delimiters: string[] = ["(", ")","[", "]"];
+      const delimiters: string[] = ["(", ")", "[", "]"];
       const result = textSplitter(text, delimiters, true);
       expect(result).toEqual(["Hel[lo,] (world!) How ", "are", "you?"]);
     });

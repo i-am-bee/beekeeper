@@ -176,8 +176,8 @@ const decisionCriteria = BodyTemplateBuilder.new()
 1. When referencing a tool in any \`[tools: tool1_name, tool2_name ...]\` square brackets, you **MUST** pick **one or more** tools **only if no task or agent is chosen for that step** that appears in the current “Available agent tools” list.  
 2. **Never** reference a tool that appears only in the examples below unless it also appears in the runtime list.  
 3. When a single tool offers only partial coverage of a conceptual task (e.g., analysis), include additional tools that cover other essential perspectives (e.g., structure, behavior, distribution, interaction). Do this even if the user does not explicitly request those dimensions, as long as they align with the goal.`,
-// 3. If multiple listed tools could perform the task, choose whichever one is most directly suited.
-})
+    // 3. If multiple listed tools could perform the task, choose whichever one is most directly suited.
+  })
   .build();
 
 const guidelines = BodyTemplateBuilder.new()
@@ -373,7 +373,7 @@ const examples = ((inputs: ExampleInput[]) =>
   createExampleInput({
     scenario: "STEP_SEQUENCE",
     fixtures: asteroid_mining,
-    note: 'Cross-referencing or verification grounded with tools',
+    note: "Cross-referencing or verification grounded with tools",
   }),
   // TODO Original examples can be removed once the new ones are OK
   //   {

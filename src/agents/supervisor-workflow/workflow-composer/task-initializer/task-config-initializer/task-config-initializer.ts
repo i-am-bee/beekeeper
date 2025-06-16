@@ -86,7 +86,11 @@ export class TaskConfigInitializer extends LLMCall<
             input = input.trim().replace(/^\{\s*\}$/, "");
 
             // No input or all parameters have dependencies
-            if (!input || !input.length || parameters.every((p) => p.dependencies?.length)) {
+            if (
+              !input ||
+              !input.length ||
+              parameters.every((p) => p.dependencies?.length)
+            ) {
               return "";
             }
             return input;

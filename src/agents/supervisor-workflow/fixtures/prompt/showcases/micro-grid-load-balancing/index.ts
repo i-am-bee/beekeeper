@@ -38,8 +38,7 @@ const choiceExplanations = {
       no: 3,
       agentConfig:
         "The task requires generating an optimized dispatch schedule using the grid_load_optimizer_api, which is available in the list of tools. No existing agent config matches this task, so a new agent config is needed.",
-      taskConfig:
-        `The task requires generating an optimized dispatch schedule using demand forecasts, solar and battery forecasts, and a frequency deviation constraint. This aligns with the purpose of the existing agent config \`dispatch_schedule_optimizer\`, but there is no existing task config for this specific task. Therefore, a new task config needs to be created.`,
+      taskConfig: `The task requires generating an optimized dispatch schedule using demand forecasts, solar and battery forecasts, and a frequency deviation constraint. This aligns with the purpose of the existing agent config \`dispatch_schedule_optimizer\`, but there is no existing task config for this specific task. Therefore, a new task config needs to be created.`,
       taskRun: `The task config "optimize_dispatch_schedule" exists, and the input can be completed using the non-dependent field "constraint: freqDeviationHz 0.2".`,
     },
     {

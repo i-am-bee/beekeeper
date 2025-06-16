@@ -223,7 +223,7 @@ export function addTaskRunMissingAttrs<T extends TaskRunMinimal>(
       history: [],
       isDependent: false,
       blockedByTaskRunIds: [],
-      blockingTaskRunIds: []
+      blockingTaskRunIds: [],
     } as TaskRunMissingAttrs,
     options?.all,
   );
@@ -247,7 +247,7 @@ export function addTaskRunMissingAttrs<T extends TaskRunMinimal>(
 
       return {
         ...merged,
-        taskRunId,        
+        taskRunId,
       } satisfies TaskRun;
     },
   );

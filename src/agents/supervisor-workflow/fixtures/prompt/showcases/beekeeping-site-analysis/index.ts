@@ -14,13 +14,17 @@ const prompt =
   "Evaluate 2 potential beekeeping locations: Sunnybrook Farm, Meadowland Reserve. For each site, conduct thorough flora analysis for nectar sources including species identification, quality assessment, and environmental suitability factors. After completing the beekeeping analysis, also evaluate these same 2 locations for butterfly farming suitability using thorough analysis adapted for butterfly host plants and habitat requirements. Present results of both analyses in a structured report format, highlighting key findings and recommendations.";
 
 const choiceExplanations = {
-  requestHandler: "The request involves a multi-step analysis of two locations for both beekeeping and butterfly farming, requiring detailed evaluation of local flora and structured reporting. This complexity necessitates a composed workflow.",
-  problemDecomposer: "The problem is logically consistent and solvable using available tools. The user defined 5 explicit subtasks, and each one is addressed by exactly one composed step that integrates the necessary tools.",
+  requestHandler:
+    "The request involves a multi-step analysis of two locations for both beekeeping and butterfly farming, requiring detailed evaluation of local flora and structured reporting. This complexity necessitates a composed workflow.",
+  problemDecomposer:
+    "The problem is logically consistent and solvable using available tools. The user defined 5 explicit subtasks, and each one is addressed by exactly one composed step that integrates the necessary tools.",
   steps: [
     {
       no: 1,
-      agentConfig: "The task requires analyzing local flora for nectar sources suitable for beekeeping using specific tools. No existing agent config is available, so a new agent config needs to be created using the specified tools.",
-      taskConfig: "There are no existing task configs that match the requirements, and the agent type is valid. Therefore, a new task config needs to be created.",
+      agentConfig:
+        "The task requires analyzing local flora for nectar sources suitable for beekeeping using specific tools. No existing agent config is available, so a new agent config needs to be created using the specified tools.",
+      taskConfig:
+        "There are no existing task configs that match the requirements, and the agent type is valid. Therefore, a new task config needs to be created.",
       taskRun: `The task config "analyze_flora_for_nectar_sources" exists, and the input can be completed using the non-dependent field "location" provided in the task step.`,
     },
     {

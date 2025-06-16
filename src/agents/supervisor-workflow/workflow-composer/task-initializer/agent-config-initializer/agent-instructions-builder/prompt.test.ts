@@ -24,8 +24,9 @@ describe(`Prompt`, () => {
         .slice(0, stepIndex)
         .map(unwrapTaskStepWithAgent),
       taskStep: unwrapTaskStepWithToolsOrLLM(fixtures.taskSteps.at(stepIndex)),
-      agentConfigDraft: unwrapTaskStepWithAgent(fixtures.taskSteps.at(stepIndex))
-        .resource.agent,
+      agentConfigDraft: unwrapTaskStepWithAgent(
+        fixtures.taskSteps.at(stepIndex),
+      ).resource.agent,
     });
 
     expect(p).toEqual(readFileSync(resolve(__dirname, "prompt.txt"), "utf-8"));

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { TaskRunMinimal } from "@/agents/supervisor-workflow/workflow-composer/task-run-initializer/dto.js";
 
 import taskConfigFixtures from "./task-config.js";

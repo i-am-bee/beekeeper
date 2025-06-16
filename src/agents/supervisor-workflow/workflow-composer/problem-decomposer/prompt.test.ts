@@ -6,7 +6,6 @@ import { prompt } from "./prompt.js";
 
 describe(`Prompt`, () => {
   it(`should not change`, () => {
-
     const fixtures = boston_trip_fixtures;
     const p = prompt({
       request: fixtures.request,

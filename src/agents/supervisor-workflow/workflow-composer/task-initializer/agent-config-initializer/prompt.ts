@@ -442,10 +442,10 @@ const examples = (selectOnly: boolean) =>
       update: {
         description: `Analyzes local flora to identify and validate nectar sources or butterfly host plant compatibility using satellite and ground survey data.`,
         // FIXME Instructions were moved to the agent instructions builder
-//         instructions: `Context: The agent is designed to analyze local flora at a specified location to determine either nectar suitability for beekeeping or host compatibility for butterflies.
-// Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production or suitability as butterfly host plants using relevant database lookups.
-// Response format: The agent will output either nectar suitability data or butterfly host compatibility data depending on the input parameters.`,
-      }, 
+        //         instructions: `Context: The agent is designed to analyze local flora at a specified location to determine either nectar suitability for beekeeping or host compatibility for butterflies.
+        // Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production or suitability as butterfly host plants using relevant database lookups.
+        // Response format: The agent will output either nectar suitability data or butterfly host compatibility data depending on the input parameters.`,
+      },
     }),
     createExampleInput({
       scenario: "UPDATE_AGENT_CONFIG",
@@ -459,9 +459,9 @@ const examples = (selectOnly: boolean) =>
           "terrain_sonar_mapping_api",
         ] as const satisfies FixtureName<typeof deep_sea_fixtures.tools>[],
         description: `This agent conducts sonar mapping to identify underwater terrain features and can optionally include marine life detection using available sonar APIs.`,
-//         instructions: `Context: The agent is designed to perform sonar mapping of underwater zones. Its primary function is to identify terrain features, with optional inclusion of marine life detection for enriched zone understanding.
-// Objective: Use the terrain_sonar_mapping_api to map underwater terrain features. When biological input parameters are present, also invoke the biological_sonar_detector_api to detect marine life.
-// Response format: Return sonar data describing terrain features and, if applicable, biological entities detected during the scan.`,
+        //         instructions: `Context: The agent is designed to perform sonar mapping of underwater zones. Its primary function is to identify terrain features, with optional inclusion of marine life detection for enriched zone understanding.
+        // Objective: Use the terrain_sonar_mapping_api to map underwater terrain features. When biological input parameters are present, also invoke the biological_sonar_detector_api to detect marine life.
+        // Response format: Return sonar data describing terrain features and, if applicable, biological entities detected during the scan.`,
       },
     }),
     createExampleInput({

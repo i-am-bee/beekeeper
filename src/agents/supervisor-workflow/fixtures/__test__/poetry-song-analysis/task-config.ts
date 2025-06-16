@@ -12,7 +12,7 @@ const ENTRIES = [
   //   description:
   //     "Task to search for round-trip flights between a specified origin and destination with given preferences, including departure and return dates and airline preferences.",
   //   taskConfigInput: `{"origin":"<origin>","destination":"<destination>","departureDate":"<departureDate>","returnDate":"<returnDate>","airlinePreferences":"<airlinePreferences>"}`,
-  // },  
+  // },
 ] as const satisfies (TaskConfigMinimal & { agentType: AgentType })[];
 
 export default createFixtures(

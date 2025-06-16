@@ -79,15 +79,16 @@ export class ExistingResourcesBuilder {
             Object.assign(acc, {
               [`${idx + 1}. ${curr.toolName}`]: {
                 description: curr.description,
-                toolInput: curr.toolInput ? curr.toolInput : '',
+                toolInput: curr.toolInput ? curr.toolInput : "",
               },
             } satisfies laml.dto.LAMLObject);
             return acc;
-          }, {}),{
-            indent: '   '
-          }
+          }, {}),
+          {
+            indent: "   ",
+          },
         );
-        
+
     const content = `${introduction ? `${introduction}\n\n` : ""}${availableTools}`;
 
     this.output += BodyTemplateBuilder.new()

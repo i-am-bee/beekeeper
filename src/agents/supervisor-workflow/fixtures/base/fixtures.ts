@@ -19,7 +19,7 @@ export class Fixtures<T extends string, U> {
       throw new Error(`No entry found for name: ${name}`);
     }
     const stepNo = (entry as any).no; // Assuming U has a 'no' property
-    if (typeof stepNo !== 'number') {
+    if (typeof stepNo !== "number") {
       throw new Error(`Entry for name: ${name} does not have a 'no' property`);
     }
     return stepNo;

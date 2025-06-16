@@ -96,7 +96,7 @@ export class ExistingResourcesBuilder {
             Object.assign(acc, {
               [`${idx + 1}. ${curr.toolName}`]: {
                 description: curr.description,
-                toolInput: curr.toolInput || 'Not specified',
+                toolInput: curr.toolInput || "Not specified",
               },
             } satisfies laml.dto.LAMLObject);
             return acc;

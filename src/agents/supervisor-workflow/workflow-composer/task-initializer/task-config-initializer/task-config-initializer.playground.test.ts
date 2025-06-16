@@ -61,6 +61,6 @@ describe("TaskConfigInitializer (Playground)", () => {
       { llm, actingAgentId: agentId, onUpdate },
     );
 
-    expect(resp.type).toEqual('SUCCESS');
+    expect(resp.type).toEqual("SUCCESS");
   });
 });

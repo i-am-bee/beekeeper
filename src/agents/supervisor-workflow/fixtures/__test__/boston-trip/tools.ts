@@ -20,10 +20,8 @@ const ENTRIES = [
     toolName: "historical_sites_search_api",
     description:
       "Purpose-built lookup for *place-based* heritage queries. Give it any neighborhood, city, or lat/long (e.g., “Back Bay”) and it returns structured JSON for each matching historic or archaeological site: official name, era, brief significance, coordinates, jurisdiction, and citation links from authoritative registers (UNESCO, U.S. National Register, state inventories, etc.). **Use this tool whenever the user wants to *find, list, or map* historic sites at a location—no generic web search needed.**",
-    toolInput:
-      '{"location":"<string e.g. Back Bay or 40.7128,-74.0060>"}',
+    toolInput: '{"location":"<string e.g. Back Bay or 40.7128,-74.0060>"}',
   },
 ] as const satisfies AgentAvailableTool[];
-
 
 export default createFixtures(ENTRIES, ({ toolName }) => toolName);

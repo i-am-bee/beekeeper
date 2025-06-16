@@ -102,7 +102,6 @@ NOTE
   },
 ] as const satisfies AgentConfigTiny[];
 
-
 export default createFixtures(
   addAgentConfigMissingAttrs(ENTRIES),
   ({ agentType }) => agentType,

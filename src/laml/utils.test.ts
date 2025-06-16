@@ -98,7 +98,7 @@ News headlines matching “<keywords>” from the past 24 hours:
         unwrapString("[]", {
           envelops: [["[", "]"]],
         }),
-      ).toEqual('');
+      ).toEqual("");
     });
   });
 });

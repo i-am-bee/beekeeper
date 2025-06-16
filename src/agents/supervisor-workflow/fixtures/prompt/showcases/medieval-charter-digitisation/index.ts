@@ -35,8 +35,7 @@ const choiceExplanations = {
     },
     {
       no: 3,
-      agentConfig:
-        `The task requires verifying the language of the extracted text using a language detection tool. There is no existing agent config that matches this task, and the available tool \`language_detect_api\` can be used to fulfill this requirement. Therefore, a new agent config needs to be created.`,
+      agentConfig: `The task requires verifying the language of the extracted text using a language detection tool. There is no existing agent config that matches this task, and the available tool \`language_detect_api\` can be used to fulfill this requirement. Therefore, a new agent config needs to be created.`,
       taskConfig: `The task of verifying the language of extracted text is not covered by any existing task configs. The agent type "language_verification" is available, and a new task config can be created for this purpose.`,
       taskRun: `The task config for verifying the language of extracted text exists, and the input can be completed using non-dependent fields.`,
     },
@@ -44,8 +43,7 @@ const choiceExplanations = {
       no: 4,
       agentConfig:
         "The task requires loading verified text into a vector search system using the vector_store_ingest_api. No existing agent config matches this task, and the available tool supports the required functionality, necessitating the creation of a new agent config.",
-      taskConfig:
-        `The task of loading verified text into a vector search system is not covered by any existing task configs. The agent type \`vector_text_ingestor\` is available, and the task requires creating a new task config to handle the ingestion of text into a vector search system.`,
+      taskConfig: `The task of loading verified text into a vector search system is not covered by any existing task configs. The agent type \`vector_text_ingestor\` is available, and the task requires creating a new task config to handle the ingestion of text into a vector search system.`,
       taskRun: `TBD`,
     },
   ],

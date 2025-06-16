@@ -41,6 +41,6 @@ describe(`Request Handler (Playground)`, () => {
       { llm, actingAgentId: agentId, onUpdate },
     );
 
-    expect(response.type).toBe('SUCCESS');
+    expect(response.type).toBe("SUCCESS");
   });
 });

@@ -8,7 +8,8 @@ import taskStepsFixtures from "./task-step.js";
 import taskRunsFixtures from "./task-run.js";
 import toolsFixtures from "./tools.js";
 
-const title = "Narrative Fusion: Merging Distinct Worlds through Modular Storytelling";
+const title =
+  "Narrative Fusion: Merging Distinct Worlds through Modular Storytelling";
 
 const prompt =
   "Compose four unique short stories, each centered on a different concept: time travel, bioluminescent fungi, ancient desert rituals, and urban foxes. Then, using narrative motifs, settings, and character traits from each story, write a screenplay scene that merges these distinct worlds into a single coherent cinematic moment. Finally, provide an analytical breakdown showing how specific details from each original story were woven into the screenplay, illustrating narrative convergence and the benefits of modular creative generation.";
