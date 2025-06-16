@@ -2,15 +2,16 @@
 import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
 import { ChatModel } from "beeai-framework";
 import { describe, it, expect } from "vitest";
-import { Coord, Matrix, TestMatrixCase } from "./matrix.js";
+import { TestMatrix } from "./test-matrix.js";
+import { Cell, Coord, TestCase } from "./types.js";
 
 interface RunnerOptions<
-  CaseT extends TestMatrixCase,
+  CaseT extends TestCase,
   InputT extends { task: string },
   ParsedT = any,
   OutputT = any,
 > {
-  matrix: Matrix<any, CaseT>;
+  matrix: TestMatrix<any, CaseT>;
   llm: ChatModel;
   llmCall: LLMCall<any, InputT, OutputT>; // any protocol, generic input/output
   /**
@@ -26,7 +27,7 @@ interface RunnerOptions<
 }
 
 export function generateMatrixTests<
-  CaseT extends TestMatrixCase,
+  CaseT extends TestCase,
   InputT extends { task: string },
   ParsedT = any,
   OutputT = any,
@@ -40,7 +41,9 @@ export function generateMatrixTests<
     expect(parsed).toMatchObject(expected),
   // fullMatrixPopulationCheck,
 }: RunnerOptions<CaseT, InputT, ParsedT, OutputT>) {
-  matrix.walk((coord: Coord<any>, cases: readonly CaseT[]) => {
+  matrix.walk((coord: Coord<any>, cell: Cell<any, CaseT[]>) => {
+    const { value: cases } = cell;
+
     if (cases.length === 0) {
       return;
     } // allow sparse grids if you wish
