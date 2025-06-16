@@ -3,14 +3,13 @@ import { countBy } from "remeda";
 import { Context } from "../../base/context.js";
 import { LLMCall, LLMCallInput } from "../../base/llm-call.js";
 import { FnResult } from "../../base/retry/types.js";
+import {
+  assertTaskSteps
+} from "../helpers/task-step/helpers/assert.js";
 import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { ProblemDecomposerInput, ProblemDecomposerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
-import {
-  assertTaskStepResourceType,
-  assertTaskSteps,
-} from "../helpers/task-step/helpers/assert.js";
 
 export class ProblemDecomposer extends LLMCall<
   typeof protocol,

@@ -24,101 +24,58 @@ Standalone tools that future agents *could* invoke if you create a step requirin
 ### Existing agents
 Agents that are already running. Each can be assigned tasks that fall within its instructions.
 
-1. game_scheduler:
-  agent_type: game_scheduler
-  tools: tavily_search_api
-  instructions: Context: You are a game scheduler agent. You are activated by an external task and receive sport type and location as input. You use the tavily_search_api tool to retrieve game schedules.
-  
-  Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
-  
-  Response format: List each game with its date, time, and teams:
-  
-  Upcoming [Sport] Games in Boston:
-  1. Date: [Date 1] — Time: [Time 1] — Teams: [Team A vs. Team B]
-  2. Date: [Date 2] — Time: [Time 2] — Teams: [Team C vs. Team D]
-  description: Schedules upcoming hockey and basketball games in Boston using tavily_search_api.
-2. historical_sites_identifier:
-  agent_type: historical_sites_identifier
+1. historical_sites_finder:
+  agent_type: historical_sites_finder
   tools: historical_sites_search_api
-  instructions: Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
- 
- Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
- 
- Response format: List each site with its name and a brief description:
- 
- Historical Sites in Back Bay:
- 1. Name: [Site Name 1] — Description: [Description 1]
- 2. Name: [Site Name 2] — Description: [Description 2]
-  description: Identifies historical sites in a given location using the historical_sites_search_api tool.
-3. restaurant_recommender:
-  agent_type: restaurant_recommender
+  instructions: Context: The agent receives a location as input and searches for historical sites within that area.
+Objective: Use the historical_sites_search_api to find and list historical sites in the specified location.
+Response format: Return a list of historical sites, including their names, significance, and any available coordinates or jurisdiction details.
+  description: This agent identifies historical sites in a specified location using the historical_sites_search_api.
+2. sports_events_searcher:
+  agent_type: sports_events_searcher
   tools: tavily_search_api
-  instructions: Context: You are an agent specializing in recommending diverse cuisine restaurants. You are activated by an external task and receive dining preferences and location as input. You use the tavily_search_api tool to retrieve a list of restaurants.
-
-Objective: Use the provided dining preferences and location to fetch a list of restaurants. Return the results in a structured format, listing one restaurant per cuisine type per day.
-
-Response format: Present the recommendations day by day with cuisine type and details:
-
-Back Bay Restaurant Recommendations:
-Day 1:
-- Italian: [Restaurant Name 1] — Description: [Description 1]
-- Chinese: [Restaurant Name 2] — Description: [Description 2]
-- French: [Restaurant Name 3] — Description: [Description 3]
-Day 2:
-- Italian: [Restaurant Name 4] — Description: [Description 4]
-- Chinese: [Restaurant Name 5] — Description: [Description 5]
-- French: [Restaurant Name 6] — Description: [Description 6]
-  description: Recommends restaurants of multiple cuisines in a given location using tavily_search_api.
-4. itinerary_creator:
-  agent_type: itinerary_creator
+  instructions: Context: The agent receives a location and duration as input and searches for sports events happening during that time.
+Objective: Use the tavily_search_api to find and list sports events, including their schedule and ticket information, in the specified location and duration.
+Response format: Return a list of sports events, including event names, dates, venues, and ticket purchasing details.
+  description: This agent searches for sports events happening in a specified location and duration using the tavily_search_api.
+3. dining_recommendations_searcher:
+  agent_type: dining_recommendations_searcher
+  tools: tavily_search_api
+  instructions: Context: The agent receives a location and a list of dining preferences as input and searches for dining recommendations that match these criteria.
+Objective: Use the tavily_search_api to find and list dining options, including restaurant names, cuisine types, and any available ratings or reviews, in the specified location.
+Response format: Return a list of dining recommendations, including restaurant names, cuisine types, and any available ratings or reviews.
+  description: This agent searches for dining recommendations based on specified location and cuisine preferences using the tavily_search_api.
+4. itinerary_compiler:
+  agent_type: itinerary_compiler
   tools: 
-  instructions: Context: You are an agent specializing in creating customized itineraries. You are activated by an external task and receive list of as input. You use the itinerary_creator tool to generate a detailed itinerary.
-
-Objective: Use the provided historical sites, game schedules, and dining suggestions to create a balanced 3-day itinerary. Ensure each day includes a mix of activities, and provide specific times for games and dining.
-
-Response format: Present the itinerary day by day with activities, times, and details:
-
-3-Day Customized Itinerary:
-Day 1:
-- Morning: Visit [Historical Site 1] (from Step 1)
-- Lunch: Dine at [Italian Restaurant 1] (from Step 2)
-- Afternoon: Attend [Hockey Game] (from Step 1)
-- Evening: Dinner at [Chinese Restaurant 1] (from Step 2)
-Day 2:
-- Morning: Explore [Historical Site 2] (from Step 1)
-- Lunch: Enjoy a meal at [French Restaurant 1] (from Step 2)
-- Afternoon: Watch [Basketball Game] (from Step 1)
-- Evening: Dine at [Italian Restaurant 2] (from Step 2)
-Day 3:
-- Morning: Discover [Historical Site 3] (from Step 1)
-- Lunch: Lunch at [Chinese Restaurant 2] (from Step 2)
-- Afternoon: Free time for personal interests or additional exploration
-- Evening: Farewell dinner at [French Restaurant 2] (from Step 2)
-  description: Creates a balanced 3-day itinerary incorporating historical sites, game schedules, and dining suggestions based on user-provided outputs from Steps 1–3.
+  instructions: Context: The agent receives lists of historical sites, sports events, and dining recommendations as input.
+Objective: Organize the provided information into a structured itinerary for a specified number of days.
+Response format: Return a day-by-day itinerary, including suggested times for visits, events, and meals, ensuring a balanced and enjoyable schedule.
+  description: This agent compiles a multi-day itinerary based on provided historical sites, sports events, and dining recommendations.
 
 ### Existing tasks
 Tasks that are already running. Each can be assigned tasks that fall within its description and input.
 
-1. create_3_day_itinerary:
-  task_type: create_3_day_itinerary
-  agent_type: itinerary_creator
-  task_config_input: {"historical_sites":"<list of historical sites>","games":"<list of games>","restaurants":"<list of restaurants>"}
-  description: Task to create a balanced 3-day itinerary incorporating historical sites, game schedules, and dining suggestions.
-2. find_sports_game_schedules:
-  task_type: find_sports_game_schedules
-  agent_type: game_scheduler
-  task_config_input: {"sport":"<choose sport: hockey | basketball>","location":"<given location>"}
-  description: Task to find upcoming hockey and basketball game schedules in a given location.
-3. identify_historical_sites:
-  task_type: identify_historical_sites
-  agent_type: historical_sites_identifier
-  task_config_input: {"location":"<given location>"}
-  description: Task to identify historical sites in a given location.
-4. recommend_restaurants:
-  task_type: recommend_restaurants
-  agent_type: restaurant_recommender
-  task_config_input: {"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>", "days":"<list of days>"}
-  description: Task to recommend restaurants for each day based on user-defined preferences, location and list of the days.
+1. find_historical_sites:
+  task_type: find_historical_sites
+  agent_type: historical_sites_finder
+  task_config_input: { "location": "<specified location>" }
+  description: Find historical sites in the given <specified location> using the historical_sites_search_api and return a list of historical sites, including their names, significance, and any available coordinates or jurisdiction details.
+2. search_sports_events:
+  task_type: search_sports_events
+  agent_type: sports_events_searcher
+  task_config_input: { "location": "<specified location>", "duration": "<specified duration>" }
+  description: Search for sports events happening in the given <specified location> during the specified <duration> using the tavily_search_api and return a list of sports events, including their schedule and ticket purchasing details.`
+3. search_dining_recommendations:
+  task_type: search_dining_recommendations
+  agent_type: dining_recommendations_searcher
+  task_config_input: { "location": "<specified location>", "dining_preferences": ["<cuisine type>", "..."] }
+  description: Search for dining recommendations in the given <specified location> based on the provided <dining preferences> using the tavily_search_api and return a list of dining options, including restaurant names, cuisine types, and any available ratings or reviews.`
+4. compile_itinerary:
+  task_type: compile_itinerary
+  agent_type: itinerary_compiler
+  task_config_input: { "historical_sites": ["<site>", "..."], "sports_events": ["<event>", "..."], "dining_recommendations": ["<recommendation>", "..."] }
+  description: Compile a 3-day itinerary including visits to historical sites, attendance at sports events, and dining at recommended restaurants. Organize the information into a structured schedule, ensuring a balanced and enjoyable experience.`
 
 
 **IMPORTANT** – If at least one **suitable** task, agent, tool, *or—when* all three are missing—a plausible LLM fallback does not exist for every required step, you must output
@@ -151,7 +108,7 @@ RESPONSE_CHOICE_EXPLANATION: <!required;text;0;Brief explanation of *why* you se
 RESPONSE_TYPE: <!required;constant;0;Valid values: STEP_SEQUENCE | UNSOLVABLE | MISSING_INPUTS>
 <Follow by one of the possible responses format based on the chosen response type>
 RESPONSE_STEP_SEQUENCE: <!optional;object;0>
-  step_sequence: <!required;numbered-list;2;Ordered list of high-level tasks that collectively achieve the user's goal, each written as "Imperative task description (input: …, output: …) [resource]" where [resource] is exactly one of [task: name], [agent: name], [tools: tool1, …], or [LLM], chosen by the priority Task > Agent > Tools > LLM and including any dependencies on earlier steps.>
+  step_sequence: <!required;numbered-list;2;Ordered list of high-level tasks that collectively achieve the user's goal, each written as "Imperative task description (input: …, output: …) [resource]" where [resource] is exactly one of [task: name], [agent: name], [tools: tool1, …], or [LLM]. If user provides an explicit set of subtasks, map each step 1:1 to those subtasks, combining multiple tools inside a single step if needed.>
 RESPONSE_UNSOLVABLE: <!optional;object;0>
   explanation: <!required;text;2;User-facing explanation of why the request cannot be solved.>
 RESPONSE_MISSING_INPUTS: <!optional;object;0>
@@ -181,7 +138,7 @@ RESPONSE_MISSING_INPUTS: <!optional;object;0>
 1. **Favor solvability, but be rigorous.** Attempt the plan only if every step has a matching resource.  
 2. **Assumptions must be minimal and explicit.** If a reasonable assumption resolves an ambiguity, state it in the relevant step.
   a. Examples of acceptable defaults: interpreting “last 24 hours” as now minus 24 h → now; treating the absence of sentiment filters as “no sentiment filtering”.  
-3. **Granularity.** A STEP_SEQUENCE should contain 3–10 high‑level, generic actions, but choose the set of resources that most completely fulfils the requested deliverables — even if this requires additional tools or extra steps beyond the bare minimum. 
+3. **Granularity.** A STEP_SEQUENCE should contain 3–10 high‑level, generic actions. Prefer resource combinations that yield complete, multi-dimensional outcomes — not merely the shortest path. Choose the richest available set of resources (even across multiple tools) that collectively fulfill the user's deliverables.
 4. **Resource check.** Before finalizing, verify that executing the steps **with the listed resources** would indeed deliver the requested outcome without introducing contradictions.  
 5. **Chain of tool calls.** If the deliverables require information that no single tool returns, decompose the task into multiple tool calls.
 6. **Consistency check.** Ensure the ordered steps flow logically toward the goal.
@@ -203,7 +160,7 @@ RESPONSE_MISSING_INPUTS: <!optional;object;0>
 
 1. When referencing a tool in any `[tools: tool1_name, tool2_name ...]` square brackets, you **MUST** pick **one or more** tools **only if no task or agent is chosen for that step** that appears in the current “Available agent tools” list.  
 2. **Never** reference a tool that appears only in the examples below unless it also appears in the runtime list.  
-3. If multiple listed tools could perform the task, choose whichever one is most directly suited.
+3. When a single tool offers only partial coverage of a conceptual task (e.g., analysis), include additional tools that cover other essential perspectives (e.g., structure, behavior, distribution, interaction). Do this even if the user does not explicitly request those dimensions, as long as they align with the goal.
 
 
 ---
@@ -232,39 +189,52 @@ RESPONSE_MISSING_INPUTS: <!optional;object;0>
    - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history)"
    - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report)"
    - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report)"
-3. Each step’s input must be explicitly justified and traceable. Every input must meet one of the following conditions:
-   - It is explicitly stated in the user message;
-   - It is produced by a previous step (clearly marked with [from Step X]);
-   - It is introduced through a minimal assumption, which must be labeled with [source: assumed] inside the input field.
-     No assumed input may appear without this tag. For example: payloadKg: 1000.
-   If any required input lacks such traceability or labeling, the response must not proceed with STEP_SEQUENCE and must instead return **MISSING_INPUTS**.
 4. Each step should be a **self-contained, logically complete unit** that contributes to the overall plan.
+   a. If a task involves analysis, evaluation, assessment, or suitability scoring, treat it as requiring multi-dimensional coverage (e.g., species identification, nectar analysis, environmental context).
+      However, you must encapsulate the full analysis into a single step if the user describes it as one coherent goal (e.g., "Analyze flora for beekeeping suitability").
+      Use multiple tools inside that step to achieve complete coverage.
 5. Clearly indicate whether the step uses a **task**, an **agent**, a **tool**, or is handled by general **LLM capabilities**.
-6. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”).
+6. **Step mapping to subTasks.** If the user provides a structured set of subtasks or high-level expectations (e.g., "subTasks", "goalSteps", "expectedSteps"), you must align your step_sequence 1:1 with those user-defined steps.
+   - Each step in step_sequence should map to exactly one user-provided subtask.
+   - Within each step, multiple tools may be composed if needed to fulfill the subtask completely.
+   - This enables high-level reasoning while preserving internal resource chaining.
+   - You must not fragment subtasks into separate lower-level steps unless the user omitted a breakdown or the goal cannot be completed otherwise.
+7. Step compactness enforcement when user-defined steps are present
+   If the user provides a structured list of subtasks, goals, or expected deliverables (e.g., under fields like "subTasks", "steps", or "objectives"), you must not break those down into lower-level tool-specific steps.
+   Instead, treat each user-defined step as the unit of decomposition, and compose multiple tools inside that step as needed to fulfill it.
+   - Example: Do not generate one step per API/tool invocation if the user's subtask describes a single cohesive analysis or operation.
+   - It is acceptable to combine several tool calls (e.g., for identification, validation, enrichment, scoring, etc.) into one step, as long as they all contribute to a single user-defined subtask.
+   - Only decompose further when no user-provided subtasks exist, or when it is necessary to surface unresolvable dependencies or execution gaps.
+   - You must ensure that the number of step_sequence items exactly matches the number of user-defined subtasks (unless a subtask is genuinely unsolvable or requires branching).
+
+   * If the user provides `subTasks`, you **must output exactly one step per subtask**. Do **not** fragment a subtask into multiple steps unless the subtask itself implies branching or internal contradiction.
+   * This alignment is **mandatory**. If tool chaining is required to fulfill a subtask, perform it inside a **single composed step**.
+
+8. Every step that depends on a prior one must explicitly state that dependency in its input, including the step number (e.g., “input: hotel list [from Step 2]”).
    - If a step requires multiple inputs from previous steps, list each input separately and explicitly indicate the originating step number. Do not group multiple inputs into a single vague description.
    - **Example**: Compose a summary report (input: market analysis [from Step 1], customer feedback [from Step 2], competitive review [from Step 3]; output: comprehensive report) [LLM]
    - All traceable input references (e.g., tag [from Step 1]) must be placed inside quotation marks to form valid string values (e.g., "tag [from Step 1]") in JSON-style input structures. Do not use <...> placeholders.
-7. If the step produces data for future steps, describe the output clearly (e.g., "produces list of top 5 destinations").
-8. Avoid vague phrasing. Prefer specific tasks with clear outputs and actionable parameters.
-9. **Exactly one resource category per step.**  
+9. If the step produces data for future steps, describe the output clearly (e.g., "produces list of top 5 destinations").
+10. Avoid vague phrasing. Prefer specific tasks with clear outputs and actionable parameters.
+11. **Exactly one resource category per step.**  
    Each step must declare **one resource *type*** (`task`, `agent`, or `tools/LLM`):   
    - If the type is `tools`, you may list **one or more tool names** inside the same brackets.  
    - If the type is `agent`, you may implicitly rely on that agent’s internal tool calls *and* LLM reasoning.  
    - `LLM` means no external tools are required. 
    Do not mix resource *types* in a single step (e.g. avoid “[agent: …, tools: …]”), but multiple tool names are fine within a single `[tools: …]` list.
-10. **Priority order when choosing a resource:**  
+12. **Priority order when choosing a resource:**  
    1) existing **task**  
    2) existing **agent**  
    3) appropriate **tool(s)**  
    4) **LLM** (only if none of the above exist).  
    If two categories are possible, pick the higher-priority one and *do not* list the others.
-11. If no suitable resource exists for a required step, mark the entire problem **UNSOLVABLE**.
-12. Do not use a step that requires unavailable resources, unless it's followed by a justification under `RESPONSE_UNSOLVABLE`.
-13. Format each step as a single line including:
+13. If no suitable resource exists for a required step, mark the entire problem **UNSOLVABLE**.
+14. Do not use a step that requires unavailable resources, unless it's followed by a justification under `RESPONSE_UNSOLVABLE`.
+15. Format each step as a single line including:
     - the **imperative description** of the task,
     - followed by `(input: input 1, input 2 [source: assumed] ... ; output: output 1, output 2 ...)`,
     - followed by a resource in square brackets: `[tools: tool_name_1, tool_name_2...]`, `[agent: agent_name]`, `[task: task_name]`, or `[LLM]`.
-14. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
+16. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
     - Is directly present in user message, OR
     - Is produced by a prior step (explicitly using [from Step X]), OR
     - Is justified with a clearly written default assumption in the step itself (explicitly using [source: assumed]).
@@ -492,7 +462,7 @@ RESPONSE_STEP_SEQUENCE:
     6. Produce a human-readable timeline with equipment assignments and rain contingency plans (input: harvest schedule [from Step 5], weather forecast [from Step 3]; output: final harvest-day plan) [LLM]
 ```
 
-### Example[4]: STEP_SEQUENCE - Poetry and Hip-Hop Song Analysis
+### Example[4]: STEP_SEQUENCE - Narrative Fusion: Merging Distinct Worlds through Modular Storytelling
 
 **Context:**
 ---

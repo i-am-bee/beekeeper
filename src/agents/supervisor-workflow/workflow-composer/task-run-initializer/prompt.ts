@@ -3,16 +3,16 @@ import { BodyTemplateBuilder } from "@/agents/supervisor-workflow/templates/body
 import { ChatExampleTemplateBuilder } from "@/agents/supervisor-workflow/templates/chat-example.js";
 import medieval_charter_fixtures from "../../fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
 import micro_grid_fixtures from "../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
-import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative-fusion/index.js";
 import smart_farm_fixtures from "../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
+import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative-fusion/index.js";
+import beekeeping_site_fixtures from "../../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
+import deep_sea_fixtures from "../../fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { TaskConfigInitializerInput } from "../task-initializer/task-config-initializer/dto.js";
-import {
-  createExampleInput,
-  ExampleInput,
-} from "./__tests__/helpers/create-example-input.js";
+import { createExampleInput } from "./__tests__/helpers/create-example-input.js";
 import { protocol } from "./protocol.js";
 import { ExistingResourcesBuilder } from "./templates.js";
+import { ExampleInput } from "../../fixtures/helpers/create-example.js";
 
 export const prompt = ({
   resources: { tasks: existingTaskConfigs, agents: existingAgentConfigs },
@@ -153,7 +153,7 @@ Your job is to prepare a **task run** for the current task step using the assign
   return builder.build();
 };
 
-const examples = ((inputs: ExampleInput[]) =>
+const examples = ((inputs: ExampleInput<typeof protocol>[]) =>
   inputs
     .map((input, idx) =>
       ChatExampleTemplateBuilder.new()
@@ -189,16 +189,36 @@ const examples = ((inputs: ExampleInput[]) =>
   createExampleInput({
     fixtures: micro_grid_fixtures,
     scenario: "CREATE_TASK_RUN",
+    note: 'Empty task_run_input because input is marked with [from Step X]',
     step: "Send control vectors to implement the optimized dispatch schedule",
   }),
   createExampleInput({
     fixtures: smart_farm_fixtures,
     scenario: "CREATE_TASK_RUN",
+    note: 'Empty task_run_input because all inputs are marked with [from Step X]',
     step: "Produce a human-readable timeline with equipment assignments and rain contingency plans",
   }),
   createExampleInput({
     fixtures: narrative_fusion_fixtures,
     scenario: "CREATE_TASK_RUN",
     step: "Write a short story based on the concept of ancient desert rituals",
+  }),
+  createExampleInput({
+    fixtures: beekeeping_site_fixtures,
+    scenario: "CREATE_TASK_RUN",
+    step: "Analyze local flora at Meadowland Reserve for nectar sources suitable for butterfly host plants",
+  }),
+  createExampleInput({
+    fixtures: deep_sea_fixtures,
+    scenario: "TASK_RUN_UNAVAILABLE",
+    step: "Conduct basic sonar mapping to identify underwater terrain features in the Puerto Rico Trench",
+    responseChoiceExplanation: `The task config "sonar_mapping_underwater_terrain" is referenced in the task step, but it does not exist in the list of existing task configs. According to the rules, if the required task config is missing, a task run cannot be created.`,
+    explanation: `Task config "sonar_mapping_underwater_terrain" is not available in the list of existing task configs, so the task run cannot be generated.`,
+    override: {
+      tasks: (original) => {
+        // Remove last task to simulate unavailability
+        return original.slice(0, -1);
+      },
+    },
   }),
 ]);

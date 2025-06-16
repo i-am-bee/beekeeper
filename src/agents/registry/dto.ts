@@ -116,6 +116,7 @@ export type AgentWithInstance<TAgentInstance> = Omit<Agent, "instance"> & {
 export const AvailableToolSchema = z.object({
   toolName: z.string(),
   description: z.string(),
+  toolInput: z.string().optional(),
 });
 
 export type AvailableTool = z.infer<typeof AvailableToolSchema>;

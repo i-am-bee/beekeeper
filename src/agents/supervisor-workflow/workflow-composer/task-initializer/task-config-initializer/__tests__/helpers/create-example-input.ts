@@ -98,8 +98,8 @@ export function createExampleInput<F extends WorkflowComposeFixture>(
             fixtures.getChoiceExplanation(stepNo, "taskConfig"),
           RESPONSE_TYPE: scenario,
           RESPONSE_CREATE_TASK_CONFIG: {
-            agent_type: task.agentType,
             task_type: task.taskType,
+            agent_type: task.agentType,
             task_config_input: task.taskConfigInput,
             description: task.description,
           },

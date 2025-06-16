@@ -10,7 +10,7 @@ import { Logger } from "beeai-framework";
 import { clone } from "remeda";
 import {
   extendResources,
-  replaceTaskByTaskTypeInResources
+  replaceTaskByTaskTypeInResources,
 } from "../../helpers/resources/utils.js";
 import { assignResource } from "../../helpers/task-step/helpers/assign-resource.js";
 import {
@@ -96,7 +96,9 @@ export class TaskConfigInitializer extends LLMCall<
             if (missingAgentTypes.length > 0) {
               return {
                 type: "ERROR",
-                explanation: `You can't create a task config with agent_type:\`${response.agent_type}\` because it doesn't exist. The only existing agents are: \`${existingAgentConfigs.map((c) => c.agentType).join(", ")}\`. Please use one of them.`,
+                explanation: existingAgentConfigs.length
+                  ? `You can't create a task config with agent_type:\`${response.agent_type}\` because it doesn't exist. The only existing agents are: \`${existingAgentConfigs.map((c) => c.agentType).join(", ")}\`. Please use one of them.`
+                  : `You can't create a task config with agent_type:\`${response.agent_type}\` because there are no existing agents. Please create an agent first.`,
               };
             }
           }
@@ -145,7 +147,9 @@ export class TaskConfigInitializer extends LLMCall<
           if (missingTaskTypes.length > 0) {
             return {
               type: "ERROR",
-              explanation: `You can't update task config task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are: \`${existingTaskConfigs.map((c) => c.taskType).join(", ")}\`. Please use one of them.`,
+              explanation: existingTaskConfigs.length
+                ? `You can't update task config task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are: \`${existingTaskConfigs.map((c) => c.taskType).join(", ")}\`. Please use one of them.`
+                : `You can't update task config task_type:\`${response.task_type}\` because there are no existing tasks. Please create a task first.`,
             };
           }
 
@@ -200,7 +204,9 @@ export class TaskConfigInitializer extends LLMCall<
           if (!selected) {
             return {
               type: "ERROR",
-              explanation: `You can't select task config with task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are:\`${existingTaskConfigs.map((c) => c.taskType).join(",")}\`. Please use one of them.`,
+              explanation: existingTaskConfigs.length
+                ? `You can't select task config with task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are:\`${existingTaskConfigs.map((c) => c.taskType).join(",")}\`. Please use one of them.`
+                : `You can't select task config with task_type:\`${response.task_type}\` because there are no existing tasks. Please create a task config first.`,
             };
           }
 

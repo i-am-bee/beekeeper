@@ -101,7 +101,7 @@
     "@types/eslint-config-prettier": "^6.11.3",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^18.15.3",
-    "beeai-framework": "0.1.14",
+    "beeai-framework": "0.1.16",
     "cross-env": "^7.0.3",
     "date-fns": "^4.1.0",
     "eslint": "^9.10.0",
@@ -124,6 +124,6 @@
     "@ai-sdk/openai": "^1.1.14",
     "@eslint/js": "^9.21.0",
     "@i-am-bee/acp-sdk": "0.0.4",
-    "beeai-framework": "0.1.14"
+    "beeai-framework": "0.1.16"
   }
 }

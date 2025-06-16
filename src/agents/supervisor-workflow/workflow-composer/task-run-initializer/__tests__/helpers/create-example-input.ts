@@ -1,38 +1,45 @@
 import { WorkflowComposeFixture } from "@/agents/supervisor-workflow/fixtures/base/workflow-compose-fixtures.js";
+import {
+  BaseCreateExampleInput,
+  ExampleInput,
+} from "@/agents/supervisor-workflow/fixtures/helpers/create-example.js";
 import { prepareDataForWorkflowStep } from "@/agents/supervisor-workflow/fixtures/helpers/prepare-resources.js";
-import { unwrapTaskStepWithTaskRun } from "@/agents/supervisor-workflow/fixtures/helpers/unwrap-task-step.js";
-import { Resources } from "@/agents/supervisor-workflow/workflow-composer/helpers/resources/dto.js";
-import { TaskStep } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/dto.js";
-import { TaskStepMapper } from "@/agents/supervisor-workflow/workflow-composer/helpers/task-step/task-step-mapper.js";
-import * as laml from "@/laml/index.js";
 import { protocol } from "../../protocol.js";
+import { unwrapTaskStepWithTaskRun } from "@/agents/supervisor-workflow/fixtures/helpers/unwrap-task-step.js";
+import { TaskStepMapper } from "../../../helpers/task-step/task-step-mapper.js";
 
-export interface ExampleInput {
-  title: string;
-  subtitle: string;
-  user: string;
-  context: {
-    previousSteps: TaskStep[];
-    resources: Resources;
-  };
-  example: laml.ProtocolResult<typeof protocol>;
+export interface CreateTaskRunExampleInput<F extends WorkflowComposeFixture>
+  extends BaseCreateExampleInput<F> {
+  readonly scenario: "CREATE_TASK_RUN";
+  responseChoiceExplanation?: string;
 }
 
-export function createExampleInput<F extends WorkflowComposeFixture>({
-  scenario,
-  step,
-  responseChoiceExplanation,
-  fixtures,
-  subtitle,
-  note,
-}: {
-  scenario: "CREATE_TASK_RUN";
-  step: Parameters<F["taskSteps"]["get"]>[0];
-  fixtures: F;
-  responseChoiceExplanation?: string;
-  subtitle?: string;
-  note?: string;
-}) {
+export interface TaskRunUnavailableExampleInput<
+  F extends WorkflowComposeFixture,
+> extends BaseCreateExampleInput<F> {
+  readonly scenario: "TASK_RUN_UNAVAILABLE";
+  responseChoiceExplanation: string;
+  explanation: string;
+  override: {
+    tasks?: (agents: F["tasks"]["values"]) => F["tasks"]["values"];
+  };
+}
+
+export type CreateExampleInputType<F extends WorkflowComposeFixture> =
+  | CreateTaskRunExampleInput<F>
+  | TaskRunUnavailableExampleInput<F>;
+
+export function createExampleInput<F extends WorkflowComposeFixture>(
+  input: CreateExampleInputType<F>,
+): ExampleInput<typeof protocol> {
+  const {
+    scenario,
+    step,
+    responseChoiceExplanation,
+    fixtures,
+    subtitle,
+    note,
+  } = input;
   const fullSubtitle = `${subtitle ?? fixtures.title}${note ? ` (${note})` : ""}`;
 
   const stepNo = fixtures.taskSteps.stepNo(step);
@@ -66,7 +73,35 @@ export function createExampleInput<F extends WorkflowComposeFixture>({
             task_run_input: taskRun.taskRunInput,
           },
         },
-      } satisfies ExampleInput;
+      };
+    }
+    case "TASK_RUN_UNAVAILABLE": {
+      const {
+        override: { tasks: overrideTasks },
+        explanation,
+      } = input;
+
+      return {
+        title: scenario,
+        subtitle: fullSubtitle,
+        user: TaskStepMapper.format(taskStep),
+        context: {
+          previousSteps,
+          resources: {
+            ...resources,
+            tasks: overrideTasks
+              ? overrideTasks(resources.tasks)
+              : resources.tasks,
+          },
+        },
+        example: {
+          RESPONSE_CHOICE_EXPLANATION: responseChoiceExplanation,
+          RESPONSE_TYPE: scenario,
+          RESPONSE_TASK_RUN_UNAVAILABLE: {
+            explanation,
+          },
+        },
+      };
     }
   }
 }

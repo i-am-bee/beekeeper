@@ -50,9 +50,11 @@ export abstract class BaseToolsFactory implements Disposable {
     const methods = await this.getFactoriesMethods();
     for (const factory of methods) {
       const product = factory();
+      const inputSchema = await product.getInputJsonSchema();
       this.availableTools.set(product.name, {
         toolName: product.name,
         description: product.description,
+        toolInput: JSON.stringify(inputSchema),
       });
       this.factories.set(product.name, factory);
     }

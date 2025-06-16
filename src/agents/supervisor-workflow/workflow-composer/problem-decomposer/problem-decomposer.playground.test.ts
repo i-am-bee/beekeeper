@@ -13,6 +13,7 @@ import smart_farm_fixtures from "../../fixtures/prompt/showcases/smart-farm-harv
 import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative-fusion/index.js";
 import beekeeping_site_fixtures from "../../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
 import deep_sea_fixtures from "../../fixtures/prompt/showcases/deep-sea-exploration/index.js";
+import asteroid_mining from "../../fixtures/prompt/showcases/asteroid-mining-feasibility/index.js";
 import { ProblemDecomposer } from "./problem-decomposer.js";
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
@@ -28,7 +29,7 @@ const onUpdate = () => ({});
  */
 describe(`Problem Decomposer (Playground)`, () => {
   it(`play`, async () => {
-    const fixtures = deep_sea_fixtures; // Choose fixture
+    const fixtures = asteroid_mining; // Choose fixture
 
     const problemDecomposer = new ProblemDecomposer(
       logger,

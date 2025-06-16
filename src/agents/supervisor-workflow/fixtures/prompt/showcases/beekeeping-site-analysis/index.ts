@@ -47,12 +47,6 @@ const choiceExplanations = {
       taskConfig: `The task requires compiling findings into a structured report using existing data from previous analyses. The agent type matches an existing agent config, but there is no existing task config for this specific task. Therefore, a new task config needs to be created.`,
       taskRun: `The task config for "compile_farming_suitability_report" exists, and the input parameters are entirely dependent on previous steps, which will be automatically injected by the runtime engine.`,
     },
-    {
-      no: 6,
-      agentConfig: `TBD`,
-      taskConfig: `TBD`,
-      taskRun: `TBD`,
-    },
   ],
 } satisfies ChoiceExplanations;
 

@@ -8,6 +8,7 @@ import micro_grid_fixtures from "@agents/supervisor-workflow/fixtures/prompt/sho
 import medieval_charter_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/medieval-charter-digitisation/index.js";
 import beekeeping_site_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
 import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
+import asteroid_mining from "@agents/supervisor-workflow/fixtures/prompt/showcases/asteroid-mining-feasibility/index.js";
 import { Logger } from "beeai-framework";
 import { describe, expect, it } from "vitest";
 
@@ -29,8 +30,8 @@ const onUpdate = () => ({});
 describe("TaskRunInitializer (Playground)", () => {
   it(`play`, async () => {
     // Setup playground
-    const fixtures = deep_sea_fixtures; // Chose fixture
-    const stepNo = 5; // Chose step number (first is 1)
+    const fixtures = asteroid_mining; // Chose fixture
+    const stepNo = 3; // Chose step number (first is 1)
 
     const taskRunInitializer = getTaskRunInitializerTool(logger, agentId);
 

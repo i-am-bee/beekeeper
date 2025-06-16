@@ -90,7 +90,7 @@ const ENTRIES = [
   },
   {
     no: 4,
-    step: "Evaluate Meadowland Reserve for butterfly farming suitability by analyzing local flora for butterfly host plants",
+    step: "Analyze local flora at Meadowland Reserve for nectar sources suitable for butterfly host plants",
     inputOutput: `input: location: "Meadowland Reserve"; output: butterfly host compatibility data`,
     resource: createResourceFixtures(
       {

@@ -8,6 +8,7 @@ import micro_grid_fixtures from "../../../fixtures/prompt/showcases/micro-grid-l
 import narrative_fusion_fixtures from "../../../fixtures/prompt/showcases/narrative-fusion/index.js";
 import smart_farm_fixtures from "../../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
+import asteroid_mining from "@agents/supervisor-workflow/fixtures/prompt/showcases/asteroid-mining-feasibility/index.js";
 import { TaskStepMapper } from "../../helpers/task-step/task-step-mapper.js";
 import { createExampleInput } from "./__tests__/helpers/create-example-input.js";
 import { AgentConfigInitializerInput } from "./dto.js";
@@ -146,12 +147,16 @@ Assignments will be provided in the format:
 
 ### Type of Resource Mapping:
 1. **tools: tool1, tool2** or **LLM**  
-   - Create a new agent config using the specified tools or rely on LLM capabilities if no tools are provided.
-   - If the resource is LLM, you may create a new agent config even when no tools are available in Available agent tools.
-   - LLM-based agents are valid as long as they generalize across tasks and follow input-output conventions.
-   - Do not treat lack of tools as a blocker for LLM-only agents.
+   - **tools: tool1, tool2**: Create a new agent config using the specified tools from Available agent tools.
+   - **LLM**: Create a new agent config that relies entirely on LLM capabilities without external tools. 
+   - **IMPORTANT**: LLM-based agents are FULLY VALID and should be created when the task involves text processing, analysis, formatting, summarization, writing, or any other capability that can be accomplished through language understanding and generation alone.
+   - LLM-only agents are appropriate for tasks such as: text formatting, citation generation, content summarization, creative writing, analysis and interpretation, data transformation (text-to-text), report generation, and content structuring.
+   - Do not treat the absence of tools as a reason to return AGENT_CONFIG_UNAVAILABLE for LLM-capable tasks.
 2. **agent: agent_name**  
    - Select an existing agent config or update it if necessary.
+3. **\`tools\`** – list tool IDs from **Available agent tools** OR leave empty/omit for LLM-only agents.
+   ↳ **LLM-only agents**: When the task can be accomplished through text processing, analysis, writing, or formatting using only LLM capabilities, create an agent with an empty tools array or omit the tools field entirely.
+   ↳ **Tool-based agents**: When external APIs or specialized functions are required, list only tool IDs from **Available agent tools**.
 
 **Do not hard-code any user request values** (keywords, locations, dates, etc.) inside the config.  
 **Do not design agents to depend on step references** (e.g., "Step 1–3") in \`<input parameters>\`. Treat these as runtime inputs that are resolved externally.  
@@ -184,7 +189,28 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
 3. **\`tools\`** – list *only* tool IDs from **Available agent tools** in **Context section**.
 4. **\`description\`** – 1-2 sentences describing mission & scope.
 5. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.
-6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.`,
+6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.
+
+#### LLM-Only Agent Guidelines
+
+**LLM agents are valid and encouraged** for tasks that involve:
+- Text formatting and structuring
+- Content summarization and synthesis  
+- Citation generation and bibliography formatting
+- Creative writing and content generation
+- Data analysis and interpretation (when data is provided as text)
+- Report compilation and documentation
+- Language processing and transformation
+- Logical reasoning and problem-solving with textual inputs
+
+**When creating LLM-only agents:**
+- Set \`tools: []\` (empty array) or omit the tools field entirely
+- Focus the \`instructions\` on the specific text processing or analysis task
+- Ensure the agent can handle the expected input format and produce the required output format
+- Design the agent to be stateless and generalizable across similar text-based tasks
+
+
+`,
     });
   }
 
@@ -243,10 +269,11 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
         contentEnd: 0,
       },
       content: `1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:
-  • Required capability is missing from the **Available agent tools** in **Context section**
-  • Fulfilling the task would repurpose an existing agent beyond its scope.
-  • Any solution would need resources outside the current environment.
-2. **\`explanation\`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., “No tool supports 3-D rendering.”).
+  • Required capability involves external systems, APIs, or specialized functions that are missing from the **Available agent tools**
+  • The task requires capabilities beyond both LLM processing AND available tools (e.g., hardware control, real-time data streams, file system access)
+  • Fulfilling the task would repurpose an existing agent beyond its scope
+  • **IMPORTANT**: Do NOT use this response type for tasks that can be accomplished through text processing, analysis, writing, formatting, or other LLM capabilities alone.
+2. **\`explanation\`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., "No tool supports hardware motor control.").
   • **Do not** apologise, speculate, or offer alternative brainstorming.
 3. **Response structure** – after the two mandatory header lines, output exactly this object and nothing more:
 \`\`\`
@@ -379,11 +406,19 @@ const examples = (selectOnly: boolean) =>
     createExampleInput({
       scenario: "CREATE_AGENT_CONFIG",
       fixtures: smart_farm_fixtures,
-      step: "Produce a human-readable timeline with equipment assignments and rain contingency plans",
+      note: "Pure LLM capable agent",
+      step: "Retrieve the list of equipment IDs assigned to South Field",
+    }),
+    createExampleInput({
+      scenario: "CREATE_AGENT_CONFIG",
+      fixtures: asteroid_mining,
+      note: "LLM-Only Mining Viability Report Compiler",
+      step: "Compile a mining viability report that integrates the technical findings from the mineral analysis and orbital mechanics",
     }),
     createExampleInput({
       scenario: "CREATE_AGENT_CONFIG",
       fixtures: narrative_fusion_fixtures,
+      note: "Pure LLM capable agent for compilation of narratives",
       step: "Provide an analytical breakdown of how the narratives converge in the screenplay scene",
     }),
     createExampleInput({

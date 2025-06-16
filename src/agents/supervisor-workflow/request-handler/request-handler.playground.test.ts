@@ -11,6 +11,7 @@ import micro_grid_fixtures from "../fixtures/prompt/showcases/micro-grid-load-ba
 import smart_farm_fixtures from "../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import narrative_fusion_fixtures from "../fixtures/prompt/showcases/narrative-fusion/index.js";
 import beekeeping_site_fixtures from "../fixtures/prompt/showcases/beekeeping-site-analysis/index.js";
+import asteroid_mining from "../fixtures/prompt/showcases/asteroid-mining-feasibility/index.js";
 import boston_trip_fixtures from "../fixtures/__test__/boston-trip/index.js";
 import deep_sea_fixtures from "@agents/supervisor-workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
 
@@ -29,7 +30,7 @@ describe(`Request Handler (Playground)`, () => {
   it(`play`, async () => {
     const requestHandler = new RequestHandler(logger, agentId);
 
-    const fixtures = deep_sea_fixtures;
+    const fixtures = asteroid_mining;
 
     const request = fixtures.request;
     const response = await requestHandler.run(

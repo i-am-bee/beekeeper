@@ -13,6 +13,7 @@ import medieval_charter_fixtures from "../../fixtures/prompt/showcases/medieval-
 import micro_grid_fixtures from "../../fixtures/prompt/showcases/micro-grid-load-balancing/index.js";
 import smart_farm_fixtures from "../../fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
 import narrative_fusion_fixtures from "../../fixtures/prompt/showcases/narrative-fusion/index.js";
+import asteroid_mining from "../../fixtures/prompt/showcases/asteroid-mining-feasibility/index.js";
 
 export const prompt = ({
   resources: {
@@ -200,6 +201,8 @@ const guidelines = BodyTemplateBuilder.new()
     },
     content: `1. Use plain imperatives (e.g., “Book flight Prague → Rome”).
 2. Each step must define its **inputs and outputs** explicitly.
+   a.  **Completeness check.**  The output list of a step *must* name every field that any *later* step will reference.  
+   (Example: if Step 3 needs \`citation_source\`, Step 1 or 2 must include \`citation_source\` in its outputs.)
 3. Each step’s input must be explicitly justified. Each input must be traceable to a valid source:
    - Either explicitly provided in user message,
    - Produced by a previous step (with [from Step X]),
@@ -259,7 +262,7 @@ const guidelines = BodyTemplateBuilder.new()
     - Is directly present in user message, OR
     - Is produced by a prior step (explicitly using [from Step X]), OR
     - Is justified with a clearly written default assumption in the step itself (explicitly using [source: assumed]).
-    If any required field is missing and cannot be sourced or assumed, you MUST respond with **MISSING_INPUTS**.
+    If any required field (including those referenced by later steps) is missing and cannot be sourced … you MUST respond with **MISSING_INPUTS**.
 
 **Example:**
 \`\`\`
@@ -360,6 +363,11 @@ const examples = ((inputs: ExampleInput[]) =>
   createExampleInput({
     scenario: "STEP_SEQUENCE",
     fixtures: narrative_fusion_fixtures,
+  }),
+  createExampleInput({
+    scenario: "STEP_SEQUENCE",
+    fixtures: asteroid_mining,
+    note: 'Cross-referencing or verification grounded with tools',
   }),
   // TODO Original examples can be removed once the new ones are OK
   //   {
