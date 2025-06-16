@@ -361,7 +361,7 @@ export class MessageTypeFilter extends ContainerComponent {
   }
 
   private onFilterChange() {
-    this._value = this.createChatFilterValue();
+    this.createChatFilterValue();
     this.emit("filter:change", this._value);
   }
 
@@ -374,7 +374,7 @@ export class MessageTypeFilter extends ContainerComponent {
       )
       .filter(isNonNull);
 
-    return {
+    this._value = {
       messageTypes,
     } satisfies MessageTypeFilterValues;
   }
@@ -408,7 +408,7 @@ export class MessageTypeFilter extends ContainerComponent {
       [MessageTypeEnum.ABORT]: true, // Default visible
       [MessageTypeEnum.ERROR]: true, // Default visible
     };
-    this._value = this.createChatFilterValue();
+    this.createChatFilterValue();
 
     if (shouldRender) {
       this.screen.element.render();

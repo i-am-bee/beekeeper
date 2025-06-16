@@ -14,6 +14,9 @@ import { ChatFilter } from "./filter/filter.js";
 import { Messages } from "./messages/messages.js";
 import { HelpBar } from "../shared/help-bar.js";
 import { ChatInput } from "./input/input.js";
+import { ChatRuntimeHandler, MessageTypeEnum } from "./runtime-handler.js";
+import { Runtime } from "@/runtime/index.js";
+import { isNonNullish } from "remeda";
 
 export class ChatMonitor extends ContainerComponent {
   private closeDialog: CloseDialog;
@@ -22,8 +25,26 @@ export class ChatMonitor extends ContainerComponent {
   private helpBar: HelpBar;
   private chatInput: ChatInput;
 
-  constructor(arg: ParentInput | ScreenInput, logger: Logger) {
+  private runtimeHandler: ChatRuntimeHandler;
+  private _isProcessing = false;
+  private _isAborting = false;
+
+  private abortCheckInterval: NodeJS.Timeout | null = null;
+  private onAbort?: () => void;
+
+  constructor(
+    arg: ParentInput | ScreenInput,
+    runtime: Runtime,
+    logger: Logger,
+  ) {
     super(arg, logger);
+
+    this.runtimeHandler = new ChatRuntimeHandler(runtime, {
+      onMessage: (role, content, type) => this.addMessage(role, content, type),
+      onStatus: (status) =>
+        this.addMessage("System", status, MessageTypeEnum.SYSTEM),
+      onStateChange: (isProcessing) => this.setProcessingState(isProcessing),
+    });
 
     this.helpBar = new HelpBar(
       {
@@ -51,7 +72,7 @@ export class ChatMonitor extends ContainerComponent {
         kind: "parent",
         parent: this.parent,
         controlsManager: this.controlsManager,
-        getChatFilters: this.getChatFilters.bind(this),
+        getChatFilters: () => this.filter.values,
       },
       logger,
     );
@@ -68,11 +89,10 @@ export class ChatMonitor extends ContainerComponent {
 
     // Should be last to appear on top
     this.closeDialog = new CloseDialog(this.controlsManager);
+    this.setupEventHandlers();
     this.setupControls();
-  }
 
-  private getChatFilters() {
-    return this.filter.values;
+    this.setProcessingState(false);
   }
 
   private setupControls(shouldRender = true) {
@@ -201,7 +221,7 @@ export class ChatMonitor extends ContainerComponent {
             }),
           },
         },
-      ],
+      ].filter(isNonNullish),
     });
 
     // Navigation
@@ -236,7 +256,110 @@ export class ChatMonitor extends ContainerComponent {
     this.closeDialog.hide();
   }
 
+  private setupEventHandlers() {
+    this.filter.on("filter:change", () => {
+      this.messages.updateDisplay();
+    });
+
+    this.chatInput.on("send:click", this.onSendMessageClick.bind(this));
+    this.chatInput.on("abort:click", this.onAbortClick.bind(this));
+  }
+
+  private setProcessingState(isProcessing: boolean) {
+    this._isProcessing = isProcessing;
+    this.chatInput.setProcessing(isProcessing);
+  }
+
+  private setAbortingState(isAborting: boolean) {
+    this._isAborting = isAborting;
+    this.chatInput.setAborting(isAborting);
+  }
+
   private openCloseDialog() {
-    this.closeDialog.show(this.controlsManager.focused.id);
+    if (this._isProcessing) {
+      this.closeDialog.show(this.controlsManager.focused.id, {
+        title: "Operation in Progress",
+        message: "Abort operation and exit?",
+        onConfirm: () => this.abortOperation(() => process.exit(0)),
+      });
+    } else {
+      this.closeDialog.show(this.controlsManager.focused.id);
+    }
+  }
+
+  private addMessage(role: string, content: string, type: MessageTypeEnum) {
+    this.messages.addMessage(role, content, type);
+    this.filter.addRole(role);
+  }
+
+  private onSendMessageClick(message: string): void {
+    const abortController = new AbortController();
+    this.sendMessage(message, abortController.signal)
+      .catch((err) => console.error(err))
+      .finally(() => {
+        this.setProcessingState(false);
+      });
+    this.setProcessingState(true);
+  }
+
+  private async sendMessage(message: string, signal: AbortSignal) {
+    // Add user message to chat
+    this.addMessage("You", message, MessageTypeEnum.INPUT);
+
+    // Send message via runtime handler
+    await this.runtimeHandler.sendMessage(message, signal);
+  }
+
+  private onAbortClick(): void {
+    this.abortOperation();
+  }
+
+  private abortOperation(onAbort?: () => void) {
+    if (!this._isProcessing || this._isAborting) {
+      return;
+    }
+    this.onAbort = onAbort;
+    this.startAbortMonitoring();
+    this.runtimeHandler.abort();
+  }
+
+  // Method to start monitoring the aborting process
+  private startAbortMonitoring() {
+    this.setAbortingState(true);
+    // Clear any existing interval
+    if (this.abortCheckInterval) {
+      clearInterval(this.abortCheckInterval);
+    }
+
+    // Check for changes every 100ms
+    this.abortCheckInterval = setInterval(() => {
+      if (!this.runtimeHandler.isRunning) {
+        this.stopAbortMonitoring();
+        this.setAbortingState(false);
+        this.onAbort?.();
+      }
+    }, 100);
+  }
+
+  // Method to stop monitoring the aborting process
+  private stopAbortMonitoring() {
+    if (this.abortCheckInterval) {
+      clearInterval(this.abortCheckInterval);
+      this.abortCheckInterval = null;
+    }
+  }
+
+  public async start(): Promise<void> {
+    // Add welcome messages with keyboard shortcuts
+    this.addMessage(
+      "System",
+      "Chat monitor initialized. You can communicate with the runtime/supervisor agent here.",
+      MessageTypeEnum.SYSTEM,
+    );
+
+    // Start monitoring input value changes
+    this.chatInput.startValueMonitoring();
+    this.messages.updateDisplay(false);
+    this.screen.element.render();
   }
 }

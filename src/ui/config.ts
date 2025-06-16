@@ -163,11 +163,19 @@ export const UIConfig = {
   } satisfies StyleCategory,
 
   borders: {
-    type: "line",
-    fg: UIColors.white.white,
-    focus: {
-      border: {
-        fg: UIColors.blue.cyan,
+    general: {
+      type: "line",
+      fg: UIColors.white.white,
+      focus: {
+        border: {
+          fg: UIColors.blue.cyan,
+        },
+      },
+    },
+    inner: {
+      type: "none",
+      focus: {
+        bg: UIColors.green.dartmouth_green,
       },
     },
   },

@@ -223,7 +223,7 @@ export class ControlsManager {
     this.logger.debug(`focus(${id})`);
 
     if (id === this._screen.id) {
-      this.logger.warn(`Screen can't be focused, skip!`)
+      this.logger.warn(`Screen can't be focused, skip!`);
       return;
     }
 

@@ -55,4 +55,5 @@ export const NavigationDescription = {
   ROLE_FILTER: "Roles filter",
   MESSAGES: "Messages",
   CHAT: "Chat",
+  SEND_MESSAGE: "Send message",
 } as const;

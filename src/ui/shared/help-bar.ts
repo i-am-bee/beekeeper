@@ -1,5 +1,9 @@
 import blessed from "neo-blessed";
-import { ContainerComponent, ParentInput, ScreenInput } from "../base/monitor.js";
+import {
+  ContainerComponent,
+  ParentInput,
+  ScreenInput,
+} from "../base/monitor.js";
 import { UIColors } from "../colors.js";
 import { ControllableContainer } from "../controls/controls-manager.js";
 import { Logger } from "beeai-framework";

@@ -106,5 +106,6 @@ const input = new ChatInput(
   },
   logger,
 );
-input.startValueMonitoring();
-controlsManager.focus(input.inputBox.id);
+input.setProcessing(false);
+// input.abortButton.element.focus();
+controlsManager.focus(input.container.id);

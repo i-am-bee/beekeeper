@@ -104,7 +104,7 @@ export function formatCompleteMessage(
  * @returns Object with UI configuration for the messages box
  */
 export function getMessagesContainerStyle() {
-  const border = clone(st.UIConfig.borders) as any;
+  const border = clone(st.UIConfig.borders.general) as any;
   return {
     border,
     label: " Messages ",
@@ -126,7 +126,7 @@ export function getMessagesBoxStyle() {
 }
 
 export function getInputContainerBoxStyle() {
-  const border = clone(st.UIConfig.borders) as any;
+  const border = clone(st.UIConfig.borders.general) as any;
   return {
     border: border,
     label: " Input ",
@@ -158,7 +158,7 @@ export function getSendButtonStyle(disabled = false) {
       fg: disabled ? UIColors.gray.cool_gray : UIColors.white.white,
       bg: disabled ? UIColors.gray.gray : UIColors.blue.blue,
       focus: {
-        bg: disabled ? UIColors.gray.gray : UIColors.blue.cyan,
+        bg: disabled ? UIColors.red.cardinal : UIColors.blue.electric_blue,
       },
       hover: {
         bg: disabled ? UIColors.gray.gray : UIColors.blue.cyan,

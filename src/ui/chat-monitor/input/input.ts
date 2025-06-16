@@ -8,13 +8,22 @@ import {
   ControllableElement,
 } from "@/ui/controls/controls-manager.js";
 import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
-import { NavigationDescription } from "@/ui/controls/navigation.js";
-import { noop } from "@/utils/noop.js";
+import {
+  NavigationDescription,
+  NavigationDirection,
+} from "@/ui/controls/navigation.js";
 import { Logger } from "beeai-framework";
+import EventEmitter from "events";
 import blessed from "neo-blessed";
 import { Textarea } from "../../blessed/Textarea.js";
 import * as st from "../../config.js";
 import * as chatStyles from "../config.js";
+
+interface ChatInputEvents {
+  "send:click": (message: string) => void;
+  "abort:click": () => void;
+  "send:enabled": (enabled: boolean) => void;
+}
 
 type ChatInputOptions = (ParentInput | ScreenInput) & {
   onValueChange: () => void;
@@ -25,13 +34,36 @@ export class ChatInput extends ContainerComponent {
   private _inputBox: ControllableElement;
   private _sendButton: ControllableElement;
   private _abortButton: ControllableElement;
+  private emitter = new EventEmitter();
 
   private _onValueChange: () => void;
 
+  private _isSendEnabled = false;
   private _isProcessing = false;
   private _isAborting = false;
   private lastValue = ""; // Track the last value
   private valueCheckInterval: NodeJS.Timeout | null = null;
+
+  public on<K extends keyof ChatInputEvents>(
+    event: K,
+    listener: ChatInputEvents[K],
+  ): typeof this.emitter {
+    return this.emitter.on(event, listener);
+  }
+
+  public off<K extends keyof ChatInputEvents>(
+    event: K,
+    listener: ChatInputEvents[K],
+  ): typeof this.emitter {
+    return this.emitter.off(event, listener);
+  }
+
+  public emit<K extends keyof ChatInputEvents>(
+    event: K,
+    ...args: Parameters<ChatInputEvents[K]>
+  ): boolean {
+    return this.emitter.emit(event, ...args);
+  }
 
   get container() {
     return this._container;
@@ -47,6 +79,10 @@ export class ChatInput extends ContainerComponent {
 
   get abortButton() {
     return this._abortButton;
+  }
+
+  get isSendEnabled() {
+    return this._isSendEnabled;
   }
 
   constructor({ onValueChange, ...rest }: ChatInputOptions, logger: Logger) {
@@ -78,10 +114,10 @@ export class ChatInput extends ContainerComponent {
       name: "inputBox",
       element: new Textarea({
         parent: this._container.element,
-        width: "100%-13", // Make room for abort button
+        width: "100%-17", // Make room for abort button
         top: "0",
         vi: false,
-        mouse: true,
+        mouse: false,
         keys: false,
         scrollbar: st.UIConfig.scrollbar,
         ...chatStyles.getInputBoxStyle(),
@@ -97,7 +133,7 @@ export class ChatInput extends ContainerComponent {
         parent: this._container.element,
         width: 10,
         height: 3,
-        left: "100%-12",
+        left: "100%-14",
         top: 0,
         ...chatStyles.getSendButtonStyle(true),
         tags: true,
@@ -114,102 +150,97 @@ export class ChatInput extends ContainerComponent {
         width: 10,
         height: 3,
         left: "50%-5",
-        top: "100%-5",
+        top: "0",
         ...chatStyles.getAbortButtonStyle(),
         tags: true,
-        mouse: true,
+        mouse: false,
         hidden: true,
       }),
       parent: this._container,
     });
 
     this.setupEventHandlers();
-    this.setupControls();
+    this.setupControls("ready");
   }
 
   private setupEventHandlers() {
+    this._inputBox.element.on("keypress", (ch, key) => {
+      if (key.name === "escape") {
+        this.controlsManager.navigate(NavigationDirection.OUT);
+      }
+    });
+
     this._inputBox.element.on("focus", () => {
       // Hack how to enable input. Don't use inputOnFocus! It steal focus control.
       (this._inputBox.element as any).readInput();
     });
-    this._inputBox.element.on("", () => {
-      this.controlsManager.focus(this._container.id);
-    });
   }
 
-  private setupControls(shouldRender = true) {
+  private setupControls(
+    state: "ready" | "ready_to_send" | "processing",
+    shouldRender = true,
+  ) {
     this.controlsManager.updateKeyActions(this._inputBox.id, {
-      kind: "override",
+      kind: "exclusive",
       actions: [
         {
-          key: "left",
+          key: "escape",
           action: {
-            description: NavigationDescription.MOVE_LEFT_RIGHT,
-            listener: keyActionListenerFactory(noop),
-          },
-        },
-        {
-          key: "right",
-          action: {
-            description: NavigationDescription.MOVE_LEFT_RIGHT,
-            listener: keyActionListenerFactory(noop),
-          },
-        },
-        {
-          key: "up",
-          action: {
-            description: NavigationDescription.MOVE_UP_DOWN,
-            listener: keyActionListenerFactory(noop),
-          },
-        },
-        {
-          key: "down",
-          action: {
-            description: NavigationDescription.MOVE_UP_DOWN,
-            listener: keyActionListenerFactory(noop),
-          },
-        },
-        {
-          key: "S-left",
-          action: {
-            description: NavigationDescription.MOVE_PREV_NEXT_WORD,
-            listener: keyActionListenerFactory(noop),
-          },
-        },
-        {
-          key: "S-right",
-          action: {
-            description: NavigationDescription.MOVE_PREV_NEXT_WORD,
-            listener: keyActionListenerFactory(noop),
-          },
-        },
-        {
-          key: "home",
-          action: {
-            description: NavigationDescription.MOVE_START_END_LINE,
-            listener: keyActionListenerFactory(noop),
-          },
-        },
-        {
-          key: "end",
-          action: {
-            description: NavigationDescription.MOVE_START_END_LINE,
-            listener: keyActionListenerFactory(noop),
+            description: NavigationDescription.OUT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.OUT);
+            }),
           },
         },
       ],
     });
 
-    this.controlsManager.updateNavigation(this._container.id, {
-      in: this._inputBox.id,
-    });
-
-    this.controlsManager.updateNavigation(this._inputBox.id, {
-      out: this._container.id,
-      outEffect: () => {
-        this.logger.debug("out effect");
-      },
-    });
+    switch (state) {
+      case "ready": {
+        this.controlsManager.updateNavigation(this._container.id, {
+          in: this._inputBox.id,
+          out: this.parent.id,
+        });
+        this.controlsManager.updateNavigation(this._inputBox.id, {
+          out: this.container.id,
+        });
+        this.updateSendButtonStyle(false);
+        break;
+      }
+      case "ready_to_send": {
+        this.controlsManager.updateNavigation(this._container.id, {
+          in: this._inputBox.id,
+          out: this.parent.id,
+        });
+        this.controlsManager.updateNavigation(this._inputBox.id, {
+          out: this._sendButton.id,
+        });
+        this.controlsManager.updateNavigation(this._sendButton.id, {
+          previous: this._inputBox.id,
+          left: this._inputBox.id,
+          out: this._container.id,
+          inEffect: () => {
+            this.clickSendButton();
+          },
+        });
+        this.updateSendButtonStyle(false);
+        break;
+      }
+      case "processing": {
+        this.controlsManager.updateNavigation(this._container.id, {
+          in: this._abortButton.id,
+          out: this.parent.id,
+        });
+        this.controlsManager.updateNavigation(this._abortButton.id, {
+          in: this._abortButton.id,
+          out: this._container.id,
+          inEffect: () => {
+            this.clickAbortButton();
+          },
+        });
+        break;
+      }
+    }
 
     if (shouldRender) {
       this.screen.element.render();
@@ -224,29 +255,37 @@ export class ChatInput extends ContainerComponent {
     if (this._isProcessing !== isProcessing) {
       if (isProcessing) {
         this.stopValueMonitoring();
-        this._inputBox.element.hide();
         this._sendButton.element.hide();
+        this._inputBox.element.hide();
         this._abortButton.element.show();
-        this._abortButton.element.focus();
+        this.setupControls("processing");
+        this.controlsManager.focus(this._abortButton.id);
       } else {
-        this._inputBox.element.show();
         this._sendButton.element.show();
+        this._inputBox.element.show();
         this._abortButton.element.hide();
         if (!this.valueCheckInterval) {
           this.startValueMonitoring();
         }
-        this._inputBox.element.focus();
+        this.setupControls(this._isSendEnabled ? "ready_to_send" : "ready");
+        this.controlsManager.focus(this._inputBox.id);
       }
     }
 
     this._isProcessing = isProcessing;
+    this.updateSendButtonStyle();
+  }
 
+  private updateSendButtonStyle(shouldRender = true) {
     // Update send button
     const disabled =
-      !isProcessing && this._inputBox.element.getContent().length === 0;
+      !this._isProcessing && this._inputBox.element.getContent().length === 0;
     const buttonStyle = chatStyles.getSendButtonStyle(disabled);
     this._sendButton.element.style = buttonStyle.style;
-    this.screen.element.render();
+
+    if (shouldRender) {
+      this.screen.element.render();
+    }
   }
 
   public setAborting(isAborting: boolean) {
@@ -275,9 +314,20 @@ export class ChatInput extends ContainerComponent {
       const currentValue = (
         this._inputBox.element as blessed.Widgets.TextareaElement
       ).getValue();
+
       if (currentValue !== this.lastValue) {
         this.lastValue = currentValue;
         this._onValueChange();
+      }
+
+      if (currentValue.trim() !== "" && !this._isSendEnabled) {
+        this._isSendEnabled = true;
+        this.setupControls("ready_to_send");
+        this.emit("send:enabled", true);
+      } else if (currentValue.trim() === "" && this._isSendEnabled) {
+        this._isSendEnabled = false;
+        this.setupControls("ready");
+        this.emit("send:enabled", false);
       }
     }, 100);
   }
@@ -300,5 +350,29 @@ export class ChatInput extends ContainerComponent {
     if (shouldRender) {
       this.screen.element.render();
     }
+  }
+
+  clickSendButton() {
+    if (this._isProcessing || this._isAborting || !this._isSendEnabled) {
+      return;
+    }
+    const value = (
+      this._inputBox.element as blessed.Widgets.TextareaElement
+    ).getValue();
+    if (value.trim() === "") {
+      return;
+    }
+
+    this.controlsManager.focus(this._sendButton.id);
+    this.emit("send:click", value);
+  }
+
+  clickAbortButton() {
+    if (!this._isProcessing) {
+      return;
+    }
+
+    this.controlsManager.focus(this._abortButton.id);
+    this.emit("abort:click");
   }
 }

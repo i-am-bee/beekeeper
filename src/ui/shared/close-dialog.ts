@@ -286,7 +286,7 @@ export class CloseDialog {
    * Hide the dialog
    */
   public hide(): void {
-    if(!this.isVisible){
+    if (!this.isVisible) {
       return;
     }
 
@@ -295,9 +295,9 @@ export class CloseDialog {
     if (!this.initiatorElementId) {
       throw new Error(`Initiator element id is missing`);
     }
-    this.screen.element.render();
     this.isVisible = false;
     this.controlsManager.focus(this.initiatorElementId);
+    this.screen.element.render();
   }
 
   /**
