@@ -4,12 +4,11 @@ import { ParserOutput } from "./parser-output.js";
 describe("LAML Parser output", () => {
   describe("Set", () => {
     it("Top level", () => {
-      const output = new ParserOutput();
+      const output = new ParserOutput();      
       output.set(
         ["RESPONSE_CHOICE_EXPLANATION"],
         "No existing agent can gather tweets on demand; a new config is required.",
       );
-
       expect(output.result).toEqual({
         RESPONSE_CHOICE_EXPLANATION:
           "No existing agent can gather tweets on demand; a new config is required.",

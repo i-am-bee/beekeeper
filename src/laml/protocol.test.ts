@@ -124,7 +124,7 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE: <!optional;object>
   });
 
   it("Missing first required field cause error", () => {
-    const parser = new Parser({ protocol });
+    const parser = new Parser(protocol);
     const fn = () =>
       parser.parse(`Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamc
 RESPONSE_TYPE: CREATE_AGENT_CONFIG`);
@@ -133,7 +133,7 @@ RESPONSE_TYPE: CREATE_AGENT_CONFIG`);
     );
   });
   it("Missing second required field cause error", () => {
-    const parser = new Parser({ protocol });
+    const parser = new Parser(protocol);
     const fn = () =>
       parser.parse(`Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamc
 
@@ -141,7 +141,7 @@ RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a ne
     expect(fn).toThrow("Can't find field `RESPONSE_TYPE`.");
   });
   it("Just first two lines are mandatory", () => {
-    const parser = new Parser({ protocol });
+    const parser = new Parser(protocol);
     expect(
       parser.parse(`Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamc
 
@@ -154,7 +154,7 @@ RESPONSE_TYPE: CREATE_AGENT_CONFIG`),
     });
   });
   it("First two lines are mandatory; Third optional", () => {
-    const parser = new Parser({ protocol });
+    const parser = new Parser(protocol);
     expect(
       parser.parse(`Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamc
 
@@ -196,7 +196,7 @@ News headlines matching “<keywords>” from the past 24 hours:
   });
 
   it("First two lines are mandatory; Fourth optional", () => {
-    const parser = new Parser({ protocol });
+    const parser = new Parser(protocol);
     expect(
       parser.parse(`Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamc
 

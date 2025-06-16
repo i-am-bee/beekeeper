@@ -8,7 +8,7 @@ import {
 import { AgentConfigCreatorInput } from "./dto.js";
 import { LAMLObject } from "@/laml/dto.js";
 
-const protocol = laml.ProtocolBuilder.new()
+const protocol = laml.ProtocolBuilder.new<Response>()
   .text({
     name: "RESPONSE_CHOICE_EXPLANATION",
     description:
@@ -454,25 +454,23 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
 This is the task:`;
 };
 
-const parser = laml.Parser.new(protocol);
 export function toResponse(parsed: LAMLObject) {
-  switch(parsed.RESPONSE_TYPE){
-    
+  switch (parsed.RESPONSE_TYPE) {
     case "CREATE_AGENT_CONFIG":
       return {
         kind: parsed.RESPONSE_TYPE,
         explanation: parsed.RESPONSE_CHOICE_EXPLANATION,
         data: {
           // agent_type: parsed.RESPONSE_CREATE_AGENT_CONFIG.agent_type,
-        }
+        },
       } as CreateAgentConfigResponse;
       break;
     case "UPDATE_AGENT_CONFIG":
-    break;
+      break;
     case "SELECT_AGENT_CONFIG":
-    break;
+      break;
     case "AGENT_CONFIG_UNAVAILABLE":
-    break;
+      break;
   }
 }
 
@@ -492,7 +490,7 @@ export async function run(llm: ChatModel, input: AgentConfigCreatorInput) {
   console.log(`${input.task}\n`);
   console.log(`### RESPONSE`);
   console.log(`${raw}\n\n`);
-  const parsed = parser.parse(raw);
+  const parsed = protocol.parse(raw);
   console.log(`${JSON.stringify(parsed, null, " ")}\n\n`);
 
   return {

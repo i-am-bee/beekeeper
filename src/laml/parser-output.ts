@@ -2,26 +2,16 @@ import { clone } from "remeda";
 import { LAMLObject, LAMLValue } from "./dto.js";
 import { pathStr } from "./utils.js";
 
-// export type OutputPrimitiveValue = string | number | boolean | string[];
-// export type OutputValue =
-//   | OutputPrimitiveValue
-//   | OutputObject
-//   | OutputObjectArray;
-// export type OutputObjectArray = OutputValue[];
-// export interface OutputObject {
-//   [key: string]: OutputValue;
-// }
-
-export class ParserOutput {
-  protected _output: LAMLObject = {};
+export class ParserOutput<TResult> {
+  protected _result: LAMLObject = {};
 
   get result() {
-    return clone(this._output);
+    return clone(this._result) as TResult;
   }
 
   set(path: string[], value: LAMLValue) {
     let idx = 0;
-    let temp = this._output;
+    let temp = this._result;
     const currentPath = [];
     for (const pathPart of path) {
       const isLast = idx + 1 === path.length;
@@ -48,7 +38,7 @@ export class ParserOutput {
 
   get(path: string[]) {
     let idx = 0;
-    let temp = this._output;
+    let temp = this._result;
     const currentPath = [];
     for (const pathPart of path) {
       currentPath.push(pathPart);

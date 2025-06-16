@@ -1,8 +1,8 @@
 import { clone } from "remeda";
-import { ParserOutput as ParserOutput } from "./parser-output.js";
+import { ConstantField, FieldKind } from "./dto.js";
+import { ParserOutput } from "./parser-output.js";
 import { FieldRef, Protocol } from "./protocol.js";
 import { pathStr, truncateText, unwrapString } from "./utils.js";
-import { ConstantField, FieldKind } from "./dto.js";
 
 export type ConversionFn = (val: string) => string;
 
@@ -27,28 +27,34 @@ export interface PathConversion extends BaseConversion {
 
 export type AnyConversion = GlobalConversion | FieldConversion | PathConversion;
 
-export class Parser {
+export class Parser<TResult> {
   protected _globalConversions: GlobalConversion[];
   protected _fieldConversions: Map<FieldKind, FieldConversion[]>;
   protected _pathConversion: Map<string, PathConversion[]>;
-  protected _protocol?: Protocol;
+  protected _protocol: Protocol<TResult>;
 
-  constructor(options?: { rules?: AnyConversion[]; protocol?: Protocol }) {
+  constructor(
+    protocol: Protocol<TResult>,
+    options?: { rules?: AnyConversion[] },
+  ) {
     this._globalConversions = [];
     this._fieldConversions = new Map();
     this._pathConversion = new Map();
     if (options?.rules) {
       options.rules.forEach(this.addConversion.bind(this));
     }
-    this._protocol = options?.protocol;
+    this._protocol = protocol;
   }
 
-  static new(protocol: Protocol, options?: { rules?: AnyConversion[] }) {
-    return new Parser({ protocol, rules: options?.rules });
+  static new<TResult>(
+    protocol: Protocol<TResult>,
+    options?: { rules?: AnyConversion[] },
+  ) {
+    return new Parser(protocol, { rules: options?.rules });
   }
 
-  static parse(
-    protocol: Protocol,
+  static parse<TResult>(
+    protocol: Protocol<TResult>,
     value: string,
     options?: { rules?: AnyConversion[] },
   ) {
@@ -94,16 +100,12 @@ export class Parser {
     }
   }
 
-  setProtocol(protocol: Protocol) {
-    this._protocol = protocol;
-  }
-
   parse(data: string) {
     if (!this._protocol) {
       throw new Error(`Protocol is not defined`);
     }
 
-    const output = new ParserOutput();
+    const output = new ParserOutput<TResult>();
     let rest = data;
     const protocol = this._protocol;
     let firstIteration = true;
@@ -324,8 +326,8 @@ export class Parser {
     }
   }
 
-  private static getParamNameString(
-    protocol: Protocol,
+  private static getParamNameString<TResult>(
+    protocol: Protocol<TResult>,
     path: string[],
     paramName: string,
     newLineBeginning: boolean,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Protocol, ProtocolBuilder } from "./protocol.js";
 import { Parser } from "./parser.js";
+import { Protocol, ProtocolBuilder } from "./protocol.js";
 
 export interface TestItem {
   name: string;
@@ -11,13 +11,17 @@ export interface TestItem {
 describe("LAML Parser", () => {
   describe("One field", () => {
     describe("Text", () => {
-      const protocol = ProtocolBuilder.new().text({
-        name: "RESPONSE_CHOICE_EXPLANATION",
-        description:
-          "Brief explanation of *why* you selected the given RESPONSE_TYPE",
-      });
+      const protocol = ProtocolBuilder.new<{
+        RESPONSE_CHOICE_EXPLANATION: string;
+      }>()
+        .text({
+          name: "RESPONSE_CHOICE_EXPLANATION",
+          description:
+            "Brief explanation of *why* you selected the given RESPONSE_TYPE",
+        })
+        .build();
 
-      const parser = new Parser({ protocol: protocol.build() });
+      const parser = new Parser(protocol);
       [
         [
           "Happy day",
@@ -92,8 +96,9 @@ describe("LAML Parser", () => {
           name: "RESPONSE_TYPE",
           description:
             "CREATE_AGENT_CONFIG | UPDATE_AGENT_CONFIG | SELECT_AGENT_CONFIG | AGENT_CONFIG_UNAVAILABLE",
-        });
-      const parser = new Parser({ protocol: protocol.build() });
+        })
+        .build();
+      const parser = new Parser(protocol);
       const testData = [
         {
           name: "Happy day",
@@ -128,18 +133,20 @@ RESPONSE_TYPE:`,
 
     describe("Nested attributes", () => {
       describe("One nested attribute", () => {
-        const protocol = ProtocolBuilder.new().object({
-          name: "RESPONSE_CREATE_AGENT_CONFIG",
-          isOptional: true,
-          attributes: ProtocolBuilder.new()
-            .text({
-              name: "agent_type",
-              description: "Name of the new agent config type in snake_case",
-            })
+        const protocol = ProtocolBuilder.new()
+          .object({
+            name: "RESPONSE_CREATE_AGENT_CONFIG",
+            isOptional: true,
+            attributes: ProtocolBuilder.new()
+              .text({
+                name: "agent_type",
+                description: "Name of the new agent config type in snake_case",
+              })
 
-            .buildFields(),
-        });
-        const parser = new Parser({ protocol: protocol.build() });
+              .buildFields(),
+          })
+          .build();
+        const parser = new Parser(protocol);
         const testData = [
           {
             name: "One level",
@@ -162,22 +169,24 @@ RESPONSE_TYPE:`,
       });
 
       describe("Two nested attribute", () => {
-        const protocol = ProtocolBuilder.new().object({
-          name: "RESPONSE_CREATE_AGENT_CONFIG",
-          isOptional: true,
-          attributes: ProtocolBuilder.new()
-            .text({
-              name: "agent_type",
-              description: "Name of the new agent config type in snake_case",
-            })
-            .text({
-              name: "instructions",
-              description:
-                "Natural language but structured text instructs on how agent should act",
-            })
-            .buildFields(),
-        });
-        const parser = new Parser({ protocol: protocol.build() });
+        const protocol = ProtocolBuilder.new()
+          .object({
+            name: "RESPONSE_CREATE_AGENT_CONFIG",
+            isOptional: true,
+            attributes: ProtocolBuilder.new()
+              .text({
+                name: "agent_type",
+                description: "Name of the new agent config type in snake_case",
+              })
+              .text({
+                name: "instructions",
+                description:
+                  "Natural language but structured text instructs on how agent should act",
+              })
+              .buildFields(),
+          })
+          .build();
+        const parser = new Parser(protocol);
         const testData = [
           {
             name: "One level; two attributes",
@@ -220,13 +229,15 @@ News headlines matching “<keywords>” from the past 24 hours:
   });
   describe("Optional attributes", () => {
     describe("One optional attribute; no match", () => {
-      const protocol = ProtocolBuilder.new().text({
-        name: "RESPONSE_CHOICE_EXPLANATION",
-        isOptional: true,
-        description:
-          "Brief explanation of *why* you selected the given RESPONSE_TYPE",
-      });
-      const parser = new Parser({ protocol: protocol.build() });
+      const protocol = ProtocolBuilder.new()
+        .text({
+          name: "RESPONSE_CHOICE_EXPLANATION",
+          isOptional: true,
+          description:
+            "Brief explanation of *why* you selected the given RESPONSE_TYPE",
+        })
+        .build();
+      const parser = new Parser(protocol);
       it("No match", () => {
         const parsed = parser.parse(
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -263,32 +274,36 @@ RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a ne
           expected: Expected<T>;
         }
 
-        interface CreateSingleFieldTestSectionConfig<T> {
-          testData: SingleFieldTestItem<T>[];
-          protocol: Protocol;
+        interface CreateSingleFieldTestSectionConfig<
+          TResult,
+          TExpected,
+        > {
+          testData: SingleFieldTestItem<TExpected>[];
+          protocol: Protocol<TResult>;
           getValue: (value: string) => string;
-          getExpected: (expected: T) => any;
+          getExpected: (expected: TExpected) => any;
           getExpectedError: (expected: ExpectedError) => string;
         }
 
-        const createSingleFieldTestSection = <T>({
+        const createSingleFieldTestSection = <TResult, T>({
           protocol,
           testData,
           getValue,
           getExpected,
           getExpectedError,
-        }: CreateSingleFieldTestSectionConfig<T>) => {
-          const parser = new Parser({ protocol });
+        }: CreateSingleFieldTestSectionConfig<TResult, T>) => {
           testData.forEach(({ name, value, expected }) => {
             it(name, () => {
               const error = expected as ExpectedError;
               value = getValue(value);
               if (error.error) {
-                expect(() => parser.parse(value)).toThrow(
+                expect(() => protocol.parse(value)).toThrow(
                   getExpectedError(error),
                 );
               } else {
-                expect(parser.parse(value)).toEqual(getExpected(expected as T));
+                expect(protocol.parse(value)).toEqual(
+                  getExpected(expected as T),
+                );
               }
             });
           });

@@ -1,18 +1,20 @@
 import { clone, isNonNullish, reverse } from "remeda";
 import * as dto from "./dto.js";
+import { protocolToSchema } from "./dto.js";
+import { Parser } from "./parser.js";
 
 export const DEFAULT_INDENT = "  ";
 export const DESCRIPTION = ``;
 
-export class ProtocolBuilder {
+export class ProtocolBuilder<TResult> {
   private _fields: dto.AnyField[];
 
   private constructor() {
     this._fields = [];
   }
 
-  static new() {
-    return new ProtocolBuilder();
+  static new<TResult>() {
+    return new ProtocolBuilder<TResult>();
   }
 
   text(field: Omit<dto.TextField, "kind">) {
@@ -60,7 +62,7 @@ export class ProtocolBuilder {
   }
 
   build() {
-    return new Protocol(this.buildFields());
+    return new Protocol<TResult>(this.buildFields());
   }
 }
 
@@ -75,8 +77,12 @@ export type TraverseCallback = (
   path: string[],
 ) => "STOP" | "CONTINUE";
 
-export class Protocol {
+export class Protocol<TResult> {
   protected _protocol: dto.Protocol;
+
+  get schema() {
+    return protocolToSchema(this._protocol);
+  }
 
   get fields() {
     return clone(this._protocol.fields);
@@ -92,6 +98,10 @@ export class Protocol {
 
   add(field: dto.AnyField) {
     this._protocol.fields.push(field);
+  }
+
+  parse(value: string) {
+    return Parser.parse<TResult>(this, value);
   }
 
   static traverse(
