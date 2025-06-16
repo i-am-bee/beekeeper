@@ -34,13 +34,13 @@ export const protocol = laml.ProtocolBuilder.new()
         description: "Name of the existing agent config type",
       })
       .text({
-        name: "description",
-        description: "Detail information about the task and its context",
-      })
-      .text({
         name: "task_config_input",
         description:
           "Task config input should serves as a template for task run input for derived task runs.",
+      })
+      .text({
+        name: "description",
+        description: "Detail information about the task and its context",
       }),
   })
   .object({
@@ -49,22 +49,23 @@ export const protocol = laml.ProtocolBuilder.new()
     attributes: laml.ProtocolBuilder.new()
       .text({
         name: "task_type",
-        description: "Name of the new task config type in snake_case",
+        description: "Name of the existing task config type to update",
       })
       .text({
         name: "agent_type",
-        description: "Name of the existing agent config type",
-      })
-      .text({
-        name: "description",
         isOptional: true,
-        description: "Detail information about the task and its context",
+        description: "Name of the existing agent config type",
       })
       .text({
         name: "task_config_input",
         isOptional: true,
         description:
           "Task config input should serves as a template for task run input for derived task runs.",
+      })
+      .text({
+        name: "description",
+        isOptional: true,
+        description: "Detail information about the task and its context",
       }),
   })
   .object({

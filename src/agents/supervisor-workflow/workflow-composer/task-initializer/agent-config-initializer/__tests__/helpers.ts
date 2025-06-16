@@ -1,0 +1,36 @@
+import { AgentAvailableTool } from "@/agents/supervisor-workflow/dto.js";
+import { ExistingAgentConfig } from "../dto.js";
+import { protocol } from "../protocol.js";
+import * as laml from "@/laml/index.js";
+import { generateMatrixTests } from "@test/matrix/generate-matrix-tests.js";
+import { Logger } from "beeai-framework";
+import { getChatLLM } from "@/helpers/llm.js";
+import { AgentConfigInitializer } from "../agent-config-initializer.js";
+import { Matrix, TestMatrixCase } from "@test/matrix/matrix.js";
+
+export type AgentCase = TestMatrixCase<
+  string,
+  Partial<laml.ProtocolResult<typeof protocol>>,
+  {
+    availableTools?: AgentAvailableTool[];
+    existingConfigs?: ExistingAgentConfig[];
+  },
+  laml.ProtocolResult<typeof protocol>
+>;
+
+const logger = Logger.root.child({ name: "agent-config-tests" });
+const llm = getChatLLM("supervisor");
+const llmCall = new AgentConfigInitializer(logger);
+
+export function runMatrix(matrix: Matrix<any, AgentCase>) {
+  generateMatrixTests({
+    matrix,
+    llm,
+    llmCall,
+    mapCaseToInput: ({ input, meta }) => ({
+      task: input,
+      availableTools: meta?.availableTools ?? [],
+      existingAgentConfigs: meta?.existingConfigs ?? [],
+    }),
+  });
+}

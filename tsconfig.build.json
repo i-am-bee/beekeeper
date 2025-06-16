@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "sourceRoot": "src",
+    "types": [
+      "node",
+      "neo-blessed"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.fixture.ts",             // Exclude fixture files by pattern
+    "**/*.fixtures.ts",
+    "**/__fixtures__/**",          // Exclude fixture directories
+    "**/__mocks__/**",
+    "**/__tests__/**",
+    "tests"
+  ]
+}

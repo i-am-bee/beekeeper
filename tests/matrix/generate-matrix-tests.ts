@@ -1,0 +1,68 @@
+// tests/helpers/generateMatrixTests.ts
+import { LLMCall } from "@/agents/supervisor-workflow/llm-call.js";
+import { ChatModel } from "beeai-framework";
+import { describe, it, expect } from "vitest";
+import { Coord, Matrix, TestMatrixCase } from "./matrix.js";
+
+interface RunnerOptions<
+  CaseT extends TestMatrixCase,
+  InputT extends { task: string },
+  ParsedT = any,
+  OutputT = any,
+> {
+  matrix: Matrix<any, CaseT>;
+  llm: ChatModel;
+  llmCall: LLMCall<any, InputT, OutputT>; // any protocol, generic input/output
+  /**
+   * Transforms the stored `CaseT` into whatever `InputT`
+   * your LLMCall implementation wants.
+   */
+  mapCaseToInput: (c: CaseT) => InputT;
+  /**
+   * Optional custom assertion (defaults to .toMatchObject()).
+   */
+  assertParsed?: (parsed: ParsedT, expected: CaseT["expected"]) => void;
+  fullMatrixPopulationCheck?: false;
+}
+
+export function generateMatrixTests<
+  CaseT extends TestMatrixCase,
+  InputT extends { task: string },
+  ParsedT = any,
+  OutputT = any,
+>({
+  matrix,
+  llm,
+  llmCall,
+  mapCaseToInput,
+  assertParsed = (parsed, expected) =>
+    // @ts-ignore – ParsedT is usually an object; this keeps it generic
+    expect(parsed).toMatchObject(expected),
+  // fullMatrixPopulationCheck,
+}: RunnerOptions<CaseT, InputT, ParsedT, OutputT>) {
+  matrix.walk((coord: Coord<any>, cases: readonly CaseT[]) => {
+    if (cases.length === 0) {
+      return;
+    } // allow sparse grids if you wish
+
+    describe(coord.join(" · "), () => {
+      cases.forEach((c) => {
+        const testName =
+          c.name ??
+          (typeof c.input === "string"
+            ? c.input
+            : ((c.input as any).task ?? "case"));
+
+        it(testName, async () => {
+          const resp = await llmCall.run(llm, mapCaseToInput(c));
+
+          // 1) structural / protocol-level matcher
+          assertParsed(resp.parsed as ParsedT, c.expected as CaseT["expected"]);
+
+          // 2) optional fine-grained assertions (PatternBuilder, etc.)
+          c.assert?.(resp.parsed, resp);
+        });
+      });
+    });
+  });
+}

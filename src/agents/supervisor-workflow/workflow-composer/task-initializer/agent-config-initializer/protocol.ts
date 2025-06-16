@@ -29,6 +29,12 @@ export const protocol = laml.ProtocolBuilder.new()
         name: "agent_type",
         description: "Name of the new agent config type in snake_case",
       })
+      .array({
+        name: "tools",
+        description:
+          "list of selected tools identifiers that this agent type can utilize",
+        type: "text",
+      })
       .text({
         name: "description",
         description:
@@ -38,12 +44,6 @@ export const protocol = laml.ProtocolBuilder.new()
         name: "instructions",
         description:
           "Natural language but structured text instructs on how agent should act",
-      })
-      .array({
-        name: "tools",
-        description:
-          "list of selected tools identifiers that this agent type can utilize",
-        type: "text",
       }),
   })
   .object({
@@ -54,6 +54,13 @@ export const protocol = laml.ProtocolBuilder.new()
         name: "agent_type",
         description: "Name of an existing agent config type to update",
       })
+      .array({
+        name: "tools",
+        isOptional: true,
+        description:
+          "list of selected tools identifiers that this agent type can utilize",
+        type: "text",
+      })
       .text({
         name: "description",
         isOptional: true,
@@ -65,13 +72,6 @@ export const protocol = laml.ProtocolBuilder.new()
         isOptional: true,
         description:
           "Natural language but structured text instructs on how agent should act",
-      })
-      .array({
-        name: "tools",
-        isOptional: true,
-        description:
-          "list of selected tools identifiers that this agent type can utilize",
-        type: "text",
       }),
   })
   .object({

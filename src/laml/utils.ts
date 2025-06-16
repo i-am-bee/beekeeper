@@ -59,7 +59,7 @@ export function printLAMLObject(
   for (const attr in obj) {
     const val = obj[attr];
     const valToPrint = Array.isArray(val)
-      ? ` ${val.join(", ")}`
+      ? ` ${val.join(", ")}\n`
       : typeof val === "object"
         ? `\n${printLAMLObject(val as LAMLObject, indent, depth + 1)}`
         : ` ${val}\n`;
@@ -71,4 +71,18 @@ export function printLAMLObject(
   }
 
   return output;
+}
+
+/**
+ * Get the split by the most success delimiter (with most items)
+ *
+ * @param value
+ * @param delimiters
+ * @returns
+ */
+export function splitArrayString(value: string, delimiters = [",", "\n", ";"]) {
+  const splits = delimiters
+    .map((d) => [d, value.split(d)])
+    .sort((a, b) => b[1].length - a[1].length);
+  return splits[0];
 }

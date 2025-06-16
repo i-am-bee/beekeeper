@@ -10,6 +10,9 @@ import { AgentConfigInitializerTool } from "./tool.js";
 import { prompt } from "./prompt.js";
 import { Logger } from "beeai-framework";
 
+/**
+ * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
+ */
 export class AgentConfigInitializer extends LLMCall<
   typeof protocol,
   AgentConfigInitializerInput,

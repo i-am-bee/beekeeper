@@ -39,7 +39,7 @@ export class TaskConfigInitializer extends LLMCall<
             method: "createTaskConfig",
             config: {
               agentKind: "operator",
-              agentType: "TBD",
+              agentType: response.agent_type,
               taskKind: "operator",
               taskType: response.task_type,
               description: response.description,

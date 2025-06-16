@@ -24,11 +24,11 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
       text: "CREATE_AGENT_CONFIG — Rules",
       level: 3,
     },
-    content: `1. **When to use** – only if a brand-new agent is required.  
-2. **\`agent_type\`** – must be unique, lowercase snake_case.  
-3. **\`description\`** – 1-2 sentences describing mission & scope.  
-4. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.  
-5. **\`tools\`** – list *only* tool IDs from **Available agent tools**.  
+    content: `1. **When to use** – only if a brand-new agent is required.
+2. **\`agent_type\`** – must be unique, lowercase snake_case.
+3. **\`tools\`** – list *only* tool IDs from **Available agent tools**.
+4. **\`description\`** – 1-2 sentences describing mission & scope.
+5. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.
 6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.`,
   })
   .section({
@@ -38,9 +38,9 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
     },
     content: `1. **When to use** – choose this type only if the agent’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, tool list adjustment).
 2. **\`agent_type\`** – repeat the existing agent’s name **unchanged**.
-3. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
-4. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the *Available agent tools* list**.  
+3. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the *Available agent tools* list**.
    ↳ If even one tool is missing, you must respond with \`AGENT_CONFIG_UNAVAILABLE\`.
+4. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
 5. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
 6. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.`,
   })
@@ -50,12 +50,12 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
       level: 3,
     },
     content: `1. **When to use** – choose this type **only** when an existing agent’s mission, instructions, and tool set **already cover the new task exactly as-is**. No structural edits are required.
-2. **\`agent_type\`** – supply just the name of the selected agent config (lowercase snake_case).  
+2. **\`agent_type\`** – supply just the name of the selected agent config (lowercase snake_case).
    *No other keys are allowed in this response object.*
 3. **No modifications** – you may **not** tweak \`instructions\`, \`description\`, or \`tools\`. If any change is needed, switch to \`UPDATE_AGENT_CONFIG\` instead.
-4. **Scope confirmation** – before selecting, double-check that:  
-   • The requested outcome is within the agent’s stated **objective**.  
-   • All necessary capabilities are provided by the agent’s existing **tools**.  
+4. **Scope confirmation** – before selecting, double-check that:
+   • The requested outcome is within the agent’s stated **objective**.
+   • All necessary capabilities are provided by the agent’s existing **tools**.
    • The agent’s **response format** matches what the user will expect.`,
   })
   .section({
@@ -66,11 +66,11 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
     newLines: {
       contentEnd: 0,
     },
-    content: `1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:  
-  • Required capability is missing from the *Available agent tools*.   
-  • Fulfilling the task would repurpose an existing agent beyond its scope.  
+    content: `1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:
+  • Required capability is missing from the *Available agent tools*.
+  • Fulfilling the task would repurpose an existing agent beyond its scope.
   • Any solution would need resources outside the current environment.
-2. **\`explanation\`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., “No tool supports 3-D rendering.”).  
+2. **\`explanation\`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., “No tool supports 3-D rendering.”).
   • **Do not** apologise, speculate, or offer alternative brainstorming.
 3. **Response structure** – after the two mandatory header lines, output exactly this object and nothing more:
 \`\`\`
@@ -156,6 +156,7 @@ const examples = ((inputs: ExampleInput[]) =>
       RESPONSE_TYPE: "CREATE_AGENT_CONFIG",
       RESPONSE_CREATE_AGENT_CONFIG: {
         agent_type: "tweets_collector",
+        tools: ["twitter_search"],
         description:
           "Gathers tweets that match a user-supplied query or hashtag within a given time window (default = 24 h).",
         instructions: `Context: You are a tweet collection agent specializing in gathering tweets containing specific hashtags. You have access to a web search tool that allows you to find tweets based on search queries. Users will provide you with a hashtag and a time frame for the tweets they want collected. 
@@ -167,7 +168,6 @@ Response format: Begin with a summary of the search query and time frame. Then l
 #AI Tweets from the past [time_window]:
 1. URL: [tweet_url_1] Content: [tweet_content_1]
 2. URL: [tweet_url_2] Content: [tweet_content_2]`,
-        tools: ["twitter_search"],
       },
     },
   },
@@ -202,15 +202,15 @@ Response format: Begin with a summary of the search query and time frame. Then l
     context: {
       existingAgentConfigs: [
         {
-          agentType: "restaurant_recommendations",
+          agentType: "restaurant_recommender",
+          tools: ["google_search", "web_extract"],
           description: "Agent for recommending vegan restaurants in a city.",
-          instructions: `Context: You are an agent specialized in finding vegan restaurants in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
+          instructions: `Context: You are an agent specialized in finding vegan restaurants in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have.
 
-Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
+Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information.
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
-          tools: ["google_search", "web_extract"],
-          agentConfigId: "operator:restaurant_recommendations[1]:1",
+          agentConfigId: "operator:restaurant_recommender:1",
           agentConfigVersion: 1,
         },
       ],
@@ -233,14 +233,14 @@ Response format: Present the information in a list format with each restaurant h
         "There isn’t an existing agent configuration specifically designed to find Chinese restaurants, but there is one for recommending vegan options, so I’ll update that agent to make it more general.",
       RESPONSE_TYPE: "UPDATE_AGENT_CONFIG",
       RESPONSE_UPDATE_AGENT_CONFIG: {
-        agent_type: "restaurant_recommendations",
+        agent_type: "restaurant_recommender",
+        tools: ["google_search", "web_extract"],
         description: "Agent for recommending restaurants in a city.",
         instructions: `Context: You are an agent specialized in finding restaurants that satisfy user-defined criteria—such as cuisine (e.g., Italian, Thai), dietary needs (e.g., vegan, gluten-free), budget, or vibe—in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
 
 Objective: Return a curated list of restaurants that fit the user’s parameters, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
-        tools: ["google_search", "web_extract"],
       },
     },
   },
@@ -251,6 +251,7 @@ Response format: Present the information in a list format with each restaurant h
       existingAgentConfigs: [
         {
           agentType: "weather_lookup",
+          tools: ["weather_conditions"],
           description:
             "Provides current weather information for specified locations using weather condition tool.",
           instructions: `Context: You are a weather lookup agent specializing in providing current weather information for specified locations. You have access to a weather condition tool that allows you to find weather data online. Users will provide you with a location for which they want the current weather.
@@ -263,8 +264,7 @@ Current Weather in [Location] on [Date]:
 - Temperature: [temperature]
 - Conditions: [conditions]
 - Notable Patterns: [patterns]`,
-          tools: ["weather_conditions"],
-          agentConfigId: "operator:weather_lookup[1]:1",
+          agentConfigId: "operator:weather_lookup:1",
           agentConfigVersion: 1,
         },
       ],
@@ -302,15 +302,15 @@ Current Weather in [Location] on [Date]:
     context: {
       existingAgentConfigs: [
         {
-          agentType: "restaurant_recommendations",
+          agentType: "restaurant_recommender",
+          tools: ["tavily_search"],
           description: "Agent for recommending restaurants in a city.",
           instructions: `Context: You are an agent specialized in recommending restaurants in a given city. You have access to web search tools to gather information about popular dining spots, including Italian, Chinese, and French cuisines. Users will provide the city and any specific dining preferences they have. 
 
 Objective: Provide a list of recommended restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.`,
-          tools: ["tavily_search"],
-          agentConfigId: "operator:restaurant_recommendations[1]:1",
+          agentConfigId: "operator:restaurant_recommender:1",
           agentConfigVersion: 1,
         },
       ],
@@ -365,7 +365,10 @@ Response format: Present the information in a list format with each restaurant h
 export const prompt = ({
   existingAgentConfigs,
   availableTools,
-}: Pick<AgentConfigInitializerInput, "existingAgentConfigs" | "availableTools">) =>
+}: Pick<
+  AgentConfigInitializerInput,
+  "existingAgentConfigs" | "availableTools"
+>) =>
   BodyTemplateBuilder.new()
     .introduction(
       `You are an **AgentConfigCreator** — the action module in a multi-agent workflow.  

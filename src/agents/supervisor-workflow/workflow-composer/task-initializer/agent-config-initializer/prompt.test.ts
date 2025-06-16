@@ -18,7 +18,7 @@ News headlines matching “<keywords>” from the past 24 hours:
 1. URL: [headline_url_1] — Summary: [headline_summary_1]  
 2. URL: [headline_url_2] — Summary: [headline_summary_2]`,
           tools: ["news_search"],
-          agentConfigId: "operator:news_headlines_24h[1]:1",
+          agentConfigId: "operator:news_headlines_24h:1",
           agentConfigVersion: 1,
         },
       ],
@@ -52,6 +52,7 @@ Your mission is to select, or—if none exists—create new agent configs to acc
 ### Existing agent configs
 1. news_headlines_24h:
   agent_type: news_headlines_24h
+  tools: news_search
   instructions: You are an agent specializing in collecting news headlines on chosen topic. You have access to a news_search tool that allows you to find articles based on keywords and time filters. Users will provide a time frame and one or more search terms for the news they want collected.
 
 Objective: Collect news headlines that contain the user-supplied keywords within the requested time window (default: past 24 hours). Use the news_search tool to execute the query, filtering results to match the specified period. Provide a list of headline URLs together with concise summaries.
@@ -62,7 +63,6 @@ News headlines matching “<keywords>” from the past 24 hours:
 1. URL: [headline_url_1] — Summary: [headline_summary_1]  
 2. URL: [headline_url_2] — Summary: [headline_summary_2]
   description: Gathers news headlines related from the past 24 hours.
-  tools: news_search
 
 ### Available agent tools
 1. arxiv_search:
@@ -97,14 +97,14 @@ RESPONSE_TYPE: <!required;constant;0;Valid values: CREATE_AGENT_CONFIG | UPDATE_
 <Follow by one of the possible responses format based on the chosen response type>
 RESPONSE_CREATE_AGENT_CONFIG: <!optional;object;0>
   agent_type: <!required;text;2;Name of the new agent config type in snake_case>
+  tools: <!required;array;2;list of selected tools identifiers that this agent type can utilize>
   description: <!required;text;2;Description of the agent's behavior and purpose of his existence>
   instructions: <!required;text;2;Natural language but structured text instructs on how agent should act>
-  tools: <!required;array;2;list of selected tools identifiers that this agent type can utilize>
 RESPONSE_UPDATE_AGENT_CONFIG: <!optional;object;0>
   agent_type: <!required;text;2;Name of an existing agent config type to update>
+  tools: <!optional;array;2;list of selected tools identifiers that this agent type can utilize>
   description: <!optional;text;2;Description of the agent's behavior and purpose of his existence>
   instructions: <!optional;text;2;Natural language but structured text instructs on how agent should act>
-  tools: <!optional;array;2;list of selected tools identifiers that this agent type can utilize>
 RESPONSE_SELECT_AGENT_CONFIG: <!optional;object;0>
   agent_type: <!required;text;2;Name of the selected agent config type>
 RESPONSE_AGENT_CONFIG_UNAVAILABLE: <!optional;object;0>
@@ -126,7 +126,7 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE: <!optional;object;0>
 **Guidelines for all branches**
 
 1. If more than one row seems to apply, pick the **top-most** matching row.  
-2. Perform the uniqueness check for \`agent_type\` **before** emitting \`CREATE_AGENT_CONFIG\`; if the name already exists, return \`AGENT_CONFIG_UNAVAILABLE\`.  
+2. Perform the uniqueness check for \`agent_type\` **before** emitting \`CREATE_AGENT_CONFIG\`; if the name already exists, use \`SELECT_AGENT_CONFIG\`.  
 3. Tool validation: any tool you list must appear in **Available agent tools**; otherwise respond with \`AGENT_CONFIG_UNAVAILABLE\`.  
 4. Arrays (e.g., \`tools\`) must be in **alphabetical order** for deterministic grading.
 
@@ -135,54 +135,46 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE: <!optional;object;0>
 
 ## Response Guidelines
 
+Agent config is a general template or a prescription (like a class in a programming language) for agents (like an instances) that will actually run at the runtime. They will receive an input from assigned task that is suitable to its purpose. Keep that in mind and design agent config general not just for one use with one set of parameters. Each specific adjustments should will provided through task inputs as an attributes.
+
 ### Response header
 1. \`RESPONSE_CHOICE_EXPLANATION\` – justifying your choice.  
 2. \`RESPONSE_TYPE\` – exactly one of: \`CREATE_AGENT_CONFIG\`, \`UPDATE_AGENT_CONFIG\`, \`SELECT_AGENT_CONFIG\`, \`AGENT_CONFIG_UNAVAILABLE\` without extra white spaces or new lines.
 These two lines are **mandatory** and must appear first, each on its own line.
 
-### CREATE_AGENT_CONFIG — Rules (numbered for clarity)
-1. **When to use** – only if a brand-new agent is required.  
-2. **\`agent_type\`** – must be unique, lowercase snake_case.  
-3. **\`description\`** – 1-2 sentences describing mission & scope.  
-4. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.  
-5. **\`tools\`** – list *only* tool IDs from **Available agent tools**.  
-6. Don’t repeat information that lives in the global task description.
-7. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and return \`AGENT_CONFIG_UNAVAILABLE\`.
+### CREATE_AGENT_CONFIG — Rules
+1. **When to use** – only if a brand-new agent is required.
+2. **\`agent_type\`** – must be unique, lowercase snake_case.
+3. **\`tools\`** – list *only* tool IDs from **Available agent tools**.
+4. **\`description\`** – 1-2 sentences describing mission & scope.
+5. **\`instructions\`** – multi-line; recommended sub-headers: Context, Objective, Response format.
+6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.
 
-### UPDATE_AGENT_CONFIG — Rules (numbered for clarity)
+### UPDATE_AGENT_CONFIG — Rules
 1. **When to use** – choose this type only if the agent’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, tool list adjustment).
 2. **\`agent_type\`** – repeat the existing agent’s name **unchanged**.
-3. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
-4. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the *Available agent tools* list**.  
+3. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the *Available agent tools* list**.
    ↳ If even one tool is missing, you must respond with \`AGENT_CONFIG_UNAVAILABLE\`.
+4. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
 5. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
 6. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.
 
-### SELECT_AGENT_CONFIG — Rules (numbered for clarity)
+### SELECT_AGENT_CONFIG — Rules
 1. **When to use** – choose this type **only** when an existing agent’s mission, instructions, and tool set **already cover the new task exactly as-is**. No structural edits are required.
-2. **\`agent_type\`** – supply just the name of the selected agent config (lowercase snake_case).  
+2. **\`agent_type\`** – supply just the name of the selected agent config (lowercase snake_case).
    *No other keys are allowed in this response object.*
 3. **No modifications** – you may **not** tweak \`instructions\`, \`description\`, or \`tools\`. If any change is needed, switch to \`UPDATE_AGENT_CONFIG\` instead.
-4. **Scope confirmation** – before selecting, double-check that:  
-   • The requested outcome is within the agent’s stated **objective**.  
-   • All necessary capabilities are provided by the agent’s existing **tools**.  
+4. **Scope confirmation** – before selecting, double-check that:
+   • The requested outcome is within the agent’s stated **objective**.
+   • All necessary capabilities are provided by the agent’s existing **tools**.
    • The agent’s **response format** matches what the user will expect.
-5. **Determinism** – output exactly two header lines followed by the minimal object:
-\`\`\`
-RESPONSE_CHOICE_EXPLANATION: <brief justification>
-RESPONSE_TYPE: SELECT_AGENT_CONFIG
-RESPONSE_SELECT_AGENT_CONFIG:
-  agent_type: <existing_agent_type>
-\`\`\`
-No extra whitespace, keys, or commentary beyond this structure.
 
-### AGENT_CONFIG_UNAVAILABLE — Rules (numbered for clarity)
-1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:  
-  • Required capability is missing from the *Available agent tools*.  
-  • The request violates platform or policy limits.  
-  • Fulfilling the task would repurpose an existing agent beyond its scope.  
+### AGENT_CONFIG_UNAVAILABLE — Rules
+1. **When to use** – choose this type **only** when **no viable path** exists to create, update, or select an agent because of at least one blocking factor:
+  • Required capability is missing from the *Available agent tools*.
+  • Fulfilling the task would repurpose an existing agent beyond its scope.
   • Any solution would need resources outside the current environment.
-2. **\`explanation\`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., “No tool supports 3-D rendering.”).  
+2. **\`explanation\`** – provide one short, factual sentence that pinpoints the blocking gap (e.g., “No tool supports 3-D rendering.”).
   • **Do not** apologise, speculate, or offer alternative brainstorming.
 3. **Response structure** – after the two mandatory header lines, output exactly this object and nothing more:
 \`\`\`
@@ -214,18 +206,18 @@ Collect tweets containing the hashtag #AI from the past 24 hours.
 RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a new config is required.
 RESPONSE_TYPE: CREATE_AGENT_CONFIG
 RESPONSE_CREATE_AGENT_CONFIG:
-  agent_type: tweets_collector_24h
+  agent_type: tweets_collector
+  tools: twitter_search
   description: Gathers tweets that match a user-supplied query or hashtag within a given time window (default = 24 h).
   instructions: Context: You are a tweet collection agent specializing in gathering tweets containing specific hashtags. You have access to a web search tool that allows you to find tweets based on search queries. Users will provide you with a hashtag and a time frame for the tweets they want collected. 
 
-Objective: Collect tweets containing the specified hashtag from the past 24 hours. Use the web search tool to execute a search query for the hashtag and filter results to include only tweets from the past 24 hours. Provide a list of tweet URLs and their content.
+Objective: Collect tweets containing the specified hashtag from the specific time window. Use the web search tool to execute a search query for the hashtag and filter results to include only tweets from the specific time window. Provide a list of tweet URLs and their content.
 
 Response format: Begin with a summary of the search query and time frame. Then list each tweet with its URL and content. Ensure the list is clear and organized, with each tweet entry on a new line. For example:
 
-#AI Tweets from the past 24 hours:
+#AI Tweets from the past [time_window]:
 1. URL: [tweet_url_1] Content: [tweet_content_1]
 2. URL: [tweet_url_2] Content: [tweet_content_2]
-  tools: twitter_search
 \`\`\`
 
 ### Example[2]: Agent config unavailable - Collect tweets (No suitable agent tool or existing agent config)
@@ -255,15 +247,15 @@ RESPONSE_AGENT_CONFIG_UNAVAILABLE:
 **Context:**
 ---
 ### Existing agent configs
-1. restaurant_recommendations:
-  agent_type: restaurant_recommendations
-  instructions: Context: You are an agent specialized in finding vegan restaurants in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
+1. restaurant_recommender:
+  agent_type: restaurant_recommender
+  tools: google_search, web_extract
+  instructions: Context: You are an agent specialized in finding vegan restaurants in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have.
 
-Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
+Objective: Provide a list of vegan restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information.
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.
   description: Agent for recommending vegan restaurants in a city.
-  tools: google_search, web_extract
 
 ### Available agent tools
 1. google_search:
@@ -279,14 +271,14 @@ I want to recommend chinese restaurants.
 RESPONSE_CHOICE_EXPLANATION: There isn’t an existing agent configuration specifically designed to find Chinese restaurants, but there is one for recommending vegan options, so I’ll update that agent to make it more general.
 RESPONSE_TYPE: UPDATE_AGENT_CONFIG
 RESPONSE_UPDATE_AGENT_CONFIG:
-  agent_type: restaurant_recommendations
+  agent_type: restaurant_recommender
+  tools: google_search, web_extract
   description: Agent for recommending restaurants in a city.
   instructions: Context: You are an agent specialized in finding restaurants that satisfy user-defined criteria—such as cuisine (e.g., Italian, Thai), dietary needs (e.g., vegan, gluten-free), budget, or vibe—in a given city. You have access to web search tools to gather information about popular vegan dining spots. Users will provide the city and any specific dining preferences they have. 
 
 Objective: Return a curated list of restaurants that fit the user’s parameters, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.
-  tools: google_search, web_extract
 \`\`\`
 
 ### Example[4]: Select agent config - Weather information
@@ -296,6 +288,7 @@ Response format: Present the information in a list format with each restaurant h
 ### Existing agent configs
 1. weather_lookup:
   agent_type: weather_lookup
+  tools: weather_conditions
   instructions: Context: You are a weather lookup agent specializing in providing current weather information for specified locations. You have access to a weather condition tool that allows you to find weather data online. Users will provide you with a location for which they want the current weather.
 
 Objective: Retrieve the current weather information for the specified location. Use the weather condition tool to execute a search query for the current weather in the given location. Provide details such as temperature, weather conditions, and any notable weather patterns.
@@ -307,7 +300,6 @@ Current Weather in [Location] on [Date]:
 - Conditions: [conditions]
 - Notable Patterns: [patterns]
   description: Provides current weather information for specified locations using weather condition tool.
-  tools: weather_conditions
 
 ### Available agent tools
 1. web_search:
@@ -333,15 +325,15 @@ RESPONSE_SELECT_AGENT_CONFIG:
 **Context:**
 ---
 ### Existing agent configs
-1. restaurant_recommendations:
-  agent_type: restaurant_recommendations
+1. restaurant_recommender:
+  agent_type: restaurant_recommender
+  tools: tavily_search
   instructions: Context: You are an agent specialized in recommending restaurants in a given city. You have access to web search tools to gather information about popular dining spots, including Italian, Chinese, and French cuisines. Users will provide the city and any specific dining preferences they have. 
 
 Objective: Provide a list of recommended restaurants, including brief descriptions and any relevant details such as location, menu highlights, and reservation information. 
 
 Response format: Present the information in a list format with each restaurant having a name, description, and dining details.
   description: Agent for recommending restaurants in a city.
-  tools: tavily_search
 
 ### Available agent tools
 1. tavily_search:

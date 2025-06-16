@@ -14,23 +14,38 @@
  * limitations under the License.
  */
 
-import 'dotenv/config';
+import "dotenv/config";
 import { defineConfig } from "vitest/config";
 import tsConfigPaths from "vite-tsconfig-paths";
+import path from "path";
 
 export default defineConfig({
   test: {
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.spec.ts",
+      "tests/**/*.test.ts",
+      "tests/**/*.spec.ts",
+    ],
+    environment: "node",
     globals: true,
     passWithNoTests: true,
     testTimeout: 120 * 1000,
     printConsoleTrace: true,
-    deps: {
-      interopDefault: false,
-    },
   },
   plugins: [
     tsConfigPaths({
       projects: ["tsconfig.json"],
     }),
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@agents": path.resolve(__dirname, "./src/agents"),
+      "@tasks": path.resolve(__dirname, "./src/tasks"),
+      "@workspaces": path.resolve(__dirname, "./src/workspaces"),
+      "@ui": path.resolve(__dirname, "./src/ui"),
+      "@runtime": path.resolve(__dirname, "./src/runtime"),
+    },
+  },
 });

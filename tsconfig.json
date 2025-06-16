@@ -2,15 +2,15 @@
   "compilerOptions": {
     "target": "ES2023",
     "module": "NodeNext",
-    "rootDir": "src",
-    "sourceRoot": "src",
+    "rootDir": ".",
+    "sourceRoot": ".",
     "baseUrl": ".",
     "moduleResolution": "NodeNext",
     "incremental": false,
     "moduleDetection": "auto",
     "types": [
       "node",
-      "neo-blessed"
+      "neo-blessed",
     ],
     "declaration": true,
     "declarationMap": true,
@@ -44,6 +44,9 @@
       ],
       "@runtime/*": [
         "./src/runtime/*"
+      ],
+      "@test/*": [
+        "./tests/*"
       ]
     },
     "typeRoots": [
@@ -52,7 +55,8 @@
     ]
   },
   "include": [
-    "src"
+    "src/**/*",
+    "tests/**/*"
   ],
   "exclude": [
     "examples"

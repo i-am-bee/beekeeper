@@ -280,41 +280,69 @@ export class Parser<TResult> {
         value = unwrapString(value.trim(), {
           start: ["[", "(", "<"],
           end: ["]", ")", ">"],
-        });
+        }).trim();
+
+        // Bullet list
+        const BULLET_SIGNS: string[] = [
+          "•", // U+2022 Bullet
+          "◦", // U+25E6 White (hollow) bullet
+          "●", // U+25CF Black circle
+          "○", // U+25CB White circle
+          "‣", // U+2023 Triangular bullet
+          "⁃", // U+2043 Hyphen bullet
+          "∙", // U+2219 Bullet operator
+          "▪", // U+25AA Black small square
+          "▫", // U+25AB White small square
+          "■", // U+25A0 Black square
+          "◾", // U+25FE Black medium-small square
+          "▸", // U+25B8 Black right-pointing small triangle
+          "►", // U+25BA Black right-pointing pointer
+          "❖", // U+2756 Black diamond with white X
+          "♦", // U+2666 Black diamond
+          "–", // U+2013 En dash
+          "-", // U+002D Hyphen-minus
+          "*", // U+002A Asterisk
+          "+", // U+002B Plus sign
+          "·", // U+00B7 Middle dot
+        ] as const;
+        const usedBulletSign = BULLET_SIGNS.find((s) =>
+          value.trimStart().startsWith(s),
+        );
+        const rawSplit = value
+          .split(usedBulletSign ? "\n" : ",")
+          .map((v) => (usedBulletSign ? v.replace(usedBulletSign, "") : v));
+
         const type = field.field.type;
         const constants = field.field.constants;
-        const split = value
-          .trim()
-          .split(",")
-          .map((val, idx) => {
-            val = unwrapString(val.trim(), {
-              start: ['"', "'", "`"],
-              greedy: true,
-            });
-
-            let newField;
-            if (type === "constant") {
-              if (!constants) {
-                throw new Error(`Missing constants at field \`\``);
-              }
-              newField = {
-                kind: type,
-                name: `[${idx}]`,
-                values: clone(constants),
-              };
-            } else {
-              newField = { kind: type, name: `[${idx}]` };
-            }
-
-            const out = this.applyTypeConversion(
-              {
-                field: newField,
-                path: field.path.concat([`[${idx}]`]),
-              },
-              val,
-            ) as number | string | boolean;
-            return out;
+        const split = rawSplit.map((val, idx) => {
+          val = unwrapString(val.trim(), {
+            start: ['"', "'", "`"],
+            greedy: true,
           });
+
+          let newField;
+          if (type === "constant") {
+            if (!constants) {
+              throw new Error(`Missing constants at field \`\``);
+            }
+            newField = {
+              kind: type,
+              name: `[${idx}]`,
+              values: clone(constants),
+            };
+          } else {
+            newField = { kind: type, name: `[${idx}]` };
+          }
+
+          const out = this.applyTypeConversion(
+            {
+              field: newField,
+              path: field.path.concat([`[${idx}]`]),
+            },
+            val,
+          ) as number | string | boolean;
+          return out;
+        });
 
         return split;
       }

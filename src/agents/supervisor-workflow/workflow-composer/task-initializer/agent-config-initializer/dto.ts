@@ -6,9 +6,9 @@ export const ExistingAgentConfigSchema = AgentConfigSchema.pick({
   agentConfigId: true,
   agentConfigVersion: true,
   agentType: true,
+  tools: true,
   description: true,
   instructions: true,
-  tools: true,
 });
 export type ExistingAgentConfig = z.infer<typeof ExistingAgentConfigSchema>;
 
