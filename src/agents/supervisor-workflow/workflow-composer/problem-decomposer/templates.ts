@@ -17,7 +17,7 @@ export class ExistingResourcesBuilder {
   }
 
   agentConfigs(configs?: AgentConfigMinimal[]) {
-    const content = !configs?.length
+    const agents = !configs?.length
       ? "There is no existing agents yet."
       : laml.printLAMLObject(
           configs.reduce((acc, curr, idx) => {
@@ -33,6 +33,10 @@ export class ExistingResourcesBuilder {
           }, {}),
         );
 
+    const content = `Agents that are already running. Each can be assigned tasks that fall within its instructions.
+
+${agents}`;
+
     this.output += BodyTemplateBuilder.new()
       .section({
         title: {
@@ -47,7 +51,7 @@ export class ExistingResourcesBuilder {
   }
 
   availableTools(tools?: AgentAvailableTool[]) {
-    const content = !tools?.length
+    const availableTools = !tools?.length
       ? "There is no available agent tools."
       : laml.printLAMLObject(
           tools.reduce((acc, curr, idx) => {
@@ -59,6 +63,10 @@ export class ExistingResourcesBuilder {
             return acc;
           }, {}),
         );
+
+    const content = `Standalone tools that future agents *could* invoke if you create a step requiring them.
+  
+${availableTools}`;
 
     this.output += BodyTemplateBuilder.new()
       .section({
