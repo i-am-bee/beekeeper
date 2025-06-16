@@ -190,7 +190,7 @@ Response format: Begin with a brief sentence that restates the search terms and 
 News headlines matching “<keywords>” from the past 24 hours:  
 1. URL: [headline_url_1] — Summary: [headline_summary_1]  
 2. URL: [headline_url_2] — Summary: [headline_summary_2]`,
-        tools: "news_search",
+        tools: ["news_search"],
       },
     });
   });

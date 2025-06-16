@@ -1,24 +1,25 @@
 import { clone } from "remeda";
+import { LAMLObject, LAMLValue } from "./dto.js";
 import { pathStr } from "./utils.js";
 
-export type OutputPrimitiveValue = string | number | boolean | string[];
-export type OutputValue =
-  | OutputPrimitiveValue
-  | OutputObject
-  | OutputObjectArray;
-export type OutputObjectArray = OutputValue[];
-export interface OutputObject {
-  [key: string]: OutputValue;
-}
+// export type OutputPrimitiveValue = string | number | boolean | string[];
+// export type OutputValue =
+//   | OutputPrimitiveValue
+//   | OutputObject
+//   | OutputObjectArray;
+// export type OutputObjectArray = OutputValue[];
+// export interface OutputObject {
+//   [key: string]: OutputValue;
+// }
 
 export class ParserOutput {
-  protected _output: OutputObject = {};
+  protected _output: LAMLObject = {};
 
   get result() {
     return clone(this._output);
   }
 
-  set(path: string[], value: OutputValue) {
+  set(path: string[], value: LAMLValue) {
     let idx = 0;
     let temp = this._output;
     const currentPath = [];
@@ -36,7 +37,7 @@ export class ParserOutput {
             `Cannot access property on primitive value at path '${pathStr(currentPath)}'. Expected an object but received a primitive type.`,
           );
         } else {
-          temp = obj as OutputObject;
+          temp = obj as LAMLObject;
         }
       } else {
         temp[pathPart] = value;
@@ -61,7 +62,7 @@ export class ParserOutput {
             `Cannot access property on primitive value at path '${pathStr(currentPath)}'. Expected an object but received a primitive type.`,
           );
         } else {
-          temp = obj as OutputObject;
+          temp = obj as LAMLObject;
         }
       } else {
         return temp[pathPart];

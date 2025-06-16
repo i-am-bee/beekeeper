@@ -6,6 +6,7 @@ import {
   UserMessage,
 } from "beeai-framework/backend/message";
 import { AgentConfigCreatorInput } from "./dto.js";
+import { LAMLObject } from "@/laml/dto.js";
 
 const protocol = laml.ProtocolBuilder.new()
   .text({
@@ -106,6 +107,50 @@ const protocol = laml.ProtocolBuilder.new()
   })
   .build();
 
+export interface CreateAgentConfigResponse {
+  explanation: string;
+  kind: "CREATE_AGENT_CONFIG";
+  data: {
+    agent_type: string;
+    description: string;
+    instructions: string;
+    tools: string[];
+  };
+}
+
+export interface UpdateAgentConfigResponse {
+  explanation: string;
+  kind: "UPDATE_AGENT_CONFIG";
+  data: {
+    agent_type: string;
+    description?: string;
+    instructions?: string;
+    tools?: string[];
+  };
+}
+
+export interface SelectAgentConfigResponse {
+  explanation: string;
+  kind: "SELECT_AGENT_CONFIG";
+  data: {
+    agentType: string;
+  };
+}
+
+export interface AgentConfigUnavailableResponse {
+  kind: "AGENT_CONFIG_UNAVAILABLE";
+  explanation: string;
+  data: {
+    explanation: string;
+  };
+}
+
+export type Response =
+  | CreateAgentConfigResponse
+  | UpdateAgentConfigResponse
+  | SelectAgentConfigResponse
+  | AgentConfigUnavailableResponse;
+
 const systemPrompt = ({
   existingConfigs,
   availableTools,
@@ -122,22 +167,40 @@ These are the assets already at your disposal. Review them before deciding wheth
 ${
   !existingConfigs.length
     ? "There is no existing agent configs yet."
-    : JSON.stringify(existingConfigs, null, " ")
+    : laml.printLAMLObject(
+        existingConfigs.reduce((acc, curr) => {
+          Object.assign(acc, {
+            [curr.agentType]: {
+              agent_type: curr.agentType,
+              instructions: curr.instructions,
+              description: curr.description,
+              tools: curr.tools,
+            },
+          } satisfies laml.dto.LAMLObject);
+          return acc;
+        }, {}),
+      )
 }
 
 ### Available agent tools
 ${
   availableTools.length > 0
     ? "There is no available agent tools."
-    : JSON.stringify(availableTools, null, " ")
+    : laml.printLAMLObject(
+        availableTools.reduce((acc, curr) => {
+          Object.assign(acc, {
+            [curr.name]: { description: curr.description },
+          } satisfies laml.dto.LAMLObject);
+          return acc;
+        }, {}),
+      )
 }
 
 ---
 
 ## Response Format
 
-All your responses **must** follow this exact format — in this order:
-${protocol.toString()}
+${protocol.printExplanation()}
 
 ---
 
@@ -225,7 +288,8 @@ Available agent tools:
   description: Query the public Twitter/X API for recent tweets that match a given keyword, hashtag, or user handle. Returns tweet text, author, timestamp, and basic engagement metrics, with optional filters for time window, language, and result count.
 
 **User:** Collect tweets containing the hashtag #AI from the past 24 hours.  
-**Assistant:**  
+**Assistant:**
+\`\`\`
 RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a new config is required.
 RESPONSE_TYPE: CREATE_AGENT_CONFIG
 RESPONSE_CREATE_AGENT_CONFIG:
@@ -242,6 +306,8 @@ RESPONSE_CREATE_AGENT_CONFIG:
     1. URL: [tweet_url_1] Content: [tweet_content_1]
     2. URL: [tweet_url_2] Content: [tweet_content_2]
   tools: twitter_search
+\`\`\`
+
 
 ### Agent config unavailable – Collect tweets (No suitable agent tool or existing agent config)
 **Context:**
@@ -254,10 +320,13 @@ Available agent tools:
 
 **User:** Collect tweets containing the hashtag #AI from the past 24 hours. 
 **Assistant:**
+\`\`\`
 RESPONSE_CHOICE_EXPLANATION: No existing agent can gather tweets on demand; a new config is required but there is no suitable tool.
 RESPONSE_TYPE: AGENT_CONFIG_UNAVAILABLE
 RESPONSE_AGENT_CONFIG_UNAVAILABLE:
   explanation: Cannot create or update an agent because there is no tool for collect tweets.  
+\`\`\`
+
 
 ### Update agent config – Generalization of restaurants recommendation
 **Context:**
@@ -281,6 +350,7 @@ Available agent tools:
 
 **User:** I want to recommend chinese restaurants.
 **Assistant:**
+\`\`\`
 RESPONSE_CHOICE_EXPLANATION: There isn’t an existing agent configuration specifically designed to find Chinese restaurants, but there is one for recommending vegan options, so I’ll update that agent to make it more general.
 RESPONSE_TYPE: UPDATE_AGENT_CONFIG
 RESPONSE_UPDATE_AGENT_CONFIG:
@@ -293,6 +363,8 @@ RESPONSE_UPDATE_AGENT_CONFIG:
         
     Response format: Present the information in a list format with each restaurant having a name, description, and dining details.
   tools: google_search, web_extract
+\`\`\`
+
 
 ### Select agent config – Weather information
 **Context:**
@@ -323,10 +395,13 @@ Available agent tools:
 
 **User:** What’s the weather right now in Prague?
 **Assistant:**
+\`\`\`
 RESPONSE_CHOICE_EXPLANATION: There is an existing agent configuration for getting actual weather situation that can satisfy the request without modification.
 RESPONSE_TYPE: SELECT_AGENT_CONFIG
 RESPONSE_SELECT_AGENT_CONFIG:
   agent_type: weather_lookup
+\`\`\`
+
 
 ### Agent config unavailable – 3-D house rendering
 Existing agent configs:
@@ -349,10 +424,13 @@ Available agent tools:
 
 **User:** Render a 3-D model of my house from this floor plan.
 **Assistant:**
+\`\`\`
 RESPONSE_CHOICE_EXPLANATION: No existing agent handles 3-D rendering and no available tool supports CAD or graphics output.
 RESPONSE_TYPE: AGENT_CONFIG_UNAVAILABLE
 RESPONSE_AGENT_CONFIG_UNAVAILABLE:
   explanation: Cannot create or update an agent because there is no tool for 3-D modelling or rendering in the current tool-set.  
+\`\`\`
+
 
 ### Agent config unavailable – Missing suitable tool
 Existing agent configs:
@@ -364,20 +442,43 @@ sound_generator:
 
 **User:** Gathers news headlines related from the past 24 hours.
 **Assistant:**
+\`\`\`
 RESPONSE_CHOICE_EXPLANATION: No listed tool can collect headline; agent cannot be created.
 RESPONSE_TYPE: AGENT_CONFIG_UNAVAILABLE
 RESPONSE_AGENT_CONFIG_UNAVAILABLE:
   explanation: Cannot create or update an agent because there is no tool for collecting headlines. 
+\`\`\`
 
 ---
 
 This is the task:`;
 };
 
+const parser = laml.Parser.new(protocol);
+export function toResponse(parsed: LAMLObject) {
+  switch(parsed.RESPONSE_TYPE){
+    
+    case "CREATE_AGENT_CONFIG":
+      return {
+        kind: parsed.RESPONSE_TYPE,
+        explanation: parsed.RESPONSE_CHOICE_EXPLANATION,
+        data: {
+          // agent_type: parsed.RESPONSE_CREATE_AGENT_CONFIG.agent_type,
+        }
+      } as CreateAgentConfigResponse;
+      break;
+    case "UPDATE_AGENT_CONFIG":
+    break;
+    case "SELECT_AGENT_CONFIG":
+    break;
+    case "AGENT_CONFIG_UNAVAILABLE":
+    break;
+  }
+}
+
 export async function run(llm: ChatModel, input: AgentConfigCreatorInput) {
   const messages: Message[] = [
     new SystemMessage(systemPrompt(input)),
-    // new CustomMessage("control", "thinking"),
     new UserMessage(input.task),
   ];
 
@@ -386,18 +487,19 @@ export async function run(llm: ChatModel, input: AgentConfigCreatorInput) {
   });
 
   const raw = resp.getTextContent();
-  const output = laml.Parser.parse(protocol, raw);
+
+  console.log(`### INPUT`);
+  console.log(`${input.task}\n`);
+  console.log(`### RESPONSE`);
+  console.log(`${raw}\n\n`);
+  const parsed = parser.parse(raw);
+  console.log(`${JSON.stringify(parsed, null, " ")}\n\n`);
 
   return {
-    type: output.RESPONSE_TYPE,
-    explanation: output.RESPONSE_CHOICE_EXPLANATION,
+    parsed,
     message: {
       kind: "assistant",
-      content:
-        output.RESPONSE_CREATE_AGENT_CONFIG ||
-        output.RESPONSE_UPDATE_AGENT_CONFIG ||
-        output.RESPONSE_SELECT_AGENT_CONFIG ||
-        output.RESPONSE_AGENT_CONFIG_UNAVAILABLE,
+      content: raw,
       createdAt: new Date(),
     },
     raw,

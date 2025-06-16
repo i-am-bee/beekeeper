@@ -2,6 +2,7 @@ import { clone, isNonNullish, reverse } from "remeda";
 import * as dto from "./dto.js";
 
 export const DEFAULT_INDENT = "  ";
+export const DESCRIPTION = ``;
 
 export class ProtocolBuilder {
   private _fields: dto.AnyField[];
@@ -219,5 +220,25 @@ export class Protocol {
     );
 
     return output.trimEnd();
+  }
+
+  printExplanation() {
+    return `All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
+  <!required|optional; type; human-readable hint>
+- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).  
+- type - One of the following:
+  - text – single-line string  
+  - number – floating-point value (e.g., 3.14)  
+  - integer – whole number  
+  - boolean - true / false  
+  - constant – one literal chosen from the values listed in the protocol  
+  - array – list of items of the specified item-type (comma-separated or JSON-style)  
+  - object – nested attributes, each described by its own metadata tag  
+- human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
+
+The format:
+\`\`\`
+${this.toString()}
+\`\`\`<STOP HERE>`;
   }
 }

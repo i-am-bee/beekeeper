@@ -43,12 +43,16 @@ export class Parser {
     this._protocol = options?.protocol;
   }
 
+  static new(protocol: Protocol, options?: { rules?: AnyConversion[] }) {
+    return new Parser({ protocol, rules: options?.rules });
+  }
+
   static parse(
     protocol: Protocol,
     value: string,
     options?: { rules?: AnyConversion[] },
   ) {
-    return new Parser({ protocol, rules: options?.rules }).parse(value);
+    return Parser.new(protocol, options).parse(value);
   }
 
   addGlobalConversion(rule: Omit<GlobalConversion, "kind">) {
@@ -271,14 +275,20 @@ export class Parser {
         }
       }
       case "array": {
-        value = unwrapString(value.trim(), ["[", "(", "<"], ["]", ")", ">"]);
+        value = unwrapString(value.trim(), {
+          start: ["[", "(", "<"],
+          end: ["]", ")", ">"],
+        });
         const type = field.field.type;
         const constants = field.field.constants;
         const split = value
           .trim()
           .split(",")
           .map((val, idx) => {
-            val = unwrapString(val.trim(), ['"', "'", "`"]);
+            val = unwrapString(val.trim(), {
+              start: ['"', "'", "`"],
+              greedy: true,
+            });
 
             let newField;
             if (type === "constant") {

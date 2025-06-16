@@ -133,3 +133,63 @@ export const ProtocolSchema = z.object({
   indent: z.string(),
 });
 export type Protocol = z.infer<typeof ProtocolSchema>;
+
+function fieldToSchema(field: AnyField): z.ZodTypeAny {
+  switch (field.kind) {
+    case "text":
+      return z.string();
+    case "number":
+      return z.number();
+    case "integer":
+      return z.number().int();
+    case "boolean":
+      return z.boolean();
+    case "constant":
+      return z.enum([...field.values] as [string, ...string[]]);
+    case "array":
+      return z
+        .array(fieldToSchema({ ...field, kind: field.type } as AnyField))
+        .nonempty();
+    case "object":
+      return fieldsToObjectSchema(field.attributes);
+    default:
+      throw new Error(`Unsupported kind ${field.kind}`);
+  }
+}
+
+function fieldsToObjectSchema(fields: AnyField[]) {
+  const shape: Record<string, z.ZodTypeAny> = {};
+  for (const f of fields) {
+    if (f.kind === "comment") {
+      continue;
+    }
+    let s = fieldToSchema(f);
+    if (f.isOptional) {
+      s = s.optional();
+    }
+    shape[f.name] = s;
+  }
+  return z.object(shape);
+}
+
+export function protocolToSchema(protocol: Protocol) {
+  return fieldsToObjectSchema(protocol.fields);
+}
+
+export const LAMLPrimitiveValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.array(z.union([z.string(), z.number(), z.boolean()])),
+]);
+export type LAMLPrimitiveValue = z.infer<typeof LAMLPrimitiveValueSchema>;
+
+const LAMLValueSchema: z.ZodType<any> = z.lazy(() =>
+  z.union([LAMLPrimitiveValueSchema, LAMLObjectSchema]),
+);
+export type LAMLValue = LAMLPrimitiveValue | LAMLObject;
+
+export const LAMLObjectSchema = z.record(LAMLValueSchema);
+export interface LAMLObject {
+  [key: string]: LAMLValue;
+}
