@@ -17,14 +17,14 @@ Use the field_info_api to fetch metadata for the given fieldId, including crop t
 
 **Response format:**
 Present a summary of agronomic metadata:
-\`\`\`response
-### Field Metadata
-- **Field ID:** south-field  
-- **Crop Type:** Barley  
-- **Area:** 4.2 ha  
-- **Max Moisture:** 18%  
-- **Coordinates:** 49.876, 15.423
-\`\`\``,
+FIELD METADATA
+===============
+
+Field ID:             south-field  
+Crop Type:            Barley  
+Area:                 4.2 ha  
+Max Moisture:         18%  
+Coordinates:          49.876, 15.423`,
     tools: ["field_info_api"] as const satisfies ToolName[],
   },
   {
@@ -38,14 +38,17 @@ Use the equipment_registry_api to fetch all machines assigned to the specified f
 
 **Response format:**
 List assigned equipment grouped by category:
-\`\`\`response
-### Equipment Assigned to south-field
-- **Harvesters:** H-2451, H-2897  
-- **Drones:** DR-0043  
-- **Dryers:** D-0031
+EQUIPMENT ASSIGNED TO SOUTH-FIELD
+==================================
 
-(If no assets are assigned, categories should be empty but valid.)
-\`\`\``,
+Harvesters:          H-2451, H-2897  
+Drones:              DR-0043  
+Dryers:              D-0031  
+
+NOTE
+-----
+
+- If no assets are assigned, categories should be empty but valid.`,
     tools: ["equipment_registry_api"] as const satisfies ToolName[],
   },
   {
@@ -59,17 +62,20 @@ Use the weather_forecast_api to fetch hourly forecasts starting at the specified
 
 **Response format:**
 Present an hourly forecast timeline:
-\`\`\`response
-### Weather Forecast for 2025-06-12 (Field: south-field)
-| Time   | Precipitation (%) | Wind Speed (km/h) |
-|--------|--------------------|-------------------|
-| 06:00  | 10%                | 12                |
-| 07:00  | 15%                | 13                |
-| ...    | ...                | ...               |
+WEATHER FORECAST FOR 2025-06-12 (FIELD: SOUTH-FIELD)
+=====================================================
+
+Time   | Precipitation (%) | Wind Speed (km/h)  
+--------|--------------------|---------------------
+06:00  | 10%                | 12                 
+07:00  | 15%                | 13                 
+...    | ...                | ...                
+
+NOTES
+------
 
 - Forecast granularity: 1 hour  
-- Flag values over 25 km/h (wind) or 30% (rain) as potential risks.
-\`\`\``,
+- Flag values over 25 km/h (wind) or 30% (rain) as potential risks.`,
     tools: ["weather_forecast_api"] as const satisfies ToolName[],
   },
   {
@@ -83,16 +89,19 @@ Use the equipment_status_api to report the status of each machine. Provide summa
 
 **Response format:**
 Present a status table per equipment unit:
-\`\`\`response
-### Equipment Status Report
-| Equipment ID | Status       | Detail             |
-|--------------|--------------|--------------------|
-| H-2451       | Operational  | —                  |
-| DR-0043      | Offline      | Battery failure    |
-| D-0031       | Operational  | —                  |
+EQUIPMENT STATUS REPORT
+=========================
 
-- Valid statuses: Operational, Offline, Maintenance, Error
-\`\`\``,
+Equipment ID | Status      | Detail           
+--------------|-------------|--------------------
+H-2451        | Operational | —                
+DR-0043       | Offline     | Battery failure  
+D-0031        | Operational | —                
+
+NOTES
+------
+
+- Valid statuses: Operational, Offline, Maintenance, Error`,
     tools: ["equipment_status_api"] as const satisfies ToolName[],
   },
   {
@@ -106,15 +115,18 @@ Use the harvest_scheduler_api to generate a field-by-field harvest timeline that
 
 **Response format:**
 Present the harvest schedule in chronological order:
-\`\`\`response
-### Harvest Schedule
-| Field ID     | Start Time | Duration | Equipment Assigned |
-|--------------|------------|----------|---------------------|
-| south-field  | 06:30      | 1h 45m   | H-2451, DR-0043     |
-| west-field   | 08:30      | 2h 10m   | H-2897, DR-0052     |
+HARVEST SCHEDULE
+=================
 
-- Plan must account for forecast conditions and moisture thresholds.
-\`\`\``,
+Field ID     | Start Time | Duration | Equipment Assigned     
+--------------|------------|----------|--------------------------
+south-field   | 06:30      | 1h 45m   | H-2451, DR-0043         
+west-field    | 08:30      | 2h 10m   | H-2897, DR-0052         
+
+NOTES
+------
+
+- Plan must account for forecast conditions and moisture thresholds.`,
     tools: ["harvest_scheduler_api"] as const satisfies ToolName[],
   },
   {
@@ -128,15 +140,19 @@ Use the timeline_report_generator tool to convert harvest schedules into step-by
 
 **Response format:**
 Output a structured plan with contingencies:
-\`\`\`response
-### Daily Harvest Timeline
-- **06:30–08:15** – Harvest south-field (H-2451, DR-0043)  
-  - Risk: Light rain expected 07:00–08:00 → possible delay  
-- **08:30–10:40** – Harvest west-field (H-2897, DR-0052)  
-  - Wind above 20 km/h → use drones with stabilizers
+DAILY HARVEST TIMELINE
+========================
 
-- Timeline includes risk notes and operational guidance.
-\`\`\``,
+06:30–08:15 – Harvest south-field (H-2451, DR-0043)  
+  - Risk: Light rain expected 07:00–08:00 → possible delay  
+
+08:30–10:40 – Harvest west-field (H-2897, DR-0052)  
+  - Wind above 20 km/h → use drones with stabilizers  
+
+NOTE
+-----
+
+- Timeline includes risk notes and operational guidance.`,
     tools: ["timeline_report_generator"] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];

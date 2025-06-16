@@ -17,21 +17,26 @@ Use the demand_forecast_api to compute per-block electricity demand at 15-minute
 
 **Response format:**
 Present a forecast summary followed by a structured table:
-\`\`\`response
-### Summary
-- **Blocks forecasted:** 3  
-- **Forecast start:** 2025-06-12T06:00Z  
-- **Intervals:** 16 (15-minute steps)
+DEMAND FORECAST SUMMARY
+========================
 
-### Demand Forecast (kWh)
-| Time              | Block-A | Block-B | Block-C |
-|-------------------|---------|---------|---------|
-| 06:00             | 120     | 134     | 98      |
-| 06:15             | 122     | 140     | 101     |
-| ...               | ...     | ...     | ...     |
+Blocks forecasted:           3  
+Forecast start:              2025-06-12T06:00Z  
+Intervals:                   16 (15-minute steps)  
 
-- Values are in kilowatt-hours per interval.
-\`\`\``,
+DEMAND FORECAST (kWh)
+----------------------
+
+Time      | Block-A | Block-B | Block-C  
+----------|---------|---------|---------
+06:00     | 120     | 134     | 98      
+06:15     | 122     | 140     | 101     
+...       | ...     | ...     | ...     
+
+NOTE
+-----
+
+- Values are in kilowatt-hours per interval.`,
     tools: ["demand_forecast_api"] as const satisfies ToolName[],
   },
   {
@@ -45,22 +50,27 @@ Use the solar_battery_forecast_api to retrieve time-series data for solar output
 
 **Response format:**
 Provide a forecast summary and one or more site-specific tables:
-\`\`\`response
-# Battery and Solar Forecast Summary
-- **Sites forecasted:** 2  
-- **Forecast start:** 2025-06-12T06:00Z  
-- **Intervals:** 16  
-- **Output:** Solar generation (kWh), Battery SoC (%)
+BATTERY AND SOLAR FORECAST SUMMARY
+===================================
 
-## Forecast Sample – Site-A
-| Time   | Solar Output | Battery SoC |
-|--------|--------------|-------------|
-| 06:00  | 0.2 kWh      | 74%         |
-| 06:15  | 0.8 kWh      | 76%         |
-| ...    | ...          | ...         |
+Sites forecasted:            2  
+Forecast start:              2025-06-12T06:00Z  
+Intervals:                   16  
+Output:                      Solar generation (kWh), Battery SoC (%)  
 
-- Battery SoC will remain between 0% and 100%.
-\`\`\``,
+FORECAST SAMPLE – SITE-A
+--------------------------
+
+Time    | Solar Output | Battery SoC  
+--------|--------------|-------------
+06:00   | 0.2 kWh      | 74%         
+06:15   | 0.8 kWh      | 76%         
+...     | ...          | ...         
+
+NOTE
+-----
+
+- Battery SoC will remain between 0% and 100%.`,
     tools: ["solar_battery_forecast_api"] as const satisfies ToolName[],
   },
   {
@@ -74,25 +84,26 @@ Use the grid_load_optimizer_api to generate optimal control vectors that minimiz
 
 **Response format:**
 Summarize the optimization result and present metrics:
-\`\`\`response
-# Dispatch Optimization Summary
-- **Objective:** Cost minimization  
-- **Constraint:** Max frequency deviation: 0.2 Hz  
-- **Result:** Dispatch plan generated successfully
+DISPATCH OPTIMIZATION SUMMARY
+==============================
 
-## Sample Control Vector (1 interval)
-{
-  "inverterSetpoints": {
-    "site-A": 2.5,
-    "site-B": -1.2
-  }
-}
+Objective:                  Cost minimization  
+Constraint:                 Max frequency deviation: 0.2 Hz  
+Result:                     Dispatch plan generated successfully  
 
-## KPI Report
-- Average frequency deviation: 0.07 Hz  
-- Energy loss minimized: 4.2%  
-- All constraints satisfied.
-\`\`\``,
+SAMPLE CONTROL VECTOR (1 INTERVAL)
+-----------------------------------
+
+inverterSetpoints:  
+  site-A:  2.5  
+  site-B: -1.2  
+
+KPI REPORT
+-----------
+
+- Average frequency deviation:     0.07 Hz  
+- Energy loss minimized:           4.2%  
+- All constraints satisfied.`,
     tools: ["grid_load_optimizer_api"] as const satisfies ToolName[],
   },
   {
@@ -106,21 +117,26 @@ Use the dispatch_command_api to submit control vectors to infrastructure devices
 
 **Response format:**
 Present a control delivery summary:
-\`\`\`response
-# Control Dispatch Summary
-- **Control batch sent:** 1  
-- **Devices targeted:** 3  
-- **Acknowledged:** 3/3
+CONTROL DISPATCH SUMMARY
+=========================
 
-## Dispatch Acknowledgements
-| Site    | Status     | Timestamp            |
-|---------|------------|----------------------|
-| Site-A  | Confirmed  | 2025-06-12T06:02:00Z |
-| Site-B  | Confirmed  | 2025-06-12T06:02:01Z |
-| Site-C  | Confirmed  | 2025-06-12T06:02:01Z |
+Control batch sent:          1  
+Devices targeted:            3  
+Acknowledged:                3/3  
 
-- Failures should be highlighted and trigger retry workflows.
-\`\`\``,
+DISPATCH ACKNOWLEDGEMENTS
+--------------------------
+
+Site     | Status     | Timestamp             
+---------|------------|------------------------
+Site-A   | Confirmed  | 2025-06-12T06:02:00Z  
+Site-B   | Confirmed  | 2025-06-12T06:02:01Z  
+Site-C   | Confirmed  | 2025-06-12T06:02:01Z  
+
+NOTE
+-----
+
+- Failures should be highlighted and trigger retry workflows.`,
     tools: ["dispatch_command_api"] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];

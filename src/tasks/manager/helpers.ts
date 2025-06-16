@@ -57,9 +57,9 @@ export function taskRunError(taskRun: TaskRun) {
   return error;
 }
 
-const TASK_INPUT_DELIMITER = ">>> This is your input for this task:";
+const TASK_INPUT_DELIMITER = ">>> Input:";
 const BLOCKING_TASKS_INPUT_DELIMITER =
-  ">>> Additional inputs:";
+  ">>> Data:";
 const BLOCKING_TASK_OUTPUT_PLACEHOLDER = "${blocking_task_output}";
 
 interface TaskRunInput {

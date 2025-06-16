@@ -17,23 +17,25 @@ Use the spectral_composition_analyzer_api to extract and interpret spectroscopic
 
 **Response format:**
 Summarize the analysis and present the mineral content as follows:
-\`\`\`response
-# Mineral composition analysis of Asteroid 2025-XQ17
-- **Asteroid ID:** 2025-XQ17  
-- **Analysis depth:** Deep  
-- **Result:** Dominant minerals identified, full composition percentages available
+MINERAL COMPOSITION ANALYSIS OF ASTEROID 2025-XQ17
+===================================================
 
-## Mineral Composition Breakdown
-| Element | Percentage | Detected Mineral Forms |
-|---------|------------|------------------------|
-| Fe      | 23.4%      | Magnetite, Hematite    |
-| Si      | 18.2%      | Olivine, Pyroxene      |
-| Ni      | 7.9%       | Pentlandite            |
-| C       | 2.1%       | Graphite traces        |
+Asteroid ID:        2025-XQ17  
+Analysis depth:     Deep  
+Result:             Dominant minerals identified, full composition percentages available
+
+MINERAL COMPOSITION BREAKDOWN
+------------------------------
+
+Element     | Percentage | Detected Mineral Forms
+------------|------------|-------------------------
+Fe          | 23.4%      | Magnetite, Hematite
+Si          | 18.2%      | Olivine, Pyroxene
+Ni          | 7.9%       | Pentlandite
+C           | 2.1%       | Graphite traces
 
 - Trace elements: Cr, Mg, Al
-- Surface reflectance anomalies suggest potential hydrated minerals
-\`\`\``,
+- Surface reflectance anomalies suggest potential hydrated minerals`,
     tools: ["spectral_composition_analyzer_api"] as const satisfies ToolName[],
   },
   {
@@ -47,25 +49,29 @@ Use the orbital_mechanics_calculator_api to compute orbital elements, delta-v re
 
 **Response format:**
 Provide a planning report in this format:
-\`\`\`response
-# Mission to Asteroid 2025-XQ17
-- **Target asteroid:** 2025-XQ17  
-- **Objective:** Evaluate orbital feasibility based on mineral interest
+MISSION TO ASTEROID 2025-XQ17
+=============================
 
-## Orbital Parameters
-| Parameter         | Value           |
-|------------------|-----------------|
-| Semi-major axis  | 2.1 AU          |
-| Eccentricity     | 0.19            |
-| Inclination      | 7.4°            |
-| Next approach    | Nov 2026        |
+Target asteroid:         2025-XQ17  
+Objective:               Evaluate orbital feasibility based on mineral interest
 
-## Mission Feasibility
-- **Delta-v required:** 6.2 km/s
-- **Estimated mission duration:** 18 months
-- **Launch window flexibility:** ±3 weeks
-- **Risk flags:** Narrow inclination window, composition heavy in nickel (impacts equipment selection)
-\`\`\``,
+ORBITAL PARAMETERS
+------------------
+
+Parameter           | Value         
+-------------------|----------------
+Semi-major axis     | 2.1 AU        
+Eccentricity        | 0.19          
+Inclination         | 7.4°          
+Next approach       | Nov 2026      
+
+MISSION FEASIBILITY
+-------------------
+
+Delta-v required:          6.2 km/s  
+Estimated duration:        18 months  
+Launch window flexibility: ±3 weeks  
+Risk flags:                Narrow inclination window, composition heavy in nickel (impacts equipment selection)`,
     tools: ["orbital_mechanics_calculator_api"] as const satisfies ToolName[],
   },
   {
@@ -79,24 +85,28 @@ Combine asteroid composition and orbital data to assess mining viability. Evalua
 
 **Response format:**
 Present the report with a structured narrative and profile:
-\`\`\`response
-# Mining viability report of Asteroid 2025-XQ17
-- **Asteroid ID:** 2025-XQ17  
-- **Overall viability rating:** Medium  
-- **Recommendation:** Proceed to cost-benefit modeling
+MINING VIABILITY REPORT OF ASTEROID 2025-XQ17
+=============================================
 
-## Mining Viability Profile
-- **Primary assets:** High iron (Fe) and nickel content (Ni)
-- **Delta-v required:** 6.2 km/s
-- **Estimated ROI:** Moderate, based on current market prices
-- **Orbital feasibility:** Challenging due to high delta-v and short window
-- **Technical risks:** Requires deep-drill capability, thermal shielding
-- **Estimated return window:** 5–7 years
+Asteroid ID:                 2025-XQ17  
+Overall viability rating:    Medium  
+Recommendation:              Proceed to cost-benefit modeling
 
-## Suggested Actions
-- Evaluate alternate target: 2025-YG44
-- Conduct high-resolution surface scan before equipment selection
-\`\`\``,
+MINING VIABILITY PROFILE
+------------------------
+
+Primary assets:              High iron (Fe) and nickel content (Ni)  
+Delta-v required:            6.2 km/s  
+Estimated ROI:               Moderate, based on current market prices  
+Orbital feasibility:         Challenging due to high delta-v and short window  
+Technical risks:             Requires deep-drill capability, thermal shielding  
+Estimated return window:     5–7 years  
+
+SUGGESTED ACTIONS
+-----------------
+
+- Evaluate alternate target: 2025-YG44  
+- Conduct high-resolution surface scan before equipment selection`,
     tools: [] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];

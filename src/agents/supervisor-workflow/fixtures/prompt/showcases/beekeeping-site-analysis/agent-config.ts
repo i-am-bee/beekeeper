@@ -22,22 +22,27 @@ Filter out low-yield or unsupported species. Provide a structured summary of nec
 
 **Response format:**
 Summarize the suitability and present validated plant data:
-\`\`\`response
-# Nectar suitability of local flora in Sunnybrook Farm for beekeeping
-- **Location:** Sunnybrook Farm  
-- **Suitable species found:** 6  
-- **Dominant nectar source:** Trifolium pratense (Red Clover)
+NECTAR SUITABILITY OF LOCAL FLORA IN SUNNYBROOK FARM FOR BEEKEEPING
+====================================================================
 
-## Validated Nectar-Producing Species
-| Species               | Nectar Yield | Ground Health Index | Notes                        |
-|-----------------------|--------------|----------------------|------------------------------|
-| Trifolium pratense    | High         | 0.92                 | Widely distributed           |
-| Brassica napus        | Medium       | 0.84                 | Seasonal bloom               |
-| Salvia officinalis    | Medium       | 0.73                 | Patchy coverage              |
+Location:                    Sunnybrook Farm  
+Suitable species found:      6  
+Dominant nectar source:      Trifolium pratense (Red Clover)
 
-- Species with yield below threshold (e.g., < 0.3) are excluded
-- Yield scale: High (≥0.7), Medium (0.4–0.69), Low (<0.4)
-\`\`\``,
+VALIDATED NECTAR-PRODUCING SPECIES
+----------------------------------
+
+Species              | Nectar Yield | Ground Health Index | Notes                 
+---------------------|--------------|----------------------|-------------------------
+Trifolium pratense   | High         | 0.92                 | Widely distributed     
+Brassica napus       | Medium       | 0.84                 | Seasonal bloom         
+Salvia officinalis   | Medium       | 0.73                 | Patchy coverage        
+
+NOTES
+-----
+
+- Species with yield below threshold (e.g., < 0.3) are excluded  
+- Yield scale: High (≥0.7), Medium (0.4–0.69), Low (<0.4)`,
     tools: [
       "ground_survey_validator_api",
       "pollinator_database_lookup_api",
@@ -60,22 +65,27 @@ Filter species that are unsuitable for hosting, and highlight dual-purpose plant
 
 **Response format:**
 Summarize ecosystem compatibility and list validated hosts:
-\`\`\`response
-# Butterfly host plant suitability in Meadowland Reserve
-- **Location:** Butterfly Meadow West  
-- **Host-compatible species detected:** 5  
-- **Top host species:** Asclepias syriaca (Common Milkweed)
+BUTTERFLY HOST PLANT SUITABILITY IN MEADOWLAND RESERVE
+=======================================================
 
-## Validated Host Plants for Butterflies
-| Species             | Host Status | Suitability Score | Known Butterfly Partners     |
-|---------------------|-------------|-------------------|------------------------------|
-| Asclepias syriaca   | Confirmed   | 0.88              | Monarch, Queen               |
-| Helianthus annuus   | Probable    | 0.69              | Painted Lady                 |
-| Verbena bonariensis | Confirmed   | 0.75              | Gulf Fritillary              |
+Location:                    Butterfly Meadow West  
+Host-compatible species:     5  
+Top host species:            Asclepias syriaca (Common Milkweed)
 
-- Suitability score is derived from known pairings and field density
-- Host status: Confirmed (DB match), Probable (low evidence), Unsupported
-\`\`\``,
+VALIDATED HOST PLANTS FOR BUTTERFLIES
+--------------------------------------
+
+Species              | Host Status | Suitability Score | Known Butterfly Partners     
+---------------------|-------------|-------------------|------------------------------
+Asclepias syriaca    | Confirmed   | 0.88              | Monarch, Queen               
+Helianthus annuus    | Probable    | 0.69              | Painted Lady                 
+Verbena bonariensis  | Confirmed   | 0.75              | Gulf Fritillary              
+
+NOTES
+-----
+
+- Suitability score is derived from known pairings and field density  
+- Host status: Confirmed (DB match), Probable (low evidence), Unsupported`,
     tools: [
       "ground_survey_validator_api",
       "pollinator_database_lookup_api",
@@ -93,22 +103,27 @@ Use comparative_report_generator_api to summarize beekeeping and butterfly suita
 
 **Response format:**
 Provide a summary followed by a comparison table:
-\`\`\`response
-# Beekeeping and Butterfly Farming Suitability Report
-- **Sites evaluated:** 3  
-- **Top recommendation:** Meadowland Reserve  
-- **Key factors:** Abundant red clover, low slope, high host-plant density
+BEEKEEPING AND BUTTERFLY FARMING SUITABILITY REPORT
+====================================================
 
-## Suitability Comparison Table
-| Location            | Beekeeping Suitability | Butterfly Farming Suitability | Recommended Action          |
-|---------------------|------------------------|-------------------------------|-----------------------------|
-| Meadowland Reserve  | High                   | High                          | Proceed with dual farming   |
-| Willow Field North  | Medium                 | Low                           | Nectar-only optimization    |
-| Sunnybrook Farm     | Low                    | Medium                        | Improve host plant density  |
+Sites evaluated:            3  
+Top recommendation:         Meadowland Reserve  
+Key factors:                Abundant red clover, low slope, high host-plant density
 
-- Suitability grades: High, Medium, Low
-- Recommendations include planting advice and timing windows
-\`\`\``,
+SUITABILITY COMPARISON TABLE
+-----------------------------
+
+Location            | Beekeeping Suitability | Butterfly Farming Suitability | Recommended Action          
+--------------------|------------------------|-------------------------------|------------------------------
+Meadowland Reserve  | High                   | High                          | Proceed with dual farming   
+Willow Field North  | Medium                 | Low                           | Nectar-only optimization    
+Sunnybrook Farm     | Low                    | Medium                        | Improve host plant density  
+
+NOTES
+-----
+
+- Suitability grades: High, Medium, Low  
+- Recommendations include planting advice and timing windows`,
     tools: ["comparative_report_generator_api"] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];

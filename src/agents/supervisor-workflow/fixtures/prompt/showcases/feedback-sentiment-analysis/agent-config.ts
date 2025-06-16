@@ -16,25 +16,30 @@ Use the customer_feedback_dataset_api to load all feedback entries associated wi
 
 **Response format:**
 Provide a summary and list all feedback entries:
-\`\`\`response
-# Dataset Information
-- **Dataset ID:** cust-feedback-2025-06  
-- **Entries loaded:** 145
+DATASET INFORMATION
+===================
 
-## Complete Feedback Dataset
-1. "Checkout process was confusing."
-2. "Great support—issue resolved quickly!" 
-3. "Packaging arrived damaged."
-4. "Product exceeded expectations."
-5. "Delivery was delayed by 3 days."
-6. "Love the new features in the app."
-7. "Customer service was unhelpful."
-8. "Fast shipping, well packaged."
-...
-145. "Would recommend to others."
+Dataset ID:               cust-feedback-2025-06  
+Entries loaded:           145  
 
-(Include metadata like timestamps or customer IDs if available.)
-\`\`\``,
+COMPLETE FEEDBACK DATASET
+--------------------------
+
+1.  "Checkout process was confusing."  
+2.  "Great support—issue resolved quickly!"  
+3.  "Packaging arrived damaged."  
+4.  "Product exceeded expectations."  
+5.  "Delivery was delayed by 3 days."  
+6.  "Love the new features in the app."  
+7.  "Customer service was unhelpful."  
+8.  "Fast shipping, well packaged."  
+...  
+145. "Would recommend to others."  
+
+NOTE
+----
+
+(Include metadata like timestamps or customer IDs if available.)`,
     tools: ["customer_feedback_dataset_api"] as const satisfies ToolName[],
   },
   {
@@ -48,25 +53,29 @@ Use the sentiment_analysis_api to evaluate the sentiment of each text. Select ei
 
 **Response format:**
 Summarize the task and list sentiment scores:
-\`\`\`response
-# Emotional Tone Evaluation
-- **Feedback entries analyzed:** 3
-- **Sentiment model used:** score
-- **Language:** English
+EMOTIONAL TONE EVALUATION
+==========================
 
-## Sentiment Scores
-| Index | Text Snippet                             | Score  |
-|-------|------------------------------------------|--------|
-| 0     | "Checkout process was confusing."        | -0.63  |
-| 1     | "Great support—issue resolved quickly!"  | 0.92   |
-| 2     | "Packaging arrived damaged."             | 0.10   |
-...
-| 144   | "Would recommend to others."             | 0.69   |
+Feedback entries analyzed:     3  
+Sentiment model used:          score  
+Language:                      English  
 
-### Notes
-- Scores range from –1 (very negative) to 1 (very positive).
-- Neutral range: –0.2 to 0.2.
-\`\`\``,
+SENTIMENT SCORES
+-----------------
+
+Index | Text Snippet                              | Score  
+------|--------------------------------------------|--------
+0     | "Checkout process was confusing."          | -0.63  
+1     | "Great support—issue resolved quickly!"    | 0.92   
+2     | "Packaging arrived damaged."               | 0.10   
+...  
+144   | "Would recommend to others."               | 0.69   
+
+NOTES
+-----
+
+- Scores range from –1 (very negative) to 1 (very positive).  
+- Neutral range: –0.2 to 0.2`,
     tools: ["sentiment_analysis_api"] as const satisfies ToolName[],
   },
   {
@@ -80,24 +89,29 @@ Analyze the distribution of sentiment scores. Compute mean, standard deviation, 
 
 **Response format:**
 Present a statistical summary and key insights:
-\`\`\`response
-# Feedback Sentiment Summary
-- **Dataset IDs:** cust-feedback-2025-06
-- **Total feedback analyzed:** 145
-- **Overall sentiment:** Mildly positive
+FEEDBACK SENTIMENT SUMMARY
+===========================
 
-## Sentiment Breakdown
-- **Average score:** 0.28  
-- **Standard deviation:** 0.42  
-- **Distribution:**
-  - Positive (>0.2): 62%
-  - Neutral (–0.2 to 0.2): 28%
-  - Negative (<–0.2): 10%
+Dataset IDs:                cust-feedback-2025-06  
+Total feedback analyzed:    145  
+Overall sentiment:          Mildly positive  
 
-## Highlights
-- Most common issue in negative feedback: Delivery delays  
-- Top praised aspect: Customer support responsiveness
-\`\`\``,
+SENTIMENT BREAKDOWN
+--------------------
+
+Average score:              0.28  
+Standard deviation:         0.42  
+
+Distribution:  
+- Positive (>0.2):          62%  
+- Neutral (–0.2 to 0.2):    28%  
+- Negative (<–0.2):         10%  
+
+HIGHLIGHTS
+-----------
+
+- Most common issue in negative feedback:    Delivery delays  
+- Top praised aspect:                        Customer support responsiveness`,
     tools: [] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];

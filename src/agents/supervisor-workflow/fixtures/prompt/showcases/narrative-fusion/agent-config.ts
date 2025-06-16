@@ -17,18 +17,17 @@ const ENTRIES = [
 Interpret the prompt and develop an original short story with a structured arc. Include a clear beginning, middle, and end. Use vivid language, emotional progression, and thematic resolution. The story should range from 300 to 1000 words unless specified otherwise.
 
 **Response format:**
-Return the story using paragraph formatting. You may include a title.
+Return the story using paragraph formatting. You may include a title. 
+- Ensure the story has setup, conflict, and resolution  
+- Optional stylistic parameters (genre, mood, moral) may be specified in the prompt
 
-\`\`\`response
-**Title:** *The Last Light of Eloria*
+The format:
+TITLE: The Last Light of Eloria
+===============================
 
 Once, in a forgotten realm beneath twin moons...
 
-[Body of the story continues with full arc]
-\`\`\`
-
-- Ensure the story has setup, conflict, and resolution  
-- Optional stylistic parameters (genre, mood, moral) may be specified in the prompt`,
+[Body of the story continues with full arc]`,
     tools: [] as const satisfies ToolName[],
   },
   {
@@ -41,19 +40,18 @@ Once, in a forgotten realm beneath twin moons...
 Extract the key emotional beats, characters, and motifs from the provided stories. Create a screenplay-format scene that preserves their essence. Use appropriate headers, actions, and dialogue to express the merged narrative.
 
 **Response format:**
+- Include scene headers (INT./EXT.), all-caps character names, and centered dialogue  
+- Ensure pacing, tone, and character motivations are preserved from source stories
+
 Return the scene in standard screenplay format:
-\`\`\`response
-**INT. ABANDONED MUSEUM — NIGHT**
+INT. ABANDONED MUSEUM — NIGHT
+==============================
 
 JULIA steps over broken glass, flashlight trembling.  
-         JULIA  
-  It's... it's just like the dream.
+        JULIA  
+It's... it's just like the dream.
 
-Behind her, the SHADOW-FIGURE appears...
-\`\`\`
-
-- Include scene headers (INT./EXT.), all-caps character names, and centered dialogue  
-- Ensure pacing, tone, and character motivations are preserved from source stories`,
+Behind her, the SHADOW-FIGURE appears...`,
     tools: [] as const satisfies ToolName[],
   },
   {
@@ -66,30 +64,40 @@ Behind her, the SHADOW-FIGURE appears...
 Analyze the scene for structural clarity, character integration, and thematic resonance. Identify narrative origin points, pacing, tone, and whether emotional or plot-based transitions are successful. Suggest revisions if inconsistencies are found.
 
 **Response format:**
+- Organize content under clear headings  
+- Add constructive revision notes where applicable
+
 Return a structured analysis report:
-\`\`\`response
-### Analysis Report
+ANALYSIS REPORT
+================
 
-**Scene Setting:**  
-Urban alley, night — introduces isolation and suspense
+SCENE SETTING  
+--------------
 
-**Character Convergence:**  
+Urban alley, night — introduces isolation and suspense  
+
+CHARACTER CONVERGENCE  
+----------------------
+
 - Julia (from Story A): Maintains motivation (escape)  
 - Marco (from Story B): Introduced mid-scene, acts as foil  
 
-**Thematic Elements:**  
+THEMATIC ELEMENTS  
+------------------
+
 - Dreams vs. Reality  
 - Trust and Betrayal  
 
-**Narrative Integration:**  
+NARRATIVE INTEGRATION  
+----------------------
+
 - Seamless transition from Julia’s arc to Marco’s  
-- Dialogue echoes the moral conflict in Story A
+- Dialogue echoes the moral conflict in Story A  
 
-- Consider improving Marco’s late entry for greater impact
-\`\`\`
+NOTE
+-----
 
-- Organize content under clear headings  
-- Add constructive revision notes where applicable`,
+- Consider improving Marco’s late entry for greater impact`,
     tools: [] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];

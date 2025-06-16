@@ -17,19 +17,24 @@ Use the terrain_sonar_mapping_api to scan underwater terrain and identify geolog
 
 **Response format:**
 Provide a scan summary and terrain feature breakdown:
-\`\`\`response
-# Terrain Mapping Report for Mariana Trench
-- **Zone scanned:** Mariana Trench (segment M-17)  
-- **Resolution:** High  
-- **Depth range:** Full (0–11,000m)
+TERRAIN MAPPING REPORT FOR MARIANA TRENCH
+=========================================
 
-## Terrain Features Identified
-- Seafloor topology: steep trench walls with sediment layers  
-- Geological formations: basaltic ridges and hydrothermal vents  
-- Obstacles: detected sub-surface rock formations at 6800m
+Zone scanned:              Mariana Trench (segment M-17)  
+Resolution:                High  
+Depth range:               Full (0–11,000m)
 
-(If available, append sonar visualization metadata or link to 3D topographic render.)
-\`\`\``,
+TERRAIN FEATURES IDENTIFIED
+----------------------------
+
+- Seafloor topology:       Steep trench walls with sediment layers  
+- Geological formations:   Basaltic ridges and hydrothermal vents  
+- Obstacles:               Detected sub-surface rock formations at 6800m  
+
+NOTE
+----
+
+(If available, append sonar visualization metadata or link to 3D topographic render.)`,
     tools: ["terrain_sonar_mapping_api"] as const satisfies ToolName[],
   },
   {
@@ -43,23 +48,27 @@ Use terrain_sonar_mapping_api and biological_sonar_detector_api to perform dual-
 
 **Response format:**
 Provide a joint mapping summary:
-\`\`\`response
-# Integrated Sonar Mapping Report for Eastern Pacific Ridge
-- **Zone:** Eastern Pacific Ridge  
-- **Scan type:** Integrated (terrain + biology)  
-- **Target organisms:** All  
-- **Bio-frequency range:** Medium
+INTEGRATED SONAR MAPPING REPORT FOR EASTERN PACIFIC RIDGE
+==========================================================
 
-## Terrain Mapping Results
-- Ridge elevation: 1400–1600m  
-- Slope angle: 23° average  
-- Detected obstacle: caldera rim at 1550m
+Zone:                      Eastern Pacific Ridge  
+Scan type:                 Integrated (terrain + biology)  
+Target organisms:          All  
+Bio-frequency range:       Medium
 
-## Marine Life Detection
-- Fish schools: Dense presence at 400–600m  
-- Marine mammals: None detected  
-- Anomalies: Suspended biological mass at 950m (possibly jellyfish bloom)
-\`\`\``,
+TERRAIN MAPPING RESULTS
+------------------------
+
+- Ridge elevation:         1400–1600m  
+- Slope angle:             23° average  
+- Detected obstacle:       Caldera rim at 1550m  
+
+MARINE LIFE DETECTION
+----------------------
+
+- Fish schools:            Dense presence at 400–600m  
+- Marine mammals:          None detected  
+- Anomalies:               Suspended biological mass at 950m (possibly jellyfish bloom)`,
     tools: [
       "terrain_sonar_mapping_api",
       "biological_sonar_detector_api",
@@ -80,24 +89,28 @@ Validate all input datasets. Ensure report is suitable for planning or review.
 
 **Response format:**
 Start with a recommendation and comparison summary:
-\`\`\`response
-# Comparative Exploration Report for Atlantic Zones
-- **Zones analyzed:** 3  
-- **Top exploration candidate:** North Atlantis Fracture Zone  
-- **Report type:** Scientific
+COMPARATIVE EXPLORATION REPORT FOR ATLANTIC ZONES
+=================================================
 
-### Comparison Table
-| Zone                       | Terrain Score | Biological Density | Exploration Value |
-|----------------------------|---------------|---------------------|-------------------|
-| Atlantis Fracture Zone     | 8.9           | 7.4                 | High              |
-| Cayman Trough              | 7.5           | 5.1                 | Medium            |
-| Southern Mid-Atlantic Rise | 5.8           | 6.0                 | Moderate          |
+Zones analyzed:               3  
+Top exploration candidate:    North Atlantis Fracture Zone  
+Report type:                  Scientific
 
-### Integrated Findings
-- Dominant species: Lanternfish (dense shoals at 500m)  
-- Key geological features: Fault scarps, sediment fans  
-- Risk flag: Deep trench wall collapse zone in Cayman Trough
-\`\`\``,
+COMPARISON TABLE
+-----------------
+
+Zone                        | Terrain Score | Biological Density | Exploration Value  
+-----------------------------|---------------|---------------------|--------------------
+Atlantis Fracture Zone       | 8.9           | 7.4                 | High               
+Cayman Trough                | 7.5           | 5.1                 | Medium             
+Southern Mid-Atlantic Rise   | 5.8           | 6.0                 | Moderate           
+
+INTEGRATED FINDINGS
+--------------------
+
+- Dominant species:           Lanternfish (dense shoals at 500m)  
+- Key geological features:    Fault scarps, sediment fans  
+- Risk flag:                  Deep trench wall collapse zone in Cayman Trough`,
     tools: [
       "sonar_data_integrator_api",
       "submarine_exploration_reporter_api",

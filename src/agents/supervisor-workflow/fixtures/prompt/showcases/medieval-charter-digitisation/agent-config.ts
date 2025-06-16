@@ -17,23 +17,28 @@ Use the hires_scan_api to scan fragile or historical documents using a cradle sc
 
 **Response format:**
 Provide a scanning summary followed by image metadata:
-\`\`\`response
-# Scanning Summary
-- **Scanning date:** 2024-03-15  
-- **Documents scanned:** 5  
-- **Resolution:** 600 DPI  
-- **Format:** TIFF
+SCANNING SUMMARY
+=================
 
-## Image Output
-| Document ID     | Image URL                              | Status     |
-|-----------------|------------------------------------------|------------|
-| doc-latin-001   | https://archive.org/scan/doc-latin-001  | Success    |
-| doc-latin-002   | https://archive.org/scan/doc-latin-002  | Success    |
-| doc-latin-003   | —                                        | Scan error |
+Scanning date:             2024-03-15  
+Documents scanned:         5  
+Resolution:                600 DPI  
+Format:                    TIFF  
 
-- Image links reflect the original scan order.
-- Additional metadata (e.g., DPI, lighting, dimensions) may be included if available.
-\`\`\``,
+IMAGE OUTPUT
+-------------
+
+Document ID      | Image URL                               | Status     
+------------------|------------------------------------------|------------
+doc-latin-001     | https://archive.org/scan/doc-latin-001  | Success    
+doc-latin-002     | https://archive.org/scan/doc-latin-002  | Success    
+doc-latin-003     | —                                        | Scan error  
+
+NOTES
+------
+
+- Image links reflect the original scan order.  
+- Additional metadata (e.g., DPI, lighting, dimensions) may be included if available.`,
     tools: ["hires_scan_api"] as const satisfies ToolName[],
   },
   {
@@ -47,21 +52,26 @@ Use the ocr_latin_script_api to extract Latin text from high-resolution image sc
 
 **Response format:**
 Summarize the OCR results and include structured output:
-\`\`\`response
-# OCR Results Summary
-- **Images processed:** 3  
-- **Detected language:** Latin  
-- **Average OCR confidence:** 91.4%
+OCR RESULTS SUMMARY
+====================
 
-## OCR Output
-| Image URL                                | Extracted Text Snippet         | Confidence |
-|------------------------------------------|--------------------------------|------------|
-| .../doc-latin-001                        | "In principio erat Verbum..."  | 95.2%      |
-| .../doc-latin-002                        | "Et lux in tenebris lucet..."  | 87.6%      |
-| .../doc-latin-003                        | "Nomen eius Ioannes erat."     | 91.5%      |
+Images processed:           3  
+Detected language:          Latin  
+Average OCR confidence:     91.4%  
 
-- Confidence values below 80% should be manually reviewed.
-\`\`\``,
+OCR OUTPUT
+-----------
+
+Image URL                              | Extracted Text Snippet          | Confidence  
+----------------------------------------|----------------------------------|-------------
+.../doc-latin-001                       | "In principio erat Verbum..."   | 95.2%       
+.../doc-latin-002                       | "Et lux in tenebris lucet..."   | 87.6%       
+.../doc-latin-003                       | "Nomen eius Ioannes erat."      | 91.5%       
+
+NOTE
+-----
+
+- Confidence values below 80% should be manually reviewed.`,
     tools: ["ocr_latin_script_api"] as const satisfies ToolName[],
   },
   {
@@ -75,22 +85,27 @@ Use the language_detect_api to determine the language of each text snippet. Retu
 
 **Response format:**
 Present a language verification summary and results:
-\`\`\`response
-# Verification Report
-- **Texts analyzed:** 4  
-- **Languages detected:** Latin (3), Italian (1)  
-- **Warnings:** 1 detection below threshold
+VERIFICATION REPORT
+====================
 
-## Language Detection Results
-| Text Snippet                     | Detected Language | ISO Code | Confidence |
-|----------------------------------|-------------------|----------|------------|
-| "Gloria in excelsis Deo."        | Latin             | lat      | 96.3%      |
-| "Ecce homo."                     | Latin             | lat      | 94.7%      |
-| "Benedictus qui venit..."        | Latin             | lat      | 91.2%      |
-| "Questo documento è antico."     | Italian           | it       | 85.0%      |
+Texts analyzed:            4  
+Languages detected:        Latin (3), Italian (1)  
+Warnings:                  1 detection below threshold  
 
-- Any value under 80% may be flagged for manual verification.
-\`\`\``,
+LANGUAGE DETECTION RESULTS
+---------------------------
+
+Text Snippet                     | Detected Language | ISO Code | Confidence  
+----------------------------------|-------------------|----------|------------
+"Gloria in excelsis Deo."        | Latin             | lat      | 96.3%      
+"Ecce homo."                     | Latin             | lat      | 94.7%      
+"Benedictus qui venit..."        | Latin             | lat      | 91.2%      
+"Questo documento è antico."     | Italian           | it       | 85.0%      
+
+NOTE
+-----
+
+- Any value under 80% may be flagged for manual verification.`,
     tools: ["language_detect_api"] as const satisfies ToolName[],
   },
   {
@@ -104,24 +119,28 @@ Use the vector_store_ingest_api to chunk and embed document text. Store results 
 
 **Response format:**
 Provide an ingestion summary per document:
-\`\`\`response
-# Ingestion Summary
-- **Documents ingested:** 3  
-- **Default chunk size:** 1000 characters  
-- **Embedding method:** Standard LLM vector encoder
+INGESTION SUMMARY
+==================
 
-## Ingestion Results
-| Document ID     | Chunks Created | Status   |
-|------------------|----------------|----------|
-| doc-latin-001    | 12             | Success  |
-| doc-latin-002    | 8              | Success  |
-| doc-latin-003    | —              | Error: empty text
+Documents ingested:         3  
+Default chunk size:         1000 characters  
+Embedding method:           Standard LLM vector encoder  
 
-### Notes
-- Each document is handled independently.
-- Chunks are indexed with the document ID.
-- Ingestion errors are reported explicitly.
-\`\`\``,
+INGESTION RESULTS
+------------------
+
+Document ID       | Chunks Created | Status                  
+------------------|----------------|--------------------------
+doc-latin-001     | 12             | Success                 
+doc-latin-002     | 8              | Success                 
+doc-latin-003     | —              | Error: empty text       
+
+NOTES
+------
+
+- Each document is handled independently.  
+- Chunks are indexed with the document ID.  
+- Ingestion errors are reported explicitly.`,
     tools: ["vector_store_ingest_api"] as const satisfies ToolName[],
   },
 ] as const satisfies AgentConfigTiny[];

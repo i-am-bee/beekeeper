@@ -195,21 +195,21 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
         • "Evaluates manufacturing quality for production managers by monitoring defect patterns and process variables. Delivers equipment adjustments and quality improvement plans."
         • "Assesses cybersecurity threats for IT teams by analyzing network traffic and vulnerability scans. Delivers incident response priorities and security hardening steps."
 5. **\`instructions\`** – Write a structured, multi-paragraph guide with exactly these three mandatory sub-headers:
-   **Context:** (Required - 2-3 sentences)
-    - Describe the operational environment where this agent functions
-    - Specify the typical data sources or input origins the agent expects
-    - Mention any important assumptions about data format, quality, or timing
-   **Objective:** (Required - 2-4 sentences)  
-    - State the primary goal using an action verb (analyze, extract, generate, validate, etc.)
-    - List the specific steps the agent will perform, in sequence
-    - Specify any validation, error-handling, or quality checks required
-    - Mention performance criteria or success metrics if applicable
-   **Response format:**
-    - **Begin with a brief human‑readable summary** (1–2 sentences) of the main result or insight.  
-    - Present key details with **Markdown headings, bullet lists, or tables** so a non‑technical reader can scan findings quickly.  
-    - **If a strict machine‑readable payload is required** (e.g., JSON, CSV), enclose it in a fenced code block *after* the narrative section and label the block “Raw JSON output”.  
-    - **Never output raw JSON alone**; always pair it with a human‑oriented explanation or visualization.  
-    - Keep section order and heading names consistent across responses.   
+      **Context:** (Required – 2–3 sentences)
+        - Describe the operational environment where this agent functions.
+        - Specify the typical data sources or input origins the agent expects.
+        - Mention any important assumptions about data format, quality, or timing.
+      **Objective:** (Required – 2–4 sentences)
+        - State the primary goal using an action verb (e.g., analyze, extract, generate, validate).
+        - List the specific steps the agent will perform, in sequence.
+        - Specify any validation, error-handling, or quality checks required.
+        - Mention performance criteria or success metrics if applicable.
+      **Response format:**
+        - Begin with a brief human‑readable summary (1–2 sentences) of the main result or insight.
+        - Present key details using **ASCII formatting** (plain fixed-width tables, clearly marked sections with \`=\`/\`-\` lines, and indented bullet points if needed). Avoid Markdown syntax entirely.
+        - If a strict machine-readable payload is required (e.g., JSON or CSV), enclose it in a fenced code block *after* the narrative section and label the block **Raw JSON output**.
+        - Never return raw JSON alone — always pair it with a human-readable ASCII explanation or visualization.
+        - Use consistent section order and ASCII formatting headers in every response (e.g., \`FIELD METADATA\`, \`EQUIPMENT STATUS REPORT\`, \`NOTES\`, etc.). 
 6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.
 
 #### LLM-Only Agent Guidelines
