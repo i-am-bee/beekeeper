@@ -7,6 +7,7 @@ import {
   unwrapTaskStepWithTaskRun,
   unwrapTaskStepWithToolsOrLLM,
 } from "./unwrap-task-step.js";
+import { AgentAvailableTool } from "../../workflow-composer/task-initializer/agent-config-initializer/dto.js";
 
 export const WorkflowSteps = [
   "agentConfigInitializer",
@@ -97,4 +98,13 @@ export function prepareDataForWorkflowStep(
     previousSteps: previousSteps.map(unwrapTaskStepWithTaskRun),
     taskStep,
   };
+}
+
+export function mapTools(
+  tools: string[],
+  resources: Resources,
+): AgentAvailableTool[] {
+  return tools
+    .map((toolName) => resources.tools.find((t) => t.toolName === toolName))
+    .filter((tool): tool is AgentAvailableTool => !!tool);
 }

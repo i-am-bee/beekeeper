@@ -27,7 +27,6 @@ export class ExistingResourcesBuilder {
                 agent_type: curr.agentType,
                 tools: curr.tools,
                 description: curr.description,
-                // instructions: curr.instructions,
               },
             } satisfies laml.dto.LAMLObject);
             return acc;

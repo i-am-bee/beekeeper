@@ -15,11 +15,13 @@ import { assignResource } from "../../helpers/task-step/helpers/assign-resource.
 import {
   AgentConfigInitializerInput,
   AgentConfigInitializerOutput,
+  AgentConfigTinyDraft,
 } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { AgentConfigInitializerTool } from "./tool.js";
 import { clone } from "remeda";
+import { AgentInstructionsBuilder } from "./agent-instructions-builder/agent-instructions-builder.js";
 
 /**
  * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
@@ -30,10 +32,15 @@ export class AgentConfigInitializer extends LLMCall<
   AgentConfigInitializerOutput
 > {
   protected tool: AgentConfigInitializerTool;
+  protected agentInstructionsBuilder: AgentInstructionsBuilder;
 
   constructor(logger: Logger, agentId: AgentIdValue) {
     super(logger, agentId);
     this.tool = new AgentConfigInitializerTool();
+    this.agentInstructionsBuilder = new AgentInstructionsBuilder(
+      logger,
+      agentId,
+    );
   }
 
   protected async processResult(
@@ -43,7 +50,7 @@ export class AgentConfigInitializer extends LLMCall<
   ): Promise<FnResult<AgentConfigInitializerOutput>> {
     const { onUpdate } = ctx;
     const {
-      data: { resources, taskStep },
+      data: { resources, taskStep, previousSteps },
     } = input;
     const { tools: availableTools, agents: existingAgentConfigs } = resources;
 
@@ -69,23 +76,22 @@ export class AgentConfigInitializer extends LLMCall<
             throw new Error(`RESPONSE_CREATE_AGENT_CONFIG is missing`);
           }
 
-          const config = {
+          const agentConfigDraft = {
             agentType: response.agent_type,
             description: response.description,
-            instructions: response.instructions,
-            tools: response.tools,
-          };
+            tools: response.tools || [],
+          } satisfies AgentConfigTinyDraft;
 
           this.handleOnUpdate(onUpdate, {
             type: result.RESPONSE_TYPE,
-            value: `I'm going to create a brand new agent config \`${config.agentType}\``,
-            payload: { toJson: config },
+            value: `I'm going to create a brand new agent config \`${agentConfigDraft.agentType}\``,
+            payload: { toJson: agentConfigDraft },
           });
 
-          const missingTools = getMissingTools(config.tools);
+          const missingTools = getMissingTools(agentConfigDraft.tools);
 
           if (missingTools.length > 0) {
-            const explanation = `The response contains the following issues:${laml.listFormatter("numbered")([`Can't create agent config \`${config.agentType}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\``], "")}
+            const explanation = `The response contains the following issues:${laml.listFormatter("numbered")([`Can't create agent config \`${agentConfigDraft.agentType}\` because it references non-existent tool(s): \`${missingTools.join(", ")}\``], "")}
 \nAvailable resources that can be used:
 - Tools: ${availableTools.map((t) => t.toolName).join(", ")}
 
@@ -96,14 +102,37 @@ Please address these issues and provide the corrected response:`;
             };
           }
 
+          const instructionsBuilderResponse =
+            await this.agentInstructionsBuilder.run(
+              {
+                data: {
+                  previousSteps,
+                  resources,
+                  agentConfigDraft,
+                  taskStep,
+                },
+                userMessage: taskStep.step,
+              },
+              ctx,
+            );
+
+          if (instructionsBuilderResponse.type === "ERROR") {
+            return {
+              type: "ERROR",
+              explanation: `Failed to build agent instructions: ${instructionsBuilderResponse.explanation}`,
+              escalation: true,
+            };
+          }
+          const { result: instructions } = instructionsBuilderResponse;
+
           const toolCallResult = await this.tool.run({
             method: "createAgentConfig",
             agentKind: "operator",
             config: {
               agentType: response.agent_type,
               description: response.description,
-              instructions: response.instructions,
-              tools: response.tools,
+              instructions,
+              tools: response.tools || [],
               autoPopulatePool: true,
               maxPoolSize: 5,
             },
@@ -134,7 +163,6 @@ Please address these issues and provide the corrected response:`;
 
           const config = {
             description: response.description,
-            instructions: response.instructions,
             tools: response.tools,
           };
 
@@ -151,6 +179,9 @@ Please address these issues and provide the corrected response:`;
               explanation: `Can't update agent config \`${response.agent_type}\` because it is not available. Available agent types: \`${existingAgentConfigs.map((c) => c.agentType).join(", ")}\`.`,
             };
           }
+          const existingAgentConfig = resources.agents.find(
+            (a) => a.agentType === response.agent_type,
+          )!;
 
           const missingTools = getMissingTools(config.tools);
           if (missingTools.length > 0) {
@@ -160,11 +191,41 @@ Please address these issues and provide the corrected response:`;
             };
           }
 
+          const agentConfigDraft = {
+            agentType: response.agent_type,
+            description:
+              response.description || existingAgentConfig.description,
+            tools: response.tools || existingAgentConfig.tools,
+          } satisfies AgentConfigTinyDraft;
+
+          const instructionsBuilderResponse =
+            await this.agentInstructionsBuilder.run(
+              {
+                data: {
+                  previousSteps,
+                  resources,
+                  agentConfigDraft,
+                  taskStep,
+                },
+                userMessage: taskStep.step,
+              },
+              ctx,
+            );
+
+          if (instructionsBuilderResponse.type === "ERROR") {
+            return {
+              type: "ERROR",
+              explanation: `Failed to build agent instructions: ${instructionsBuilderResponse.explanation}`,
+              escalation: true,
+            };
+          }
+          const { result: instructions } = instructionsBuilderResponse;
+
           const toolCallResult = await this.tool.run({
             method: "updateAgentConfig",
             agentKind: "operator",
             agentType: response.agent_type,
-            config,
+            config: { ...config, instructions },
           });
 
           const {

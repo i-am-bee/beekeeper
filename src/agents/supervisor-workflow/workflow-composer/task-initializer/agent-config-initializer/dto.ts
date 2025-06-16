@@ -10,15 +10,12 @@ export const AgentAvailableToolSchema = z.object({
 });
 export type AgentAvailableTool = z.infer<typeof AgentAvailableToolSchema>;
 
-export const AgentConfigMinimalSchema = AgentConfigSchema.pick({
-  agentConfigId: true,
-  agentConfigVersion: true,
+export const AgentConfigTinyDraftSchema = AgentConfigSchema.pick({
   agentType: true,
   tools: true,
   description: true,
-  instructions: true,
 });
-export type AgentConfigMinimal = z.infer<typeof AgentConfigMinimalSchema>;
+export type AgentConfigTinyDraft = z.infer<typeof AgentConfigTinyDraftSchema>;
 
 export const AgentConfigTinySchema = AgentConfigSchema.pick({
   agentType: true,

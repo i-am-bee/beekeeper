@@ -31,6 +31,7 @@ export const protocol = laml.ProtocolBuilder.new()
       })
       .array({
         name: "tools",
+        isOptional: true,
         description:
           "list of selected tools identifiers that this agent type can utilize",
         type: "text",
@@ -39,11 +40,6 @@ export const protocol = laml.ProtocolBuilder.new()
         name: "description",
         description:
           "Description of the agent's behavior and purpose of his existence",
-      })
-      .text({
-        name: "instructions",
-        description:
-          "Natural language but structured text instructs on how agent should act",
       }),
   })
   .object({
@@ -66,12 +62,6 @@ export const protocol = laml.ProtocolBuilder.new()
         isOptional: true,
         description:
           "Description of the agent's behavior and purpose of his existence",
-      })
-      .text({
-        name: "instructions",
-        isOptional: true,
-        description:
-          "Natural language but structured text instructs on how agent should act",
       }),
   })
   .object({

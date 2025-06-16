@@ -140,6 +140,13 @@ process.on("unhandledRejection", (error) => {
   shutdown("UnhandledRejection");
 });
 
+// Override console.error to filter out unwanted messages in console-based UI
+console.error = (...args) => {
+  const error = args.join(" ");
+  // Call original console.error for other messages
+  logger.error(error, "Consoler error:");
+};
+
 // Run the application
 main().catch((error) => {
   logger.error(error, "Application error:");

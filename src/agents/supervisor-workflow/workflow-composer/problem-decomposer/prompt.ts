@@ -203,16 +203,22 @@ const guidelines = BodyTemplateBuilder.new()
 2. Each step must define its **inputs and outputs** explicitly.
    a.  **Completeness check.**  The output list of a step *must* name every field that any *later* step will reference.  
    (Example: if Step 3 needs \`citation_source\`, Step 1 or 2 must include \`citation_source\` in its outputs.)
-3. Each step’s input must be explicitly justified. Each input must be traceable to a valid source:
-   - Either explicitly provided in user message,
-   - Produced by a previous step (with [from Step X]),
-   - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
-   If any input cannot be traced in this way, the step — and the whole problem — must be marked **MISSING_INPUTS**. Do not invent values (e.g., blockIds, siteIds) without justification.
-   **Examples**: 
-   - INCORRECT: "Query database (input: customer records; output: analysis)" ← Missing source, vague
-   - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history)"
-   - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report)"
-   - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report)"
+3. Each step’s input must be explicitly justified. 
+   a. Each input must be traceable to a valid source:
+      - Either explicitly provided in user message,
+      - Produced by a previous step (with [from Step X]),
+      - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
+      If any input cannot be traced in this way, the step — and the whole problem — must be marked **MISSING_INPUTS**. Do not invent values (e.g., blockIds, siteIds) without justification.
+      **Examples**: 
+        - INCORRECT: "Query database (input: customer records; output: analysis)" ← Missing source, vague
+        - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history)"
+        - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report)"
+        - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report)"
+   b. If a step compiles or presents information that originates in more than one earlier step (e.g., combining analysis with original sources, or citing data), then it must include *all relevant outputs* in its inputs — not just the latest transformation.**  
+      This ensures full traceability for citation, validation, and user transparency.
+      **Example (CORRECT)**  
+        "Compile a summary of leadership information (input: name and term details [from Step 2], source link [from Step 1]; output: summary with citation) [LLM]"
+        - **Rationale:** Even though Step 2 verified the information, Step 1 provided the original source — which is needed to generate proper citations.
 4. Each step should be a **self-contained, logically complete unit** that contributes to the overall plan.
    a. If a task involves analysis, evaluation, assessment, or suitability scoring, treat it as requiring multi-dimensional coverage (e.g., species identification, nectar analysis, environmental context).
       However, you must encapsulate the full analysis into a single step if the user describes it as one coherent goal (e.g., "Analyze flora for beekeeping suitability").

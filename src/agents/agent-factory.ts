@@ -82,13 +82,12 @@ export class AgentFactory extends BaseAgentFactory<
     taskRunId: TaskRunIdValue,
     addToMemory?: (AssistantMessage | ToolMessage)[],
   ): Promise<string> {
+    if (addToMemory) {
+      agent.memory.addMany(addToMemory);
+    }
     if (agent instanceof SupervisorWorkflow) {
       return await agent.run({ prompt, onUpdate, originTaskRunId: taskRunId });
     } else {
-      if (addToMemory) {
-        agent.memory.addMany(addToMemory);
-      }
-
       const resp = await agent
         .run({ prompt }, { signal })
         .observe((emitter) => {

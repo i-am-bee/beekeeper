@@ -11,6 +11,7 @@ import { Context } from "./context.js";
 import { retry } from "./retry/retry.js";
 import { FnResult, FnResultWithPayload, RetryResult } from "./retry/types.js";
 import { Runnable } from "./runnable.js";
+import { groundInTime } from "../workflow-composer/helpers/prompt.js";
 
 export interface LLMCallInput<TInput> {
   userMessage: string;
@@ -42,7 +43,7 @@ export abstract class LLMCall<
     input: LLMCallInput<TInput>,
     ctx: Context,
   ): Promise<LLMCallRunOutput<TOutput>> {
-    const { userMessage: originalUserMessage, data } = input;
+    const { userMessage: originalUserMessage, data, memory } = input;
     const callLLM = this.callLLM.bind(this);
     const result = await retry<TOutput, BaseMemory>(
       async (
@@ -61,7 +62,7 @@ export abstract class LLMCall<
           {
             userMessage,
             data: clone(data),
-            memory: payloadIn,
+            memory: payloadIn || memory,
           },
           ctx,
         );
@@ -104,8 +105,8 @@ export abstract class LLMCall<
         syncThreshold: 0.25, // maxTokens*syncThreshold = threshold where we start to use a real tokenization endpoint instead of guessing the number of tokens
       });
 
-    if (firstCall) {
-      memory.add(new SystemMessage(this.systemPrompt(data)));
+    if (firstCall || !memory.messages.some((m) => m.role === "system")) {
+      memory.add(new SystemMessage(groundInTime(this.systemPrompt(data))));
     }
     memory.add(new UserMessage(userMessage));
 
@@ -115,8 +116,8 @@ export abstract class LLMCall<
     });
     memory.add(new AssistantMessage(resp.getTextContent()));
 
+    const raw = resp.getTextContent();
     try {
-      const raw = resp.getTextContent();
       this.logger.debug(`### INPUT`);
       this.logger.debug(input);
       this.logger.debug(`### RESPONSE`);
@@ -160,7 +161,7 @@ export abstract class LLMCall<
         return {
           result: {
             type: "ERROR",
-            explanation: `Failed to parse LLM response: ${error.message}`,
+            explanation: `Failed to parse LLM response: ${error.message}\n\nRaw response: ${raw}`,
           },
           payload: memory,
         };

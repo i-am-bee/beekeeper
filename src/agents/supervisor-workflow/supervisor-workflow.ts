@@ -1,11 +1,12 @@
 import { ChatModel, Logger } from "beeai-framework";
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { AgentIdValue } from "../registry/dto.js";
 import { Context } from "./base/context.js";
 import { Runnable } from "./base/runnable.js";
 import { SupervisorWorkflowInput } from "./dto.js";
 import { RequestHandler } from "./request-handler/request-handler.js";
-import { WorkflowComposer } from "./workflow-composer/workflow-composer.js";
 import { TaskRunStarterTool } from "./tool.js";
+import { WorkflowComposer } from "./workflow-composer/workflow-composer.js";
 
 export class SupervisorWorkflow extends Runnable<
   SupervisorWorkflowInput,
@@ -15,6 +16,11 @@ export class SupervisorWorkflow extends Runnable<
   protected requestHandler: RequestHandler;
   protected workflowComposer: WorkflowComposer;
   protected taskRunStarterTool: TaskRunStarterTool;
+  protected _memory: TokenMemory;
+
+  get memory() {
+    return this._memory;
+  }
 
   constructor(logger: Logger, llm: ChatModel, agentId: AgentIdValue) {
     super(logger, agentId);
@@ -22,6 +28,11 @@ export class SupervisorWorkflow extends Runnable<
     this.requestHandler = new RequestHandler(this.logger, agentId);
     this.workflowComposer = new WorkflowComposer(this.logger, agentId);
     this.taskRunStarterTool = new TaskRunStarterTool();
+    this._memory = new TokenMemory({
+      maxTokens: llm.parameters.maxTokens, // optional (default is 128k),
+      capacityThreshold: 0.75, // maxTokens*capacityThreshold = threshold where we start removing old messages
+      syncThreshold: 0.25, // maxTokens*syncThreshold = threshold where we start to use a real tokenization endpoint instead of guessing the number of tokens
+    });
   }
 
   async run({
@@ -39,6 +50,7 @@ export class SupervisorWorkflow extends Runnable<
       {
         data: { request: input },
         userMessage: input,
+        memory: this._memory,
       },
       ctx,
     );
@@ -69,7 +81,13 @@ export class SupervisorWorkflow extends Runnable<
         return `Failed to schedule interaction blocking task runs: ${toolResult.result.data}`;
       }
 
-      return `I have prepared these tasks for you: \n${output.result.map((t, idx) => `${idx + 1}. ${t.taskType}`).join(`\n`)}`;
+      return `I have prepared these tasks: \n${output.result
+        .map(
+          (t, idx) => `${idx + 1}. ${t.taskType}\n\t\t${t.config.description}`,
+        )
+        .join(`\n`)}
+
+...and scheduled them to start interaction blocking task runs. Please check the task runs in the task monitor.`;
     } else {
       return result.response;
     }

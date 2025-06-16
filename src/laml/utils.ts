@@ -37,7 +37,7 @@ export function unwrapString(
       value = value.substring(s.length);
       if (value.length > 1) {
         value = value.substring(0, value.length - e.length);
-      }else{
+      } else {
         value = "";
       }
 
@@ -93,7 +93,11 @@ export interface LAMLPrimitiveValueFormatter {
 }
 
 export const listFormatter = (type: ListFieldType) =>
-  ((val: LAMLPrimitiveValue, indent: string = DEFAULT_INDENT) =>
+  ((
+    val: LAMLPrimitiveValue,
+    indent: string = DEFAULT_INDENT,
+    startsWithNewLine = true,
+  ) =>
     (val as string[])
       .map((v, index) => {
         let bullet;
@@ -105,7 +109,7 @@ export const listFormatter = (type: ListFieldType) =>
             bullet = `-`;
             break;
         }
-        return `${index === 0 ? "\n" : ""}${bullet} ${v}`;
+        return `${index === 0 && startsWithNewLine ? "\n" : ""}${bullet} ${v}`;
       })
       .join("\n")) satisfies LAMLPrimitiveValueFormatterFn;
 

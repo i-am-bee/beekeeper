@@ -26,7 +26,7 @@ export const prompt = ({
 >) => {
   const builder = BodyTemplateBuilder.new()
     .introduction(
-      `You are an **AgentConfigCreator** — the action module in a multi-agent workflow.  
+      `You are an **AgentConfigInitializer** — the action module in a multi-agent workflow.  
 Your mission is to process assignments in the format:  
 \`<Assignment for the agent> (input: <input parameters>, output: <output value>) [<type of resource>]\`  
 Based on the type of resource, you will either create, update, or select an agent config.`,
@@ -194,23 +194,7 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
         • "Analyzes investment portfolios for financial advisors by processing market data and risk metrics. Delivers rebalancing strategies and client recommendations."
         • "Evaluates manufacturing quality for production managers by monitoring defect patterns and process variables. Delivers equipment adjustments and quality improvement plans."
         • "Assesses cybersecurity threats for IT teams by analyzing network traffic and vulnerability scans. Delivers incident response priorities and security hardening steps."
-5. **\`instructions\`** – Write a structured, multi-paragraph guide with exactly these three mandatory sub-headers:
-      **Context:** (Required – 2–3 sentences)
-        - Describe the operational environment where this agent functions.
-        - Specify the typical data sources or input origins the agent expects.
-        - Mention any important assumptions about data format, quality, or timing.
-      **Objective:** (Required – 2–4 sentences)
-        - State the primary goal using an action verb (e.g., analyze, extract, generate, validate).
-        - List the specific steps the agent will perform, in sequence.
-        - Specify any validation, error-handling, or quality checks required.
-        - Mention performance criteria or success metrics if applicable.
-      **Response format:**
-        - Begin with a brief human‑readable summary (1–2 sentences) of the main result or insight.
-        - Present key details using **ASCII formatting** (plain fixed-width tables, clearly marked sections with \`=\`/\`-\` lines, and indented bullet points if needed). Avoid Markdown syntax entirely.
-        - If a strict machine-readable payload is required (e.g., JSON or CSV), enclose it in a fenced code block *after* the narrative section and label the block **Raw JSON output**.
-        - Never return raw JSON alone — always pair it with a human-readable ASCII explanation or visualization.
-        - Use consistent section order and ASCII formatting headers in every response (e.g., \`FIELD METADATA\`, \`EQUIPMENT STATUS REPORT\`, \`NOTES\`, etc.). 
-6. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.
+5. **Uniqueness guard** – If the proposed \`agent_type\` already exists, abort and use \`SELECT_AGENT_CONFIG\` instead.
 
 #### LLM-Only Agent Guidelines
 
@@ -226,7 +210,6 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
 
 **When creating LLM-only agents:**
 - Set \`tools: []\` (empty array) or omit the tools field entirely
-- Focus the \`instructions\` on the specific text processing or analysis task
 - Ensure the agent can handle the expected input format and produce the required output format
 - Design the agent to be stateless and generalizable across similar text-based tasks`,
     });
@@ -243,13 +226,12 @@ These two lines are **mandatory** and must appear first, each on its own line.`,
 3. **\`tools\` edits** – whenever you list a \`tools\` array, include **every** tool the agent will use and **verify that each tool exists in the **Available agent tools** in the **Context section**.
    ↳ If even one tool is missing, you must respond with \`AGENT_CONFIG_UNAVAILABLE\`.
 4. **\`description\`** – include this field *only* if it is being changed. Ensure it reflects any changes made to tools or instructions.
-5. **\`instructions\`** – include this field *only* if it is being changed. The content must align with all updated capabilities or tools.
-6. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
-7. **Diff-check guard** — Before choosing UPDATE_AGENT_CONFIG you **must** verify that at least one value you output is different from the existing config in “Existing agent configs”.
+5. **Include only changed fields** – output *only* the attributes you are modifying; omit everything that is staying the same.
+6. **Diff-check guard** — Before choosing UPDATE_AGENT_CONFIG you **must** verify that at least one value you output is different from the existing config in “Existing agent configs”.
    • If every field you intend to output (tools, description, instructions, etc.) would be identical to the stored values, this is a no-op → switch to SELECT_AGENT_CONFIG instead.  
    • An UPDATE response is valid only when the diff contains a real change.
-8. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
-9. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.`,
+7. **Scope discipline** – edits may refine instructions, improve formatting, or prune redundancies, but they must **never repurpose** the agent for a different domain.
+8. **Determinism** – list items inside any array (such as \`tools\`) in **alphabetical order** to keep outputs consistent.`,
     });
   }
 
@@ -459,10 +441,11 @@ const examples = (selectOnly: boolean) =>
       responseChoiceExplanation: `The existing agent config "flora_nectar_analysis" already supports the required tools and general workflow (analyzing local flora via satellite, ground survey, and species lookup). The requested task shifts the focus from nectar production to butterfly host compatibility, which is a supported lookup_type within the existing tools. This requires only a scope widening in the description and instructions.`,
       update: {
         description: `Analyzes local flora to identify and validate nectar sources or butterfly host plant compatibility using satellite and ground survey data.`,
-        instructions: `Context: The agent is designed to analyze local flora at a specified location to determine either nectar suitability for beekeeping or host compatibility for butterflies.
-Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production or suitability as butterfly host plants using relevant database lookups.
-Response format: The agent will output either nectar suitability data or butterfly host compatibility data depending on the input parameters.`,
-      },
+        // FIXME Instructions were moved to the agent instructions builder
+//         instructions: `Context: The agent is designed to analyze local flora at a specified location to determine either nectar suitability for beekeeping or host compatibility for butterflies.
+// Objective: Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production or suitability as butterfly host plants using relevant database lookups.
+// Response format: The agent will output either nectar suitability data or butterfly host compatibility data depending on the input parameters.`,
+      }, 
     }),
     createExampleInput({
       scenario: "UPDATE_AGENT_CONFIG",
@@ -476,9 +459,9 @@ Response format: The agent will output either nectar suitability data or butterf
           "terrain_sonar_mapping_api",
         ] as const satisfies FixtureName<typeof deep_sea_fixtures.tools>[],
         description: `This agent conducts sonar mapping to identify underwater terrain features and can optionally include marine life detection using available sonar APIs.`,
-        instructions: `Context: The agent is designed to perform sonar mapping of underwater zones. Its primary function is to identify terrain features, with optional inclusion of marine life detection for enriched zone understanding.
-Objective: Use the terrain_sonar_mapping_api to map underwater terrain features. When biological input parameters are present, also invoke the biological_sonar_detector_api to detect marine life.
-Response format: Return sonar data describing terrain features and, if applicable, biological entities detected during the scan.`,
+//         instructions: `Context: The agent is designed to perform sonar mapping of underwater zones. Its primary function is to identify terrain features, with optional inclusion of marine life detection for enriched zone understanding.
+// Objective: Use the terrain_sonar_mapping_api to map underwater terrain features. When biological input parameters are present, also invoke the biological_sonar_detector_api to detect marine life.
+// Response format: Return sonar data describing terrain features and, if applicable, biological entities detected during the scan.`,
       },
     }),
     createExampleInput({

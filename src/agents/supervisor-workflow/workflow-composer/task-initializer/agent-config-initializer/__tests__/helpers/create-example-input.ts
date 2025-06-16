@@ -25,7 +25,7 @@ export interface UpdateAgentExampleInput<F extends WorkflowComposeFixture>
   extends BaseCreateExampleInput<F> {
   readonly scenario: "UPDATE_AGENT_CONFIG";
   responseChoiceExplanation: string;
-  update: Partial<Omit<AgentConfigTiny, "agentType">>;
+  update: Partial<Omit<AgentConfigTiny, "agentType" | "instructions">>;
 }
 
 export interface AgentUnavailableExampleInput<F extends WorkflowComposeFixture>
@@ -91,7 +91,6 @@ export function createExampleInput<F extends WorkflowComposeFixture>(
             agent_type: agent.agentType,
             tools: agent.tools,
             description: agent.description,
-            instructions: agent.instructions,
           },
         },
       };

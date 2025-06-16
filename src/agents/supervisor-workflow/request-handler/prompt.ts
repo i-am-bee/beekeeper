@@ -3,12 +3,15 @@ import { BodyTemplateBuilder } from "../templates/body.js";
 import { ChatExampleTemplateBuilder } from "../templates/chat-example.js";
 import { protocol } from "./protocol.js";
 import { examplesEnabled } from "../helpers/env.js";
+import { format } from "date-fns";
 
 export const prompt = () => {
   const builder = BodyTemplateBuilder.new()
     .introduction(
       `You are a **RequestHandler**—a step within a multi‑agent workflow system.  
-Your primary responsibility is to efficiently analyze user request and determine the appropriate processing path.`,
+Your primary responsibility is to efficiently analyze user request and determine the appropriate processing path.
+
+The current date is **${format(new Date(), "MMMM d, yyyy")}**.`,
     )
     .section({
       title: {
@@ -80,16 +83,23 @@ const decisionCriteria = BodyTemplateBuilder.new()
     },
     content: `| If **ALL** these are true →                                                                                                                                                                                                                                                                                                                 | …then choose **RESPONSE_TYPE** | Short rationale                                               |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| • The user’s request is **clear, specific, and answerable** with a concise factual response or brief list.<br>• No additional context or data collection is required.<br>• Fulfilling the request needs **no multi-step plan** or coordination with other agents/tools.                                                                     | **DIRECT_ANSWER**              | Provide the answer immediately.                               |
-| • The request is **ambiguous, incomplete, or self-contradictory** *and* you cannot safely infer the missing pieces (e.g., missing file, unclear goal, no location given for location-sensitive task).<br>• Obtaining targeted information from the user would unlock the ability to answer or plan effectively.                             | **CLARIFICATION**               | Ask the user a focused follow-up question to resolve the gap. |
-| • The request involves a **non-trivial, multi-step objective** (e.g., research project, itinerary, data pipeline).<br>• The intent and key parameters are already inferable from the user’s message (or after minimal internal normalization).<br>• Executing the task will require orchestration by downstream planning/execution modules. | **COMPOSE_WORKFLOW**           | Hand off a structured task description for detailed planning. |
+| • The information requested is static or unlikely to have changed since well before the “current date.” If the fact could plausibly change in normal circumstances (e.g., current office‑holders, prices, sports standings, weather), do not treat it as static.
+• No additional context or data collection is required.
+• Fulfilling the request needs **no multi-step plan** or coordination with other agents/tools.                                                                     | **DIRECT_ANSWER**              | Provide the answer immediately.                               |
+| • The request is **ambiguous, incomplete, or self-contradictory** *and* you cannot safely infer the missing pieces (e.g., missing file, unclear goal, no location given for location-sensitive task).
+• Obtaining targeted information from the user would unlock the ability to answer or plan effectively.                             | **CLARIFICATION**               | Ask the user a focused follow-up question to resolve the gap. |
+| • The request involves a **non-trivial, multi-step objective** (e.g., research project, itinerary, data pipeline).
+• The intent and key parameters are already inferable from the user’s message (or after minimal internal normalization).
+• Executing the task will require orchestration by downstream planning/execution modules.
+• The request asks for a “current,” “latest,” or “currently serving” entity (e.g., heads of state, CEOs, champions) where accuracy depends on real‑time confirmation. | **COMPOSE_WORKFLOW**           | Hand off a structured task description for detailed planning. |
 
 **Guidelines for all branches**
 
 1. **Bias toward usefulness.** If you can satisfy the user with a short, accurate reply, prefer **DIRECT_ANSWER** over escalation.
 2. **Clarify early, not late.** Use **CLARIFICATION** whenever an assumption would risk misunderstanding the user’s goal or producing an unusable plan. Keep questions precise and minimal.
 3. **Plan when scope grows.** Choose **COMPOSE_WORKFLOW** for anything that is likely to span multiple actions, tools, or agents—even if parts seem answerable now.
-4. **Policy & safety.** If the request violates policy or is infeasible, respond per policy (either with refusal or safe completion) before applying these criteria.`,
+4. **Policy & safety.** If the request violates policy or is infeasible, respond per policy (either with refusal or safe completion) before applying these criteria.
+5. **Freshness check.** When answering about any person in office, company leadership, live scores, prices, or other volatile data, assume your cached knowledge may be outdated. Route to **COMPOSE_WORKFLOW** so a downstream step can verify with a live source.`,
   })
   .build();
 
