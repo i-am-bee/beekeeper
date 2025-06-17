@@ -170,7 +170,7 @@ export class TaskConfigInitializer extends LLMCall<
             return {
               type: "ERROR",
               explanation: existingTaskConfigs.length
-                ? `You can't update task config task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are: \`${existingTaskConfigs.map((c) => c.taskType).join(", ")}\`. Please use one of them.`
+                ? `You can't update task config task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are: \`${existingTaskConfigs.map((c) => c.taskType).join(", ")}\`. Please use one of them or create new one.`
                 : `You can't update task config task_type:\`${response.task_type}\` because there are no existing tasks. Please create a task first.`,
             };
           }

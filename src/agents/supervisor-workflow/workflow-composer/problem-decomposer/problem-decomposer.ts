@@ -73,13 +73,13 @@ ${
   ((missingAnyAgent || missingAnyTool || missingAnyTask) &&
     `\nAvailable resources that can be used:` +
       ((missingAnyTask &&
-        `\n- Tasks: ${existingTasks.map((t) => t.taskType).join(", ")}`) ||
+        `\n- Tasks: ${existingTasks.length ? existingTasks.map((t) => t.taskType).join(", ") : `There are no available tasks please use provided tools or agents instead.`}`) ||
         "") +
       ((missingAnyAgent &&
-        `\n- Agents: ${existingAgents.map((a) => a.agentType).join(", ")}`) ||
+        `\n- Agents: ${existingAgents.length ? existingAgents.map((a) => a.agentType).join(", ") : `There are no available agents please use provided tools.`}`) ||
         "") +
       ((missingAnyTool &&
-        `\n- Tools: ${availableTools.map((t) => t.toolName).join(", ")}`) ||
+        `\n- Tools: ${existingAgents.length ? availableTools.map((t) => t.toolName).join(", ") : `There are no available tools.`}`) ||
         "")) ||
   ""
 }

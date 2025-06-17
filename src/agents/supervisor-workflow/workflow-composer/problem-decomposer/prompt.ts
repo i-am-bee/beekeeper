@@ -187,12 +187,13 @@ const guidelines = BodyTemplateBuilder.new()
       level: 3,
     },
     content: `1. **Do not ask the user for information they did not request.**
-2. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to \`MISSING_INPUTS\`.
+2. Any specific filters or quantities in \`userParameters\` (e.g., "top 10", "past 24 hours", "last 2", "season: 2024") must be reflected explicitly in the corresponding step input — either as a literal value or as a propagated field reference.
+3. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to \`MISSING_INPUTS\`.
    a. You must not introduce new parameters unless:
       - They were directly present in userParameters, or
       - They were produced by an earlier step, or
       - You make a safe, minimal assumption (e.g., "next meeting" = soonest meeting in calendar).
-3. If a parameter is helpful but not essential (e.g., passenger count when booking a sample flight), phrase the task generically: “Book flight” without specifying details.`,
+4. If a parameter is helpful but not essential (e.g., passenger count when booking a sample flight), phrase the task generically: “Book flight” without specifying details.`,
   })
   .section({
     title: {
@@ -210,11 +211,15 @@ const guidelines = BodyTemplateBuilder.new()
       - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
       If any input cannot be traced in this way, the step — and the whole problem — must be marked **MISSING_INPUTS**. Do not invent values (e.g., blockIds, siteIds) without justification.
       **Examples**: 
-        - INCORRECT: "Query database (input: customer records; output: analysis)" ← Missing source, vague
-        - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history)"
-        - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report)"
-        - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report)"
-   b. If a step compiles or presents information that originates in more than one earlier step (e.g., combining analysis with original sources, or citing data), then it must include *all relevant outputs* in its inputs — not just the latest transformation.**  
+        - INCORRECT: "Query database (input: customer records; output: analysis) [tools: db_query]" ← Missing source, vague"
+        - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history) [tools: db_query]"
+        - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report) [LLM]" ← missing the \`[source: assumed]\`.
+        - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report) [LLM]"
+   b. If the user provides a specific value or filter (e.g., "last 2 events", "top 5", "after July 2023"), that value must be explicitly included in the input clause of the relevant step — either as a literal or a referenced parameter. Do not omit numeric or filtering instructions provided by the user.
+      **Examples**: 
+        - INCORRECT: "Summarize recent customer reviews (input: review list [from Step 2]; output: summarized reviews) [LLM]" ← missing the \`5\`.
+        - CORRECT: "Summarize the last 5 customer reviews (input: review list [from Step 2], number of reviews: 5; output: summarized reviews) [LLM]"        
+   c. If a step compiles or presents information that originates in more than one earlier step (e.g., combining analysis with original sources, or citing data), then it must include *all relevant outputs* in its inputs — not just the latest transformation.**  
       This ensures full traceability for citation, validation, and user transparency.
       **Example (CORRECT)**  
         "Compile a summary of leadership information (input: name and term details [from Step 2], source link [from Step 1]; output: summary with citation) [LLM]"
@@ -264,6 +269,9 @@ const guidelines = BodyTemplateBuilder.new()
     - the **imperative description** of the task,
     - followed by \`(input: input 1, input 2 [source: assumed] ... ; output: output 1, output 2 ...)\`,
     - followed by a resource in square brackets: \`[tools: tool_name_1, tool_name_2...]\`, \`[agent: agent_name]\`, \`[task: task_name]\`, or \`[LLM]\`.
+    - If the user’s request contains a numeric limit, range, ordinal, or date filter,
+      append a literal \`filter:\` field **inside** the parentheses, e.g.:
+      \`… (input: schedule [from Step 2], filter: last_events: 2; output: …)\` 
 16. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
     - Is directly present in user message, OR
     - Is produced by a prior step (explicitly using [from Step X]), OR
