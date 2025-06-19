@@ -189,7 +189,6 @@ export const UIConfig = {
   },
   input: {
     fg: UIColors.white.white,
-    bg: "black",
     focus: {
       bg: UIColors.green.dartmouth_green,
     },

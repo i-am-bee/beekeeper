@@ -17,6 +17,7 @@ import { ChatInput } from "./input/input.js";
 import { ChatRuntimeHandler, MessageTypeEnum } from "./runtime-handler.js";
 import { Runtime } from "@/runtime/index.js";
 import { isNonNullish } from "remeda";
+import { WorkflowPopup } from "./workflow-popup/workflow-popup.js";
 
 export class ChatMonitor extends ContainerComponent {
   private closeDialog: CloseDialog;
@@ -24,6 +25,7 @@ export class ChatMonitor extends ContainerComponent {
   private messages: Messages;
   private helpBar: HelpBar;
   private chatInput: ChatInput;
+  private workflowPopup: WorkflowPopup;
 
   private runtimeHandler: ChatRuntimeHandler;
   private _isProcessing = false;
@@ -83,6 +85,18 @@ export class ChatMonitor extends ContainerComponent {
         kind: "parent",
         parent: this.parent,
         controlsManager: this.controlsManager,
+      },
+      logger,
+    );
+
+    this.workflowPopup = new WorkflowPopup(
+      {
+        kind: "parent",
+        parent: this.parent,
+        controlsManager: this.controlsManager,
+        // onAutoPopup: () => {
+        //   this.workflowPopup.show(this.controlsManager.focused.id);
+        // },
       },
       logger,
     );
@@ -182,7 +196,7 @@ export class ChatMonitor extends ContainerComponent {
           },
         },
         {
-          key: "C-e",
+          key: "C-r",
           action: {
             description: NavigationDescription.ROLE_FILTER,
             listener: keyActionListenerFactory(() => {
@@ -192,7 +206,7 @@ export class ChatMonitor extends ContainerComponent {
           },
         },
         {
-          key: "C-w",
+          key: "C-f",
           action: {
             description: NavigationDescription.MESSAGES_FILTER,
             listener: keyActionListenerFactory(() => {
@@ -212,12 +226,22 @@ export class ChatMonitor extends ContainerComponent {
           },
         },
         {
-          key: "C-x",
+          key: "space",
           action: {
             description: NavigationDescription.CHAT,
             listener: keyActionListenerFactory(() => {
               this.collapse();
               this.chatInput.focusInputBox();
+            }),
+          },
+        },
+        {
+          key: "C-w",
+          action: {
+            description: NavigationDescription.WORKFLOW,
+            listener: keyActionListenerFactory(() => {
+              this.collapse();
+              this.workflowPopup.show(this.controlsManager.focused.id);
             }),
           },
         },
@@ -253,6 +277,7 @@ export class ChatMonitor extends ContainerComponent {
 
   private collapse() {
     this.filter.collapse();
+    this.workflowPopup.hide();
     this.closeDialog.hide();
   }
 

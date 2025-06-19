@@ -33,9 +33,11 @@ export interface NavigationTransitions {
 export const NavigationDescription = {
   EXIT_APP: "Exit app",
   CANCEL: "Cancel",
+  HIDE: "Hide",
   IN_OUT: "Navigate in/out",
   OUT: "Navigate out",
   LEFT_RIGHT: "Navigate left/right",
+  TOGGLE_AUTO_POPUP: "Toggle auto popup",
   UP_DOWN: "Navigate up/down",
   NEXT_PREV: "Navigate next/prev",
   SELECT_CONTAINER: "Select container",
@@ -54,6 +56,7 @@ export const NavigationDescription = {
   MESSAGES_FILTER: "Messages filter",
   ROLE_FILTER: "Roles filter",
   MESSAGES: "Messages",
+  WORKFLOW: "Workflow",
   CHAT: "Chat",
   SEND_MESSAGE: "Send message",
 } as const;

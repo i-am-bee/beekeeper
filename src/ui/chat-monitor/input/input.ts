@@ -137,7 +137,7 @@ export class ChatInput extends ContainerComponent {
         top: 0,
         ...chatStyles.getSendButtonStyle(true),
         tags: true,
-        mouse: true,
+        mouse: false,
       }),
       parent: this._container,
     });

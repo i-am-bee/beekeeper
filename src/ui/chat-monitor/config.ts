@@ -149,9 +149,9 @@ export function getInputBoxStyle() {
  * @param isAbort Whether the system is currently processing
  * @returns Object with UI configuration for the abort button
  */
-export function getSendButtonStyle(disabled = false) {
+
+export function getButtonStyle(disabled = false) {
   return {
-    content: "SEND",
     align: "center" as any,
     valign: "middle" as any,
     style: {
@@ -160,26 +160,32 @@ export function getSendButtonStyle(disabled = false) {
       focus: {
         bg: disabled ? UIColors.red.cardinal : UIColors.blue.electric_blue,
       },
-      hover: {
-        bg: disabled ? UIColors.gray.gray : UIColors.blue.cyan,
-      },
     },
+  };
+}
+
+export function getSendButtonStyle(disabled = false) {
+  return {
+    content: "SEND",
+    ...getButtonStyle(disabled),
   };
 }
 export function getAbortButtonStyle(disabled = false) {
   return {
     content: "ABORT",
-    align: "center" as any,
-    valign: "middle" as any,
+    ...getButtonStyle(disabled),
     style: {
-      fg: disabled ? UIColors.gray.cool_gray : UIColors.white.white,
+      ...getButtonStyle(disabled).style,
       bg: disabled ? UIColors.gray.cool_gray : UIColors.red.dark_red,
       focus: {
         bg: disabled ? UIColors.gray.cool_gray : UIColors.red.electric_red,
       },
-      hover: {
-        bg: disabled ? UIColors.gray.cool_gray : UIColors.red.red,
-      },
     },
+  };
+}
+export function getHideButtonStyle(disabled = false) {
+  return {
+    content: "Hide",
+    ...getButtonStyle(disabled),
   };
 }
