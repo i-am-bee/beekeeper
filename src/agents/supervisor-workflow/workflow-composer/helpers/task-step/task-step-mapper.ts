@@ -183,7 +183,7 @@ export class TaskStepMapper {
 
     try {
       parsedTaskStep = textSplitter(taskStep, ["(", ")", "[", "]"], true);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return new TaskStepResourceAssignError(
         `Failed to parse task step: \`${taskStep}\`. Please ensure it follows the correct format e.g. \`Do something (input: x, output: y) [tools: tool1, tool2]\``,

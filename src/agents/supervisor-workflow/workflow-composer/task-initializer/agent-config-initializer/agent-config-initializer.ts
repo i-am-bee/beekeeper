@@ -82,8 +82,11 @@ export class AgentConfigInitializer extends LLMCall<
             tools: response.tools || [],
           } satisfies AgentConfigTinyDraft;
 
-
-          if(resources.agents.find((a) => a.agentType === agentConfigDraft.agentType)) {
+          if (
+            resources.agents.find(
+              (a) => a.agentType === agentConfigDraft.agentType,
+            )
+          ) {
             return {
               type: "ERROR",
               explanation: `Agent config \`${agentConfigDraft.agentType}\` already exists. Please create a different agent type, update the existing one or just select it.`,

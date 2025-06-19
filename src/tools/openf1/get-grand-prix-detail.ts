@@ -1,15 +1,11 @@
-import {
-    Tool,
-    ToolEmitter,
-    ToolInput
-} from "beeai-framework";
+import { Tool, ToolEmitter, ToolInput } from "beeai-framework";
 import { Emitter } from "beeai-framework/emitter/emitter";
 import { parseISO } from "date-fns";
 import { z } from "zod";
 import {
-    FormattedToolOutput,
-    formatToolDescription,
-    formatToolOutput,
+  FormattedToolOutput,
+  formatToolDescription,
+  formatToolOutput,
 } from "../helpers/tool-format.js";
 import { GrandPrixDetail } from "./dto.js";
 import { OpenF1Service } from "./service.js";
@@ -71,8 +67,7 @@ export class GetGrandPrixDetailTool extends Tool<GetGrandPrixDetailToolOutput> {
 
   inputSchema() {
     return z.object({
-      grand_prix_id: z
-        .number(),
+      grand_prix_id: z.number(),
     });
   }
 

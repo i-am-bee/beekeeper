@@ -1,8 +1,4 @@
-import {
-  Tool,
-  ToolEmitter,
-  ToolInput
-} from "beeai-framework";
+import { Tool, ToolEmitter, ToolInput } from "beeai-framework";
 import { Emitter } from "beeai-framework/emitter/emitter";
 import {
   FormattedToolOutput,
