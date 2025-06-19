@@ -543,6 +543,12 @@ export class OpenF1ApiError extends Error {
 }
 
 export class OpenF1Client {
+  /**
+   * Singleton instance of the OpenF1Client
+   * @private
+   */
+  private static instance: OpenF1Client;
+
   /** Base URL for the OpenF1 API */
   private baseURL: string;
   /** Request timeout in milliseconds */
@@ -552,7 +558,7 @@ export class OpenF1Client {
   /** Optional rate limiter for controlling request rates */
   private rateLimiter?: RateLimiter;
 
-  constructor(config: ClientConfig = {}) {
+  private constructor(config: ClientConfig = {}) {
     this.baseURL = config.baseURL || "https://api.openf1.org/v1";
     this.timeout = config.timeout || 10000;
     this.headers = {
@@ -565,6 +571,20 @@ export class OpenF1Client {
     if (config.rateLimiter) {
       this.rateLimiter = new RateLimiter(config.rateLimiter);
     }
+  }
+
+  static getInstance(): OpenF1Client {
+    if (!OpenF1Client.instance) {
+      OpenF1Client.instance = new OpenF1Client({
+        rateLimiter: {
+          maxRequests: 10,
+          windowMs: 10000, // 1 minute
+          strategy: "queue" as const,
+          maxQueueSize: 1000,
+        },
+      });
+    }
+    return OpenF1Client.instance;
   }
 
   /**
@@ -883,14 +903,6 @@ async function example(): Promise<void> {
 export default OpenF1Client;
 */
 
-export function getClient(config: ClientConfig = {}) {
-  return new OpenF1Client({
-    rateLimiter: {
-      maxRequests: 50,
-      windowMs: 60000, // 1 minute
-      strategy: "queue" as const,
-      maxQueueSize: 1000,
-    },
-    ...config,
-  });
+export function getClient() {
+  return OpenF1Client.getInstance();
 }
