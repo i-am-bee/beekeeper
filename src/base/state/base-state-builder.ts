@@ -22,7 +22,7 @@ export abstract class BaseStateBuilder<
 > extends EventEmitter {
   protected state: TState;
   private readonly updateSchema: z.ZodObject<{
-    timestamp: z.ZodString;
+    timestamp: z.ZodDate;
     data: TSchema;
   }>;
   private watcher: FSWatcher | null = null;
@@ -39,7 +39,7 @@ export abstract class BaseStateBuilder<
     super();
     this.state = initialState;
     this.updateSchema = z.object({
-      timestamp: z.string(),
+      timestamp: z.date(),
       data: this.dataSchema,
     });
   }

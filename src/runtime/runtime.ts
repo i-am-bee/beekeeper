@@ -1,6 +1,6 @@
 import { AgentWithInstance } from "@/agents/registry/dto.js";
 import { AgentRegistry } from "@/agents/registry/registry.js";
-import { PROCESS_AND_PLAN_TASK_NAME } from "@/agents/supervisor.js";
+import { PROCESS_AND_PLAN_TASK_NAME } from "@/agents/supervisor/react-agent/supervisor.js";
 import { RuntimeOutput } from "@/runtime/dto.js";
 import {
   InteractionTaskRun,

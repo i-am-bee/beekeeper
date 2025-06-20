@@ -16,7 +16,7 @@ import { MessageTypeEnum } from "../runtime-handler.js";
 export interface MessageValue {
   role: string;
   content: string;
-  timestamp: Date;
+  timestamp: Date | string;
   type: MessageTypeEnum;
 }
 

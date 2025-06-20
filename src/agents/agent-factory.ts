@@ -6,7 +6,7 @@ import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { AssistantMessage, ToolMessage } from "beeai-framework/backend/message";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { BaseAgentFactory, CreateAgentInput } from "./base/agent-factory.js";
-import { SupervisorWorkflow } from "./supervisor-workflow/supervisor-workflow.js";
+import { SupervisorWorkflow } from "./supervisor/workflow/supervisor-workflow.js";
 
 export type AgentUpdateCallback = (key: string, value: string) => void;
 
