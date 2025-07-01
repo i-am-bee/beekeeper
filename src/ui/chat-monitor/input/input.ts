@@ -209,7 +209,7 @@ export class ChatInput extends ContainerComponent {
           : undefined,
       ].filter(isNonNullish),
     });
-    this.controlsManager.refreshKeyBindings();    
+    this.controlsManager.refreshKeyBindings();
 
     switch (state) {
       case "ready": {
@@ -260,7 +260,6 @@ export class ChatInput extends ContainerComponent {
         break;
       }
     }
-
 
     if (shouldRender) {
       this.screen.element.render();

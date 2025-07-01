@@ -15,7 +15,6 @@ import boston_trip_fixtures from "../fixtures/__test__/boston-trip/index.js";
 import deep_sea_fixtures from "@/agents/supervisor/workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import feedback_analysis from "@/agents/supervisor/workflow/fixtures/prompt/showcases/feedback-sentiment-analysis/index.js";
 
-
 vi.mock("@/agents/supervisor/workflow/state/logger.ts", async () => {
   // Pull in the real module so we can re‑export everything else untouched
   const actual = await vi.importActual<

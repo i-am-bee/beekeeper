@@ -50,7 +50,10 @@ export class GetDriverTool extends Tool<GetDriverToolOutput> {
   }
 
   protected async _run(input: ToolInput<this>) {
-    const output = await OpenF1Service.getInstance().getDriver(input.driverId, input.sessionId);
+    const output = await OpenF1Service.getInstance().getDriver(
+      input.driverId,
+      input.sessionId,
+    );
     return formatToolOutput<OutputObject>(output);
   }
 }

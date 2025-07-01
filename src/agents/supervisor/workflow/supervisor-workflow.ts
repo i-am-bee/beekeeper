@@ -69,7 +69,7 @@ export class SupervisorWorkflow extends Runnable<
   }
 
   protected async _run(
-    {prompt: input, originTaskRunId}: SupervisorWorkflowInput,
+    { prompt: input, originTaskRunId }: SupervisorWorkflowInput,
     ctx: Context,
   ): Promise<string> {
     const requestHandlerRunOutput = await this.requestHandler.run(

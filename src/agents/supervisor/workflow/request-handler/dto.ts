@@ -1,8 +1,5 @@
 import { DateStringSchema } from "@/base/dto.js";
-import {
-  AssistantMessage,
-  UserMessage,
-} from "beeai-framework/backend/message";
+import { AssistantMessage, UserMessage } from "beeai-framework/backend/message";
 import { z } from "zod";
 
 export const UserWorkflowMessageSchema = z.object({

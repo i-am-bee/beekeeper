@@ -29,31 +29,30 @@ export class WorkflowComposer extends Runnable<
     this.taskRunInitializer = new TaskRunInitializer(logger, agentId);
   }
 
-
-    async logStateInput(
-      { input, originTaskRunId }: WorkflowComposerInput,
-      state: SupervisorWorkflowStateLogger,
-    ): Promise<void> {
-      await state.logWorkflowComposerStart({
-        input: { input, originTaskRunId },
+  async logStateInput(
+    { input, originTaskRunId }: WorkflowComposerInput,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await state.logWorkflowComposerStart({
+      input: { input, originTaskRunId },
+    });
+  }
+  async logStateOutput(
+    output: FnResult<WorkflowComposerOutput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    if (output.type === "ERROR") {
+      await state.logWorkflowComposerError({
+        output,
+      });
+    } else {
+      await state.logWorkflowComposerEnd({
+        output: output.result,
       });
     }
-    async logStateOutput(
-      output: FnResult<WorkflowComposerOutput>,
-      state: SupervisorWorkflowStateLogger,
-    ): Promise<void> {
-      if (output.type === "ERROR") {
-        await state.logWorkflowComposerError({
-          output,
-        });
-      } else {
-        await state.logWorkflowComposerEnd({
-          output: output.result,
-        });
-      }
-    }
+  }
 
-protected  async _run(
+  protected async _run(
     input: WorkflowComposerInput,
     ctx: Context,
   ): Promise<FnResult<WorkflowComposerOutput>> {

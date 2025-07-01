@@ -1,7 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Base success result schema
-export const FnSuccessResultSchema = <T extends z.ZodTypeAny>(resultSchema: T) =>
+export const FnSuccessResultSchema = <T extends z.ZodTypeAny>(
+  resultSchema: T,
+) =>
   z.object({
     type: z.literal("SUCCESS"),
     result: resultSchema,
@@ -16,15 +18,18 @@ export const FnErrorResultSchema = z.object({
 
 // Union type for function results
 export const FnResultSchema = <T extends z.ZodTypeAny>(resultSchema: T) =>
-  z.discriminatedUnion('type', [
+  z.discriminatedUnion("type", [
     FnSuccessResultSchema(resultSchema),
     FnErrorResultSchema,
   ]);
 
 // Function result with payload
-export const FnResultWithPayloadSchema = <T extends z.ZodTypeAny, P extends z.ZodTypeAny>(
+export const FnResultWithPayloadSchema = <
+  T extends z.ZodTypeAny,
+  P extends z.ZodTypeAny,
+>(
   resultSchema: T,
-  payloadSchema: P
+  payloadSchema: P,
 ) =>
   z.object({
     result: FnResultSchema(resultSchema),
@@ -38,7 +43,9 @@ export const RetryOptionsSchema = z.object({
 });
 
 // Retry success result schema
-export const RetrySuccessResultSchema = <T extends z.ZodTypeAny>(resultSchema: T) =>
+export const RetrySuccessResultSchema = <T extends z.ZodTypeAny>(
+  resultSchema: T,
+) =>
   z.object({
     type: z.literal("SUCCESS"),
     result: resultSchema,
@@ -55,7 +62,7 @@ export const RetryErrorResultSchema = z.object({
 
 // Union type for retry results
 export const RetryResultSchema = <T extends z.ZodTypeAny>(resultSchema: T) =>
-  z.discriminatedUnion('type', [
+  z.discriminatedUnion("type", [
     RetrySuccessResultSchema(resultSchema),
     RetryErrorResultSchema,
   ]);
@@ -108,6 +115,8 @@ export function isErrorResult<T>(result: FnResult<T>): result is FnErrorResult {
   return result.type === "ERROR";
 }
 
-export function isSuccessResult<T>(result: FnResult<T>): result is FnSuccessResult<T> {
+export function isSuccessResult<T>(
+  result: FnResult<T>,
+): result is FnSuccessResult<T> {
   return result.type === "SUCCESS";
 }

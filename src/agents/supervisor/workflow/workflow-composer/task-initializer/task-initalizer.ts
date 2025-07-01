@@ -52,7 +52,7 @@ export class TaskInitializer extends Runnable<
     }
   }
 
-protected  async _run(
+  protected async _run(
     { taskStep, previousSteps, resources }: TaskInitializerInput,
     ctx: Context,
   ): Promise<FnResult<TaskInitializerOutput>> {

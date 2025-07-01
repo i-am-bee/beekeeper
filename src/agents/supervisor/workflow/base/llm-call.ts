@@ -39,7 +39,7 @@ export abstract class LLMCall<
 
   abstract get protocol(): P;
 
-protected  async _run(
+  protected async _run(
     input: LLMCallInput<TInput>,
     ctx: Context,
   ): Promise<LLMCallRunOutput<TOutput>> {
@@ -171,7 +171,7 @@ protected  async _run(
       this.logger.error(`Error processing LLM call`, error);
       throw new Error(`Failed to process LLM call: ${error}`);
     }
-  }  
+  }
 
   protected abstract processResult(
     result: laml.ProtocolResult<P>,

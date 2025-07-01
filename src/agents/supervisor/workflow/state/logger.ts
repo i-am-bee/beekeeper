@@ -280,7 +280,7 @@ export class SupervisorWorkflowStateLogger extends BaseStateLogger<
     this.logUpdate({
       data: {
         kind: WorkflowNodePhaseKindEnumSchema.enum.task_config_initializer_end,
-        output: {...pick(data.output,['taskStep'])},
+        output: { ...pick(data.output, ["taskStep"]) },
       },
     });
   }
@@ -312,7 +312,7 @@ export class SupervisorWorkflowStateLogger extends BaseStateLogger<
     this.logUpdate({
       data: {
         kind: WorkflowNodePhaseKindEnumSchema.enum.task_config_initializer_end,
-        output: {...pick(data.output,['taskStep'])},
+        output: { ...pick(data.output, ["taskStep"]) },
       },
     });
   }

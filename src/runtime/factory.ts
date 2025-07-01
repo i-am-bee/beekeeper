@@ -47,7 +47,7 @@ export async function createRuntime({
   // Reset audit logs
   AgentStateLogger.init(outputDirPath);
   TaskStateLogger.init(outputDirPath);
-  SupervisorWorkflowStateLogger.init(outputDirPath);  
+  SupervisorWorkflowStateLogger.init(outputDirPath);
 
   // Setup workspace
   WorkspaceManager.init(workspace ?? "default", logger, {

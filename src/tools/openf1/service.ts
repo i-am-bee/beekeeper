@@ -112,7 +112,10 @@ export class OpenF1Service {
   }
 
   @Cache()
-  public async getDriver(driverId: number, session_id: number): Promise<dto.DriverDetail> {
+  public async getDriver(
+    driverId: number,
+    session_id: number,
+  ): Promise<dto.DriverDetail> {
     const [driver] = await this.client.getDrivers({
       sessionKey: session_id,
       driverNumber: driverId,

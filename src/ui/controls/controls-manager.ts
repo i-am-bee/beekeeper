@@ -290,7 +290,7 @@ export class ControlsManager {
       const [key, action] = entry;
       const listenerKey = `${target.id}[${key}]`;
       if (this.keyActionListeners.has(listenerKey)) {
-        continue; // Skip if listener already exists        
+        continue; // Skip if listener already exists
       }
       const listener = action.listener(ControlsManager.lastKeypressEventId);
       this.keyActionListeners.set(listenerKey, listener);

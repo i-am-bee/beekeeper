@@ -1,4 +1,3 @@
-
 import { AgentAvailableTool } from "../../../workflow-composer/helpers/resources/dto.js";
 import { createFixtures } from "../../base/fixtures.js";
 

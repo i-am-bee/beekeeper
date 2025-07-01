@@ -5,7 +5,10 @@ import {
 } from "@/ui/base/monitor.js";
 import { ControllableContainer } from "@/ui/controls/controls-manager.js";
 import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
-import { NavigationDescription, NavigationDirection } from "@/ui/controls/navigation.js";
+import {
+  NavigationDescription,
+  NavigationDirection,
+} from "@/ui/controls/navigation.js";
 import { Logger } from "beeai-framework";
 import clipboardy from "clipboardy";
 import blessed from "neo-blessed";

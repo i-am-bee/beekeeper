@@ -151,13 +151,13 @@ export class SupervisorWorkflowStateBuilder extends BaseStateBuilder<
         this.state.currentRunIndex = this.state.runs.length - 1;
         this.state.currentRun = this.state.runs[this.state.currentRunIndex];
         this.state.currentStepIndex = undefined;
-        this.state.currentStep = undefined
+        this.state.currentStep = undefined;
         this.emit("state:updated", {
           type: StateUpdateType.SUPERVISOR_WORKFLOW_RUN,
           ids: [String(this.state.currentRunIndex)],
         });
         break;
-      case "supervisor_workflow_end":        
+      case "supervisor_workflow_end":
         this.emit("state:updated", {
           type: StateUpdateType.SUPERVISOR_WORKFLOW_RUN,
           ids: [],
