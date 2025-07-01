@@ -29,10 +29,13 @@ export class RoleFilter extends ContainerComponent {
   static readonly COL_WIDTH = 40;
 
   private _container: ControllableContainer;
-  private _selectAllRolesCheckbox: ControllableElement;
+  private _selectAllRolesCheckbox: ControllableElement<blessed.Widgets.CheckboxElement>;
   private knownRoles: string[] = [];
   private emitter = new EventEmitter();
-  private roleCheckboxes: Record<string, ControllableElement> = {};
+  private roleCheckboxes: Record<
+    string,
+    ControllableElement<blessed.Widgets.CheckboxElement>
+  > = {};
 
   // Filter settings
   private messageRoleFilters: Record<string, boolean> = {};

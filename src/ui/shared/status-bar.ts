@@ -14,11 +14,11 @@ export class StatusBar extends EventEmitter {
   private controlsManager: ControlsManager;
   private screen: ControllableScreen;
   private statusBar: ControllableContainer;
-  private expandButton: ControllableElement;
+  private expandButton: ControllableElement<blessed.Widgets.ButtonElement>;
   private timeDisplay: blessed.Widgets.TextElement;
   private statusText: blessed.Widgets.TextElement;
   private fullscreenLogBox: ControllableContainer;
-  private closeButton: ControllableElement;
+  private closeButton: ControllableElement<blessed.Widgets.ButtonElement>;
   private logContentBox: blessed.Widgets.BoxElement;
   private logFooter: blessed.Widgets.BoxElement;
   private updateInterval: NodeJS.Timeout | null = null;

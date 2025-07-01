@@ -118,9 +118,9 @@ export function getMessagesBoxStyle() {
   return {
     scrollbar: st.UIConfig.scrollbar,
     style: {
-      focus: {
-        bg: UIColors.green.dartmouth_green,
-      },
+      // focus: {
+      //   bg: UIColors.green.dartmouth_green,
+      // },
     },
   };
 }
@@ -181,11 +181,5 @@ export function getAbortButtonStyle(disabled = false) {
         bg: disabled ? UIColors.gray.cool_gray : UIColors.red.electric_red,
       },
     },
-  };
-}
-export function getHideButtonStyle(disabled = false) {
-  return {
-    content: "Hide",
-    ...getButtonStyle(disabled),
   };
 }
