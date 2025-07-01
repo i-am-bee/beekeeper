@@ -56,7 +56,6 @@ export const NavigationDescription = {
   MESSAGES_FILTER: "Messages filter",
   ROLE_FILTER: "Roles filter",
   MESSAGES: "Messages",
-  WORKFLOW: "Workflow",
   CHAT: "Chat",
   SEND_MESSAGE: "Send message",
 } as const;

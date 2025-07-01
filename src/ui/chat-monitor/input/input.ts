@@ -18,6 +18,7 @@ import blessed from "neo-blessed";
 import { Textarea } from "../../blessed/Textarea.js";
 import * as st from "../../config.js";
 import * as chatStyles from "../config.js";
+import { isNonNullish } from "remeda";
 
 interface ChatInputEvents {
   "send:click": (message: string) => void;
@@ -168,6 +169,9 @@ export class ChatInput extends ContainerComponent {
       if (key.name === "escape") {
         this.controlsManager.navigate(NavigationDirection.OUT);
       }
+      if (key.name === "enter") {
+        this.controlsManager.navigate(NavigationDirection.IN);
+      }
     });
 
     this._inputBox.element.on("focus", () => {
@@ -192,8 +196,20 @@ export class ChatInput extends ContainerComponent {
             }),
           },
         },
-      ],
+        state === "ready_to_send"
+          ? {
+              key: "enter",
+              action: {
+                description: NavigationDescription.SEND_MESSAGE,
+                listener: keyActionListenerFactory(() => {
+                  this.clickSendButton();
+                }),
+              },
+            }
+          : undefined,
+      ].filter(isNonNullish),
     });
+    this.controlsManager.refreshKeyBindings();    
 
     switch (state) {
       case "ready": {
@@ -214,6 +230,9 @@ export class ChatInput extends ContainerComponent {
         });
         this.controlsManager.updateNavigation(this._inputBox.id, {
           out: this._sendButton.id,
+          inEffect: () => {
+            this.clickSendButton();
+          },
         });
         this.controlsManager.updateNavigation(this._sendButton.id, {
           previous: this._inputBox.id,
@@ -241,6 +260,7 @@ export class ChatInput extends ContainerComponent {
         break;
       }
     }
+
 
     if (shouldRender) {
       this.screen.element.render();

@@ -5,7 +5,7 @@ import {
 } from "@/ui/base/monitor.js";
 import { ControllableContainer } from "@/ui/controls/controls-manager.js";
 import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
-import { NavigationDescription } from "@/ui/controls/navigation.js";
+import { NavigationDescription, NavigationDirection } from "@/ui/controls/navigation.js";
 import { Logger } from "beeai-framework";
 import clipboardy from "clipboardy";
 import blessed from "neo-blessed";
@@ -94,8 +94,18 @@ export class Messages extends ContainerComponent {
 
   private setupControls(shouldRender = true) {
     this.controlsManager.updateKeyActions(this._messagesBox.id, {
-      kind: "override",
+      kind: "exclusive",
       actions: [
+        {
+          key: "escape",
+          action: {
+            description: NavigationDescription.OUT,
+            listener: keyActionListenerFactory(() => {
+              // The scroll is done automatically, we just need to reset the highlighted message
+              this.controlsManager.navigate(NavigationDirection.OUT);
+            }),
+          },
+        },
         {
           key: "up",
           action: {
@@ -208,7 +218,7 @@ export class Messages extends ContainerComponent {
           },
         },
         {
-          key: "S-c",
+          key: "C-c",
           action: {
             description: NavigationDescription.COPY_MESSAGE,
             listener: keyActionListenerFactory(() => {

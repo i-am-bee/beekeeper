@@ -66,6 +66,7 @@ export type AddContainerInput = Pick<
 
 export interface ControlsManagerEvents {
   "focus:change": (focused?: Controllable) => void;
+  "keybindings:change": () => void;
 }
 
 export interface PathStep {
@@ -219,6 +220,12 @@ export class ControlsManager {
     }
   }
 
+  refreshKeyBindings() {
+    if (this._focused) {
+      this.setKeyBindings(this._focused);
+    }
+  }
+
   focus(id: string, shouldRender = true) {
     this.logger.debug(`focus(${id})`);
 
@@ -283,13 +290,14 @@ export class ControlsManager {
       const [key, action] = entry;
       const listenerKey = `${target.id}[${key}]`;
       if (this.keyActionListeners.has(listenerKey)) {
-        throw new Error(`Listener for \`${listenerKey}\` exists already`);
+        continue; // Skip if listener already exists        
       }
       const listener = action.listener(ControlsManager.lastKeypressEventId);
       this.keyActionListeners.set(listenerKey, listener);
       target.element.key(key, listener);
     }
     this._keyBindings = keyBindings;
+    this.onKeybindingsChange();
   }
 
   private unsetKeyBindings(target: Controllable, keyBindings: KeyBindings) {
@@ -340,5 +348,9 @@ export class ControlsManager {
 
   private onFocusChange() {
     this.emit("focus:change", this._focused);
+  }
+
+  private onKeybindingsChange() {
+    this.emit("keybindings:change");
   }
 }

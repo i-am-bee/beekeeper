@@ -31,6 +31,10 @@ export class HelpBar extends ContainerComponent {
       this.updateContent();
     });
 
+    this.controlsManager.on("keybindings:change", () => {
+      this.updateContent();
+    });
+
     this.updateContent();
   }
 
