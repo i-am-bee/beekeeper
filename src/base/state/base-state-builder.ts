@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { createReadStream, FSWatcher, watch, statSync } from "fs";
+import { createReadStream, FSWatcher, statSync, watch } from "fs";
 import { createInterface } from "readline";
 import { z } from "zod";
 import { LogInitSchema } from "./dto.js";
@@ -22,7 +22,7 @@ export abstract class BaseStateBuilder<
 > extends EventEmitter {
   protected state: TState;
   private readonly updateSchema: z.ZodObject<{
-    timestamp: z.ZodDate;
+    timestamp: z.ZodString;
     data: TSchema;
   }>;
   private watcher: FSWatcher | null = null;
@@ -39,7 +39,7 @@ export abstract class BaseStateBuilder<
     super();
     this.state = initialState;
     this.updateSchema = z.object({
-      timestamp: z.date(),
+      timestamp: z.string(),
       data: this.dataSchema,
     });
   }

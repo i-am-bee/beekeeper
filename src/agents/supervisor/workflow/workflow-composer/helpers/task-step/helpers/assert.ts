@@ -5,13 +5,19 @@ export function assertTaskStepResourceType<
   T extends TaskStepAssignedResourceEnum,
 >(
   taskStep: TaskStep,
-  expectedType: T,
+  expectedType: T | T[],
 ): asserts taskStep is TaskStep & {
   resource: Extract<TaskStep["resource"], { type: T }>;
 } {
-  if (taskStep.resource.type !== expectedType) {
+  const expectedTypes = Array.isArray(expectedType)
+    ? expectedType
+    : [expectedType];
+
+  if (!expectedTypes.includes(taskStep.resource.type as T)) {
     throw new Error(
-      `Expected task step to have resource type "${expectedType}", but got "${taskStep.resource.type}".`,
+      `Expected task step to have resource type "${expectedTypes.join(
+        `" or "`,
+      )}", but got "${taskStep.resource.type}".`,
     );
   }
 }

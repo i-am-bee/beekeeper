@@ -1,4 +1,5 @@
-import { AgentAvailableTool } from "@/agents/supervisor/workflow/workflow-composer/task-initializer/agent-config-initializer/dto.js";
+
+import { AgentAvailableTool } from "../../../workflow-composer/helpers/resources/dto.js";
 import { createFixtures } from "../../base/fixtures.js";
 
 const ENTRIES = [

@@ -4,8 +4,9 @@ import { TaskManager } from "@/tasks/manager/manager.js";
 import { ServiceLocator } from "@/utils/service-locator.js";
 import { Logger } from "beeai-framework";
 import { Context } from "../../base/context.js";
-import { FnResult } from "../../base/retry/types.js";
+import { FnResult } from "../../base/retry/dto.js";
 import { Runnable } from "../../base/runnable.js";
+import { SupervisorWorkflowStateLogger } from "../../state/logger.js";
 import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { AgentConfigInitializer } from "./agent-config-initializer/agent-config-initializer.js";
 import { TaskInitializerInput, TaskInitializerOutput } from "./dto.js";
@@ -28,7 +29,30 @@ export class TaskInitializer extends Runnable<
     this.taskManager = ServiceLocator.getInstance().get(TaskManager);
   }
 
-  async run(
+  async logStateInput(
+    { taskStep }: TaskInitializerInput,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await state.logTaskInitializerStart({
+      input: { taskStep },
+    });
+  }
+  async logStateOutput(
+    output: FnResult<TaskInitializerOutput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    if (output.type === "ERROR") {
+      await state.logTaskInitializerError({
+        output,
+      });
+    } else {
+      await state.logTaskInitializerEnd({
+        output: output.result,
+      });
+    }
+  }
+
+protected  async _run(
     { taskStep, previousSteps, resources }: TaskInitializerInput,
     ctx: Context,
   ): Promise<FnResult<TaskInitializerOutput>> {

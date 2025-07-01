@@ -112,9 +112,9 @@ export class OpenF1Service {
   }
 
   @Cache()
-  public async getDriver(driverId: number): Promise<dto.DriverDetail> {
+  public async getDriver(driverId: number, session_id: number): Promise<dto.DriverDetail> {
     const [driver] = await this.client.getDrivers({
-      sessionKey: "latest",
+      sessionKey: session_id,
       driverNumber: driverId,
     });
 
@@ -202,7 +202,7 @@ export class OpenF1Service {
     const result: dto.Position[] = [];
     for (const position of Array.from(positionsMap.entries())) {
       const [driverNumber, positionValue] = position;
-      const driver = await this.getDriver(driverNumber);
+      const driver = await this.getDriver(driverNumber, session.session_id);
       result.push({
         position: positionValue,
         driver: {

@@ -8,77 +8,35 @@ Based on the agent config type, you will either create, update, or select a task
 ## Context
 
 ### Previous steps
-The previous steps represent the sequence of tasks completed before the current user input:
-
-1. Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]
-2. Find upcoming hockey/basketball game schedules in Boston (input: sport, location; output: game list) [agent: game_searcher]
+There is no previous steps yet.
 
 ### Existing task configs
-1. family_events:
-  task_type: family_events
-  agent_type: city_events_weekend
-  task_config_input: {"budget_max_eur":"<maximum budget in euros>","family_friendly":true,"outdoor_only":true,"fallback_if_rain":"<fallback option: indoor | none>"}
-  description: Find family‑friendly outdoor events under a user-defined budget for the coming weekend and suggest an indoor alternative if rain is forecast.
+Only the task configs explicitly listed here are considered to exist.  
+Do **not** infer or invent task configs based on agent config names or similarities. 
+
+There is no existing task configs yet.
 
 ### Existing agent configs
-1. historical_sites_identifier:
-  agent_type: historical_sites_identifier
-  tools: historical_sites_search_api
-  instructions: Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
-
-Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
-
-Response format: List each site with its name and a brief description.
-  description: Identifies historical sites in a given location using the historical_sites_search_api tool.
-2. game_searcher:
-  agent_type: game_searcher
-  tools: sports_schedule_api
-  instructions: Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
-
-Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
-
-Response format: List each game with its date, time, and teams.
-  description: Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.
-3. restaurant_recommender:
-  agent_type: restaurant_recommender
-  tools: google_search, web_extract
-  instructions: Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
-
-Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
-
-Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.
-  description: Recommends restaurants based on user-defined preferences and location using web search tools.
-4. itinerary_creator:
-  agent_type: itinerary_creator
-  tools: itinerary_planner_api
-  instructions: Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
-
-Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
-
-Response format: Present the itinerary day by day with activities and details.
-  description: Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.
+There is no existing agent config yet.
 
 
 ---
 
-**Response format:**
+## Response Format
 
-All your responses **MUST** follow this exact format where each attribute comes with a metadata tag that you MUST read and obey when composing your response.
-<!required|optional; indent; type; human-readable hint>
-- required | optional - Whether the attribute **must** appear in your output (required) or can be omitted when you have no value for it (optional).
-- type - One of the following:
-  - text – single-line string
-  - number – floating-point value (e.g., 3.14)
-  - integer – whole number
-  - boolean - true / false
-  - constant – one literal chosen from the values listed in the protocol
-  - array – list of items of the specified item-type (comma-separated or JSON-style)
-  - list - human readable list of items numbered or with bullet points
-  - object – nested attributes, each described by its own metadata tag
-- indent – integer; the key’s left-margin offset in spaces (0 = column 0)
-- human-readable hint - brief guidance explaining the purpose or expected content of the attribute.
+All your responses **MUST** strictly adhere to the following template. Each line describes exactly what you must provide:
 
-The format:
+* Each attribute has a **metadata tag** (`<!required|optional; indent; type; human-readable hint>`).
+* **IMPORTANT:** These metadata tags are **guidelines only**—do **not** include them literally in your final response. They exist solely to guide you on what information is expected.
+
+### Metadata Tag Explanation (for your internal reference only)
+
+* `required | optional` – Indicates if the attribute **must** be included.
+* `type` – Defines the attribute's data type (text, number, integer, boolean, constant, array, numbered-list, bullets-list, object).
+* `indent` – Specifies indentation level (spaces).
+* `human-readable hint` – Brief guidance explaining the attribute's content.
+
+**When composing your response, use the format below exactly:**
 ```
 RESPONSE_CHOICE_EXPLANATION: <!required;text;0;Brief explanation of *why* you selected the given RESPONSE_TYPE>
 RESPONSE_TYPE: <!required;constant;0;Valid values: CREATE_TASK_CONFIG | UPDATE_TASK_CONFIG | SELECT_TASK_CONFIG | TASK_CONFIG_UNAVAILABLE>
@@ -96,7 +54,7 @@ RESPONSE_UPDATE_TASK_CONFIG: <!optional;object;0>
 RESPONSE_SELECT_TASK_CONFIG: <!optional;object;0>
   task_type: <!required;text;2;Name of the selected task config type>
 RESPONSE_TASK_CONFIG_UNAVAILABLE: <!optional;object;0>
-  explanation: <!required;text;2;Brief reason why you are unable to create, update, or select an existing task config>
+  explanation: <!required;text;2;Clear, objective reason why config cannot be selected, updated, or created>
 ```<STOP HERE>
 
 ---
@@ -106,16 +64,21 @@ RESPONSE_TASK_CONFIG_UNAVAILABLE: <!optional;object;0>
 ### DECISION CRITERIA — Quick-reference matrix 
 | If **ALL** these are true → | …then choose **RESPONSE_TYPE** | Short rationale |
 |---|---|---|
-| • An existing task’s purpose **and** config input already satisfy the user need.<br>• No structural changes are required. | **SELECT_TASK_CONFIG** | Re-use as-is. |
+| • An existing task’s purpose **and** config input already satisfy the user need.<br>• No structural changes are required. <br>• ⚠️ The task config must be listed under "Existing task configs". | **SELECT_TASK_CONFIG** | Re-use as-is. |
 | • The task’s core mission stays the same **but** you must fix clarity, widen/narrow scope a bit, edit task config input a little bit.<br>• No repurposing to a new domain. | **UPDATE_TASK_CONFIG** | Light touch edit. |
 | • No current task fits.<br>• Creating a fresh task will not duplicate an existing `task_type`. | **CREATE_TASK_CONFIG** | Brand-new task config. |
+| • Agent config is missing. | **TASK_CONFIG_UNAVAILABLE** | Configuration not possible. |
 
 **Guidelines for all branches**
 
 1. If more than one row seems to apply, pick the **top-most** matching row.  
 2. Perform the uniqueness check for `task_type` **before** emitting `CREATE_TASK_CONFIG`; if the name already exists, return `SELECT_TASK_CONFIG` instead.  
-3. Agent config validation: agent type must appear in **Existing agents**; otherwise respond with `TASK_CONFIG_UNAVAILABLE`.  
-4. Arrays (e.g., `tools`) must be in **alphabetical order** for deterministic grading.
+3. Agent config validation: 
+   - agent type must appear in **Existing agents**; otherwise respond with `TASK_CONFIG_UNAVAILABLE`.  
+4. Task config validation: 
+   - You may only reference a `task_type` if it is explicitly listed in the **Existing task configs**.
+   - Do not infer or assume the existence of a task config based on agent configs alone.
+5. Arrays (e.g., `tools`) must be in **alphabetical order** for deterministic grading.
 
 
 ---
@@ -133,9 +96,13 @@ These two lines are **mandatory** and must appear first, each on its own line.
 1. **When to use** – only if a brand-new task is required.
 2. **`task_type`** – Must be unique, lowercase snake_case, and must **never embed a concrete input value**. Use operation‑only names (e.g., `find_nearest_airports`, not `find_nearest_airports_in_london`).
 3. **`agent_type`** – Name of the one of the existing agent configs type.
-4. **`task_config_input`** – General format of input required to run the task; often it is a JSON.
-5. **`description`** – Describe the generic task. Use placeholders (`<given location>`, `<user budget>`, etc.) instead of literal input examples.
-6. **Uniqueness guard** – If the proposed `task_type` already exists, abort and use `SELECT_TASK_CONFIG` instead.
+4. **`task_config_input`** – General format of input required to run the task; typically structured as JSON.
+   - **IMPORTANT:** When the input involves arrays (like multiple short stories or other lists), you **MUST NOT** specify a fixed count of items.
+   - Clearly indicate array inputs using a single placeholder within brackets, such as ["<item>", "..."], explicitly signaling flexibility for 1 or more items.
+   - **DO NOT** include numbered placeholders (e.g., "<item 1>", "<item 2>") that imply a fixed array length. Always generalize to allow any number of inputs (e.g., "<item>", "...").
+5. **`description`** – Write a concise instruction for the agent executing the task, explicitly formatted as an assignment. For example: "Generate a short story based on a provided <story concept>. Ensure it has a clear beginning, middle, and end." Always use placeholders (<given location>, <story concept>, etc.) instead of specific literal examples.
+6. **Uniqueness guard** – If the proposed `task_type` is already listed in **Existing task configs**, abort and use `SELECT_TASK_CONFIG` instead.  
+   ⚠️ Do not assume a task exists just because an agent of a similar name is present.
 
 ### UPDATE_TASK_CONFIG — Rules
 1. **When to use** – choose this type only if the task’s **core purpose remains the same** but you need minor edits (e.g., clarity fixes, small scope widening/narrowing, task config input adjustment).
@@ -156,597 +123,383 @@ These two lines are **mandatory** and must appear first, each on its own line.
    • The requested outcome is within the task’s stated **objective**.
    • The task’s **config input** matches all necessary information to complete the task.
 
+### TASK_CONFIG_UNAVAILABLE — Rules
+1. **When to use** – Use this response **only** if the task cannot proceed due to one of the following:
+   a. When neither `CREATE_TASK_CONFIG`, `UPDATE_TASK_CONFIG`, nor `SELECT_TASK_CONFIG` is valid.
+   b. **Missing agent config**
+      • The specified `agent_type` is not listed under **Existing agent configs**.
+2. Field requirements:
+   * Keep the explanation concise and diagnostic (e.g., "Agent type 'X' not found in existing agent configs.").
+   * Do not suggest alternatives, invent configs, or output other fields.
+
 
 ---
 
 ## Examples
 
-### Example[1]: CREATE_TASK_CONFIG - Identify historical sites
+### Example[1]: CREATE_TASK_CONFIG - Medieval Charter Digitisation and Ingestion
 
 **Context:**
 ---
 ### Previous steps
-There is no previous steps yet.
+The previous steps represent the sequence of tasks completed before the current user input:
+
+1. Scan each document to produce high-resolution images (input: document IDs ["doc-latin-001", "doc-latin-002", "doc-latin-003", "doc-latin-004", "doc-latin-005"]; output: URLs of scanned images) [task_run: operator:scan_documents_high_res[1]:1]
 
 ### Existing task configs
-There is no existing task configs yet.
+1. scan_documents_high_res:
+  task_type: scan_documents_high_res
+  agent_type: document_scanner
+  task_config_input: {"document_ids": ["<document_id>", "..."]}
+  description: Scan each document identified by <document_ids> to produce high-resolution images and return URLs of the scanned images.
 
 ### Existing agent configs
-1. historical_sites_identifier:
-  agent_type: historical_sites_identifier
-  tools: historical_sites_search_api
-  instructions: Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
-
-Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
-
-Response format: List each site with its name and a brief description.
-  description: Identifies historical sites in a given location using the historical_sites_search_api tool.
-2. game_searcher:
-  agent_type: game_searcher
-  tools: sports_schedule_api
-  instructions: Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
-
-Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
-
-Response format: List each game with its date, time, and teams.
-  description: Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.
-3. restaurant_recommender:
-  agent_type: restaurant_recommender
-  tools: google_search, web_extract
-  instructions: Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
-
-Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
-
-Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.
-  description: Recommends restaurants based on user-defined preferences and location using web search tools.
-4. itinerary_creator:
-  agent_type: itinerary_creator
-  tools: itinerary_planner_api
-  instructions: Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
-
-Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
-
-Response format: Present the itinerary day by day with activities and details.
-  description: Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.
+1. document_scanner:
+  agent_type: document_scanner
+  tools: hires_scan_api
+  description: Scans historical documents for archivists by producing high-resolution TIFFs from cradle-based hardware. Delivers image URLs with resolution metadata.
+2. ocr_latin_text_extractor:
+  agent_type: ocr_latin_text_extractor
+  tools: ocr_latin_script_api
+  description: Extracts Latin-script text for manuscript researchers by applying OCR to scanned images. Delivers recognized text with confidence levels.
 
 
 ---
 **User:**
-Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]
+Extract text from each scanned image using OCR tuned for Latin script (input: image URLs [from Step 1], language hint "lat"; output: extracted text with confidence scores) [agent: ocr_latin_text_extractor]
 **Assistant:**
 ```
-RESPONSE_CHOICE_EXPLANATION: No existing task config matches the request; a new task config is required.
+RESPONSE_CHOICE_EXPLANATION: The task of extracting text from images using OCR tuned for Latin script is not covered by any existing task config. Therefore, a new task config needs to be created to accommodate this requirement.
 RESPONSE_TYPE: CREATE_TASK_CONFIG
 RESPONSE_CREATE_TASK_CONFIG:
-  task_type: identify_historical_sites
-  agent_type: historical_sites_identifier
-  task_config_input: {"location":"<given location>"}
-  description: Task to identify historical sites in a given location.
+  task_type: extract_text_from_images_latin_script
+  agent_type: ocr_latin_text_extractor
+  task_config_input: {"image_urls": ["<image_url>", "..."], "language_hint": "lat"}
+  description: Extract text from each image URL provided using OCR tuned for Latin script, ensuring the text is in Latin script. Return the extracted text along with confidence scores for each image.`
 ```
 
-### Example[2]: CREATE_TASK_CONFIG - Find game schedules
+### Example[2]: CREATE_TASK_CONFIG - Micro-grid Dispatch Planning Workflow
 
 **Context:**
 ---
 ### Previous steps
 The previous steps represent the sequence of tasks completed before the current user input:
 
-1. Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]
+1. Forecast electricity demand for each city block between 18:00 and 21:00 on 2025-06-05 (input: blockIds ["block-central-2", "block-north-7"], start time 2025-06-05T18:00Z, periods: 12; output: demand forecast in 15-min intervals) [task_run: operator:forecast_electricity_demand[1]:1]
+2. Forecast solar generation and battery state-of-charge for each site between 18:00 and 21:00 on 2025-06-05 (input: siteIds ["site-solar-01", "site-battery-02"], start time 2025-06-05T18:00Z, periods: 12; output: solar and battery forecasts) [task_run: operator:forecast_solar_battery[1]:1]
 
 ### Existing task configs
-1. identify_historical_sites:
-  task_type: identify_historical_sites
-  agent_type: historical_sites_identifier
-  task_config_input: {"location":"<given location>"}
-  description: Task to identify historical sites in a given location.
+1. forecast_electricity_demand:
+  task_type: forecast_electricity_demand
+  agent_type: electricity_demand_forecaster
+  task_config_input: {"blockIds": ["<blockId>", "..."], "start_time": "<start_time>", "periods": "<number_of_periods>"}
+  description: Forecast electricity demand for each specified city block starting from <start_time> for <number_of_periods> 15-minute intervals using the demand_forecast_api.
+2. forecast_solar_battery:
+  task_type: forecast_solar_battery
+  agent_type: solar_battery_forecaster
+  task_config_input: {"siteIds": ["<siteId>", "..."], "start_time": "<start_time>", "periods": "<number_of_periods>"}
+  description: Forecast solar generation and battery state-of-charge for each specified site starting from <start_time> for <number_of_periods> 15-minute intervals using the solar_battery_forecast_api.
 
 ### Existing agent configs
-1. historical_sites_identifier:
-  agent_type: historical_sites_identifier
-  tools: historical_sites_search_api
-  instructions: Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
-
-Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
-
-Response format: List each site with its name and a brief description.
-  description: Identifies historical sites in a given location using the historical_sites_search_api tool.
-2. game_searcher:
-  agent_type: game_searcher
-  tools: sports_schedule_api
-  instructions: Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
-
-Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
-
-Response format: List each game with its date, time, and teams.
-  description: Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.
-3. restaurant_recommender:
-  agent_type: restaurant_recommender
-  tools: google_search, web_extract
-  instructions: Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
-
-Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
-
-Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.
-  description: Recommends restaurants based on user-defined preferences and location using web search tools.
-4. itinerary_creator:
-  agent_type: itinerary_creator
-  tools: itinerary_planner_api
-  instructions: Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
-
-Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
-
-Response format: Present the itinerary day by day with activities and details.
-  description: Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.
+1. electricity_demand_forecaster:
+  agent_type: electricity_demand_forecaster
+  tools: demand_forecast_api
+  description: Forecasts short-term power demand for grid operators by analyzing city block usage patterns. Delivers 15-minute interval predictions per block.
+2. solar_battery_forecaster:
+  agent_type: solar_battery_forecaster
+  tools: solar_battery_forecast_api
+  description: Projects solar output and battery state for site managers by forecasting rooftop PV and charge levels. Delivers 15-minute interval profiles for generation and storage.
+3. dispatch_schedule_optimizer:
+  agent_type: dispatch_schedule_optimizer
+  tools: grid_load_optimizer_api
+  description: Optimizes power dispatch for grid controllers by aligning supply and demand under frequency constraints. Delivers control vectors and performance metrics.
 
 
 ---
 **User:**
-Find upcoming hockey/basketball game schedules in a given location (input: sport, location; output: game list) [agent: game_searcher]
+Generate an optimized dispatch schedule that meets forecasted demand using solar, battery, and EV resources, while staying within ±0.2 Hz frequency deviation (input: demand forecast [from Step 1], solar and battery forecasts [from Step 2], constraint: freqDeviationHz 0.2; output: control vectors and KPI report) [agent: dispatch_schedule_optimizer]
 **Assistant:**
 ```
-RESPONSE_CHOICE_EXPLANATION: No existing task config matches the request; a new task config is required.
+RESPONSE_CHOICE_EXPLANATION: The task requires generating an optimized dispatch schedule using demand forecasts, solar and battery forecasts, and a frequency deviation constraint. This aligns with the purpose of the existing agent config `dispatch_schedule_optimizer`, but there is no existing task config for this specific task. Therefore, a new task config needs to be created.
 RESPONSE_TYPE: CREATE_TASK_CONFIG
 RESPONSE_CREATE_TASK_CONFIG:
-  task_type: find_game_schedules
-  agent_type: game_searcher
-  task_config_input: {"sport":"<choose sport: hockey | basketball>","location":"<given location>"}
-  description: Task to find upcoming hockey and basketball game schedules in a given location.
+  task_type: optimize_dispatch_schedule
+  agent_type: dispatch_schedule_optimizer
+  task_config_input: {"demand_forecast": "<demand_forecast>", "solar_battery_forecasts": "<solar_battery_forecasts>", "constraint": {"freqDeviationHz": "<frequency_deviation>"}}
+  description: Generate an optimized dispatch schedule that meets the forecasted electricity demand using solar, battery, and EV resources while ensuring frequency deviation stays within the specified limits.`
 ```
 
-### Example[3]: CREATE_TASK_CONFIG - Recommend restaurants
+### Example[3]: CREATE_TASK_CONFIG - Smart-Farm “Rain-Contingency” Harvest Planner
 
 **Context:**
 ---
 ### Previous steps
 The previous steps represent the sequence of tasks completed before the current user input:
 
-1. Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]
-2. Find upcoming hockey/basketball game schedules in a given location (input: sport, location; output: game list) [agent: game_searcher]
+1. Retrieve field metadata and agronomic details for South Field (input: field name or ID; output: field details (location, crop, moisture limits, etc.)) [task_run: operator:retrieve_field_metadata[1]:1]
+2. Retrieve the list of equipment IDs assigned to South Field (input: field name or ID [from Step 1]; output: equipment IDs (harvesters, drones, dryers)) [task_run: operator:retrieve_equipment_ids[1]:1]
+3. Retrieve the 24-hour weather forecast for the coordinates of South Field (input: field coordinates [from Step 1]; output: weather forecast data) [task_run: operator:retrieve_weather_forecast[1]:1]
 
 ### Existing task configs
-1. identify_historical_sites:
-  task_type: identify_historical_sites
-  agent_type: historical_sites_identifier
-  task_config_input: {"location":"<given location>"}
-  description: Task to identify historical sites in a given location.
-2. find_game_schedules:
-  task_type: find_game_schedules
-  agent_type: game_searcher
-  task_config_input: {"sport":"<choose sport: hockey | basketball>","location":"<given location>"}
-  description: Task to find upcoming hockey and basketball game schedules in a given location.
-
-### Existing agent configs
-1. historical_sites_identifier:
-  agent_type: historical_sites_identifier
-  tools: historical_sites_search_api
-  instructions: Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
-
-Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
-
-Response format: List each site with its name and a brief description.
-  description: Identifies historical sites in a given location using the historical_sites_search_api tool.
-2. game_searcher:
-  agent_type: game_searcher
-  tools: sports_schedule_api
-  instructions: Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
-
-Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
-
-Response format: List each game with its date, time, and teams.
-  description: Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.
-3. restaurant_recommender:
-  agent_type: restaurant_recommender
-  tools: google_search, web_extract
-  instructions: Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
-
-Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
-
-Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.
-  description: Recommends restaurants based on user-defined preferences and location using web search tools.
-4. itinerary_creator:
-  agent_type: itinerary_creator
-  tools: itinerary_planner_api
-  instructions: Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
-
-Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
-
-Response format: Present the itinerary day by day with activities and details.
-  description: Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.
-
-
----
-**User:**
-Recommend Italian, Chinese, and French restaurants in Back Bay for each day (input: dining preferences, location, days; output: restaurant list) [agent: restaurant_recommender]
-**Assistant:**
-```
-RESPONSE_CHOICE_EXPLANATION: No existing task config matches the request; a new task config is required.
-RESPONSE_TYPE: CREATE_TASK_CONFIG
-RESPONSE_CREATE_TASK_CONFIG:
-  task_type: recommend_restaurants
-  agent_type: restaurant_recommender
-  task_config_input: {"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>", "days":"<list of days>"}
-  description: Task to recommend restaurants for each day based on user-defined preferences, location and list of the days.
-```
-
-### Example[4]: CREATE_TASK_CONFIG - Create a 3-day itinerary
-
-**Context:**
----
-### Previous steps
-The previous steps represent the sequence of tasks completed before the current user input:
-
-1. Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]
-2. Find upcoming hockey/basketball game schedules in a given location (input: sport, location; output: game list) [agent: game_searcher]
-3. Recommend Italian, Chinese, and French restaurants in Back Bay for each day (input: dining preferences, location; output: restaurant list) [agent: restaurant_recommender]
-
-### Existing task configs
-1. identify_historical_sites:
-  task_type: identify_historical_sites
-  agent_type: historical_sites_identifier
-  task_config_input: {"location":"<given location>"}
-  description: Task to identify historical sites in a given location.
-2. find_game_schedules:
-  task_type: find_game_schedules
-  agent_type: game_searcher
-  task_config_input: {"sport":"<choose sport: hockey | basketball>","location":"<given location>"}
-  description: Task to find upcoming hockey and basketball game schedules in a given location.
-3. recommend_restaurants:
-  task_type: recommend_restaurants
-  agent_type: restaurant_recommender
-  task_config_input: {"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>"}
-  description: Task to recommend restaurants based on user-defined preferences and location.
-
-### Existing agent configs
-1. historical_sites_identifier:
-  agent_type: historical_sites_identifier
-  tools: historical_sites_search_api
-  instructions: Context: You are an agent specializing in identifying historical sites. You are activated by an external task and receive a location as input. You use the historical_sites_search_api tool to retrieve a list of historical sites.
-
-Objective: Use the provided location to fetch a list of historical sites. Return the results in a structured format.
-
-Response format: List each site with its name and a brief description.
-  description: Identifies historical sites in a given location using the historical_sites_search_api tool.
-2. game_searcher:
-  agent_type: game_searcher
-  tools: sports_schedule_api
-  instructions: Context: You are an agent specializing in finding sports game schedules. You are activated by an external task and receive sport type and location as input. You use the sports_schedule_api tool to retrieve game schedules.
-
-Objective: Use the provided sport type and location to fetch upcoming game schedules. Return the results in a structured format.
-
-Response format: List each game with its date, time, and teams.
-  description: Finds upcoming sports game schedules in a given location using the sports_schedule_api tool.
-3. restaurant_recommender:
-  agent_type: restaurant_recommender
-  tools: google_search, web_extract
-  instructions: Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
-
-Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
-
-Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.
-  description: Recommends restaurants based on user-defined preferences and location using web search tools.
-4. itinerary_creator:
-  agent_type: itinerary_creator
-  tools: itinerary_planner_api
-  instructions: Context: You are an agent specializing in creating itineraries. You are activated by an external task and receive inputs such as historical sites, games, and dining suggestions. You use the itinerary_planner_api to generate a detailed itinerary.
-
-Objective: Create a balanced 3-day itinerary based on the provided inputs. Include day-by-day activities and details.
-
-Response format: Present the itinerary day by day with activities and details.
-  description: Creates a balanced 3-day itinerary based on provided inputs such as historical sites, games, and dining suggestions using the itinerary_planner_api tool.
-
-
----
-**User:**
-Create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions (input: outputs from Steps 1–3; output: detailed itinerary) [agent: itinerary_creator]
-**Assistant:**
-```
-RESPONSE_CHOICE_EXPLANATION: No existing task config matches the request; a new task config is required.
-RESPONSE_TYPE: CREATE_TASK_CONFIG
-RESPONSE_CREATE_TASK_CONFIG:
-  task_type: create_3_day_itinerary
-  agent_type: itinerary_creator
-  task_config_input: {"historical_sites":"<list of historical sites>","games":"<list of games>","restaurants":"<list of restaurants>"}
-  description: Task to create a balanced 3-day itinerary incorporating historical sites, games, and dining suggestions.
-```
-
-### Example[5]: UPDATE_TASK_CONFIG - Generalize restaurant recommendations
-
-**Context:**
----
-### Previous steps
-The previous steps represent the sequence of tasks completed before the current user input:
-
-1. Identify historical sites in Back Bay (input: location; output: list of sites) [agent: historical_sites_identifier]
-2. Find upcoming hockey/basketball game schedules in a given location (input: sport, location; output: game list) [agent: game_searcher]
-
-### Existing task configs
-1. recommend_restaurants:
-  task_type: recommend_restaurants
-  agent_type: restaurant_recommender
-  task_config_input: {"dining_preferences":"<preferences such as cuisine, dietary restrictions, or other preferences>","location":"<given location>"}
-  description: Task to recommend restaurants based on user-defined preferences and location.
-
-### Existing agent configs
-1. restaurant_recommender:
-  agent_type: restaurant_recommender
-  tools: google_search, web_extract
-  instructions: Context: You are an agent specializing in recommending restaurants. You are activated by an external task and receive dining preferences and location as input. You use web search tools to gather information about restaurants.
-
-Objective: Provide a list of restaurants based on user-defined preferences and location. Include details such as name, description, and contact information.
-
-Response format: Present the information in a structured list with each restaurant having a name, description, and contact details.
-  description: Recommends restaurants based on user-defined preferences and location using web search tools.
-
-
----
-**User:**
-Recommend restaurants in Back Bay based on any user-defined preferences (input: preferences, location; output: restaurant list) [agent: restaurant_recommender]
-**Assistant:**
-```
-RESPONSE_CHOICE_EXPLANATION: The existing task config for recommending restaurants can be generalized to support any user-defined preferences.
-RESPONSE_TYPE: CREATE_TASK_CONFIG
-RESPONSE_CREATE_TASK_CONFIG:
-  task_type: recommend_restaurants
-  agent_type: itinerary_creator
-  task_config_input: {"preferences":"<any user-defined preferences>","location":"<given location>"}
-  description: Task to recommend restaurants based on any user-defined preferences and location.
-```
-
-### Example[6]: UPDATE_TASK_CONFIG - Add restrictions to fitness class recommendations
-
-**Context:**
----
-### Previous steps
-The previous steps represent the sequence of tasks completed before the current user input:
-
-1. Search for yoga studios in Cambridge (input: location; output: list of studios) [agent: yoga_studio_searcher]
-2. Retrieve schedules for yoga classes in Cambridge (input: studio list from Step 1; output: class schedules) [agent: class_schedule_retriever]
-3. Filter yoga classes based on user preferences (input: class schedules from Step 2, preferences; output: filtered classes) [agent: class_filter]
-
-### Existing task configs
-1. recommend_fitness_classes:
-  task_type: recommend_fitness_classes
-  agent_type: recommend_fitness_classes
-  task_config_input: {"preferences":"<preferences such as yoga, pilates, or other types>","location":"<given location>"}
-  description: Task to recommend fitness classes based on user-defined preferences and location.
-
-### Existing agent configs
-1. fitness_class_recommender:
-  agent_type: fitness_class_recommender
-  tools: fitness_class_api, web_extract
-  instructions: Context: You are an agent specializing in recommending fitness classes. You are activated by an external task and receive preferences and location as input. You use APIs and web search tools to gather information about fitness classes.
-
-Objective: Provide a list of fitness classes based on user-defined preferences and location. Include details such as name, description, and schedule.
-
-Response format: Present the information in a structured list with each class having a name, description, and schedule.
-  description: Recommends fitness classes based on user-defined preferences and location using APIs and web search tools.
-
-
----
-**User:**
-Recommend yoga classes in Back Bay that are beginner-friendly (input: preferences, restrictions, location; output: class list) [agent: fitness_class_recommender]
-**Assistant:**
-```
-RESPONSE_CHOICE_EXPLANATION: The existing task config for recommending fitness classes can be updated to include restrictions such as beginner-friendly options.
-RESPONSE_TYPE: UPDATE_TASK_CONFIG
-RESPONSE_UPDATE_TASK_CONFIG:
-  task_type: recommend_fitness_classes
-  agent_type: itinerary_creator
-  task_config_input: {"preferences":"<preferences such as yoga>","restrictions": "<restrictions such as beginner-friendly, low-impact, or advanced>","location":"<given location>"}
-  description: Task to recommend fitness classes based on user-defined preferences, including restrictions, in a given location.
-```
-
-### Example[7]: UPDATE_TASK_CONFIG - Narrow movie recommendations to specific genres
-
-**Context:**
----
-### Previous steps
-There is no previous steps yet.
-
-### Existing task configs
-1. recommend_movies:
-  task_type: recommend_movies
-  agent_type: movie_recommender
-  task_config_input: {"preferences":"<preferences such as genre, language, or other criteria>","year":"<given year>"}
-  description: Task to recommend movies based on user-defined preferences and year.
-
-### Existing agent configs
-1. movie_recommender:
-  agent_type: movie_recommender
-  tools: movie_search_api, movie_info_api
-  instructions: Context: You are an agent specializing in recommending movies. You are activated by an external task and receive preferences and year as input. You use the movie_search_api and movie_info_api tools to gather information about movies.
-
-Objective: Provide a list of movies based on user-defined preferences and year. Include details such as title, genre, language, and release year.
-
-Response format: Present the information in a structured list with each movie having a title, genre, language, and release year.
-  description: Recommends movies based on user-defined preferences and year using movie search and info APIs.
-
-
----
-**User:**
-Recommend action movies from 2023 (input: preferences, year; output: movie list) [agent: movie_recommender]
-**Assistant:**
-```
-RESPONSE_CHOICE_EXPLANATION: The existing task config for recommending movies can be narrowed to focus only on action movies.
-RESPONSE_TYPE: UPDATE_TASK_CONFIG
-RESPONSE_UPDATE_TASK_CONFIG:
-  task_type: recommend_movies
-  task_config_input: {"preferences":"action","year":"2023"}
-  description: Task to recommend action movies from 2023 based on user-defined preferences.
-```
-
-### Example[8]: UPDATE_TASK_CONFIG - Expand F1 race strategy analysis inputs
-
-**Context:**
----
-### Previous steps
-The previous steps represent the sequence of tasks completed before the current user input:
-
-1. Retrieve F1 race data for the 2023 season (input: season year; output: race data) [agent: f1_data_retriever]
-2. Analyze pit stop strategies for each race (input: race data from Step 1; output: pit stop analysis) [agent: pit_stop_analyzer]
-
-### Existing task configs
-1. recommend_movies:
-  task_type: recommend_movies
-  agent_type: movie_recommender
-  task_config_input: {"preferences":"<preferences such as genre, language, or other criteria>","year":"<given year>"}
-  description: Task to recommend movies based on user-defined preferences and year.
-
-### Existing agent configs
-1. movie_recommender:
-  agent_type: movie_recommender
-  tools: movie_search_api, movie_info_api
-  instructions: Context: You are an agent specializing in recommending movies. You are activated by an external task and receive preferences and year as input. You use the movie_search_api and movie_info_api tools to gather information about movies.
-
-Objective: Provide a list of movies based on user-defined preferences and year. Include details such as title, genre, language, and release year.
-
-Response format: Present the information in a structured list with each movie having a title, genre, language, and release year.
-  description: Recommends movies based on user-defined preferences and year using movie search and info APIs.
-
-
----
-**User:**
-Recommend action movies from 2023 (input: preferences, year; output: movie list) [agent: movie_recommender]
-**Assistant:**
-```
-RESPONSE_CHOICE_EXPLANATION: The existing task config for recommending movies can be narrowed to focus only on action movies.
-RESPONSE_TYPE: UPDATE_TASK_CONFIG
-RESPONSE_UPDATE_TASK_CONFIG:
-  task_type: recommend_movies
-  task_config_input: {"preferences":"action","year":"2023"}
-  description: Task to recommend action movies from 2023 based on user-defined preferences.
-```
-
-### Example[9]: SELECT_TASK_CONFIG - Reuse farm task planning config
-
-**Context:**
----
-### Previous steps
-The previous steps represent the sequence of tasks completed before the current user input:
-
-1. Analyze soil quality in the farm fields (input: soil samples; output: soil quality report) [agent: soil_analyzer]
-2. Check the operational status of automated farm equipment (input: equipment list; output: equipment status report) [agent: equipment_checker]
-3. Retrieve the weather forecast for the farm location (input: location; output: weather forecast) [agent: weather_forecaster]
-
-### Existing task configs
-1. analyze_soil_quality:
-  task_type: analyze_soil_quality
-  agent_type: soil_analyzer
-  task_config_input: {"soil_samples":"<list of soil samples>"}
-  description: Task to analyze soil quality based on provided soil samples.
-2. plan_farm_tasks:
-  task_type: plan_farm_tasks
-  agent_type: farm_task_planner
-  task_config_input: {"field_conditions":"<current field conditions>","equipment_status":"<status of automated equipment>","weather_forecast":"<weather forecast for the day>"}
-  description: Plan daily tasks on a fully automated farm based on field conditions, equipment status, and weather forecast.
-3. check_equipment_status:
-  task_type: check_equipment_status
-  agent_type: equipment_checker
-  task_config_input: {"equipment_list":"<list of farm equipment>"}
-  description: Task to check the operational status of automated farm equipment.
-4. retrieve_weather_forecast:
+1. retrieve_field_metadata:
+  task_type: retrieve_field_metadata
+  agent_type: field_metadata_retriever
+  task_config_input: { "field_identifier": "<field name or ID>" }
+  description: Retrieve detailed metadata for a specified field using the field_info_api. The output should include the field's location, crop type, and moisture constraints.
+2. retrieve_equipment_ids:
+  task_type: retrieve_equipment_ids
+  agent_type: equipment_id_retriever
+  task_config_input: { "field_identifier": "<field name or ID>" }
+  description: Retrieve a list of equipment IDs assigned to a specified field using the equipment_registry_api. The output should include IDs for harvesters, drones, and dryers.
+3. retrieve_weather_forecast:
   task_type: retrieve_weather_forecast
-  agent_type: weather_forecaster
-  task_config_input: {"location":"<farm location>"}
-  description: Task to retrieve the weather forecast for a given farm location.
+  agent_type: weather_forecast_retriever
+  task_config_input: { "field_coordinates": "<field coordinates>" }
+  description: Retrieve a 24-hour weather forecast for specified field coordinates using the weather_forecast_api. The output should include weather forecast data in a structured format.
 
 ### Existing agent configs
-1. soil_analyzer:
-  agent_type: soil_analyzer
-  tools: soil_analysis_api
-  instructions: Context: You are an agent specializing in soil analysis. You are activated by an external task and receive soil samples as input. You use the soil_analysis_api tool to analyze the samples.
-Objective: Use the provided soil samples to analyze soil quality. Return the results in a structured format.
-Response format: List each sample with its quality metrics and recommendations.
-  description: Analyzes soil quality based on provided soil samples using the soil_analysis_api tool.
-2. farm_task_planner:
-  agent_type: farm_task_planner
-  tools: farm_task_planning_api
-  instructions: Context: You are an agent specializing in farm task planning. You are activated by an external task and receive field conditions, equipment status, and weather forecast as input. You use the farm_task_planning_api tool to plan daily tasks.
-Objective: Use the provided field conditions, equipment status, and weather forecast to plan daily tasks on a fully automated farm. Return the results in a structured format.
-Response format: List each task with its description, priority, and estimated time.
-  description: Plans daily tasks on a fully automated farm based on field conditions, equipment status, and weather forecast using the farm_task_planning_api tool.
-3. equipment_checker:
-  agent_type: equipment_checker
-  tools: equipment_status_api
-  instructions: Context: You are an agent specializing in checking equipment status. You are activated by an external task and receive a list of equipment as input. You use the equipment_status_api tool to check the status.
-Objective: Use the provided equipment list to check the operational status of automated farm equipment. Return the results in a structured format.
-Response format: List each equipment with its status and any required maintenance.
-  description: Checks the operational status of automated farm equipment using the equipment_status_api tool.
-4. weather_forecaster:
-  agent_type: weather_forecaster
+1. field_metadata_retriever:
+  agent_type: field_metadata_retriever
+  tools: field_info_api
+  description: Retrieves field metadata for farm managers by querying agronomic databases. Delivers crop type, area, and moisture thresholds.
+2. equipment_id_retriever:
+  agent_type: equipment_id_retriever
+  tools: equipment_registry_api
+  description: Retrieves assigned machinery for field operators by checking registry records. Delivers lists of available drones, harvesters, and dryers.
+3. weather_forecast_retriever:
+  agent_type: weather_forecast_retriever
   tools: weather_forecast_api
-  instructions: Context: You are an agent specializing in weather forecasting. You are activated by an external task and receive a location as input. You use the weather_forecast_api tool to retrieve the forecast.
-Objective: Use the provided location to retrieve the weather forecast. Return the results in a structured format.
-Response format: Provide the weather forecast with details such as temperature, humidity, and precipitation.
-  description: Retrieves the weather forecast for a given location using the weather_forecast_api tool.
+  description: Fetches localized weather data for agronomists by querying coordinates. Delivers 24-hour outlooks with hourly rain and wind forecasts.
+4. equipment_status_checker:
+  agent_type: equipment_status_checker
+  tools: equipment_status_api
+  description: Checks machinery readiness for technicians by validating operational state of harvest and drying equipment. Delivers pass/fail statuses with optional diagnostics.
 
 
 ---
 **User:**
-Plan daily tasks for the farm based on current field conditions, equipment status, and weather forecast (input: field conditions, equipment status, weather forecast; output: task plan) [agent: farm_task_planner]
+Check the operational readiness of harvesters, drones, and grain dryers (input: equipment IDs [from Step 2]; output: equipment status) [agent: equipment_status_checker]
 **Assistant:**
 ```
-RESPONSE_CHOICE_EXPLANATION: The existing task config for planning farm tasks already satisfies the user request without modifications.
-RESPONSE_TYPE: SELECT_TASK_CONFIG
-RESPONSE_SELECT_TASK_CONFIG:
-  task_type: plan_farm_tasks
+RESPONSE_CHOICE_EXPLANATION: The task of checking the operational readiness of equipment based on equipment IDs aligns with the purpose and input requirements of the existing agent config `equipment_status_checker`. There is no existing task config for this specific task, so a new task config needs to be created.
+RESPONSE_TYPE: CREATE_TASK_CONFIG
+RESPONSE_CREATE_TASK_CONFIG:
+  task_type: check_equipment_operational_status
+  agent_type: equipment_status_checker
+  task_config_input: { "equipment_ids": ["<equipment ID>", "..."] }
+  description: Verify and return the operational status of specified equipment such as harvesters, drones, and grain dryers using the equipment_status_api. The input should be a list of equipment IDs, and the output should indicate whether each piece of equipment is operational or not.
 ```
 
-### Example[10]: SELECT_TASK_CONFIG - Correct interplanetary probe trajectory
+### Example[4]: CREATE_TASK_CONFIG - Narrative Fusion: Merging Distinct Worlds through Modular Storytelling
 
 **Context:**
 ---
 ### Previous steps
 The previous steps represent the sequence of tasks completed before the current user input:
 
-1. Calculate the initial trajectory for an interplanetary probe (input: launch parameters; output: trajectory data) [agent: trajectory_calculator]
-2. Analyze gravitational assist opportunities (input: trajectory data from Step 1; output: assist options) [agent: gravity_assist_analyzer]
+1. Write a short story based on the concept of time travel (input: story concept "time travel"; output: short story) [task_run: operator:generate_short_story[1]:1]
 
 ### Existing task configs
-1. calculate_probe_trajectory:
-  task_type: calculate_probe_trajectory
-  agent_type: trajectory_calculator
-  task_config_input: {"launch_parameters":"<parameters such as launch angle, velocity, and time>"}
-  description: Task to calculate the initial trajectory for an interplanetary probe based on launch parameters.
-2. correct_probe_trajectory:
-  task_type: correct_probe_trajectory
-  agent_type: trajectory_corrector
-  task_config_input: {"trajectory_data":"<initial trajectory data>","assist_options":"<gravitational assist options>"}
-  description: Task to correct the trajectory of an interplanetary probe using gravitational assist opportunities.
+1. generate_short_story:
+  task_type: generate_short_story
+  agent_type: short_story_generator
+  task_config_input: {"story_concept":"<concept or theme for the story>"}
+  description: Generate a short story based on a provided <story concept>. Ensure it has a clear beginning, middle, and end, creatively incorporating the concept.
 
 ### Existing agent configs
-1. trajectory_calculator:
-  agent_type: trajectory_calculator
-  tools: trajectory_simulation_api
-  instructions: Context: You are an agent specializing in calculating probe trajectories. You are activated by an external task and receive launch parameters as input. You use the trajectory_simulation_api tool to calculate the trajectory.
-Objective: Use the provided launch parameters to calculate the initial trajectory for an interplanetary probe. Return the results in a structured format.
-Response format: Provide the trajectory data with details such as velocity, angle, and time.
-  description: Calculates the initial trajectory for an interplanetary probe based on launch parameters using the trajectory_simulation_api tool.
-2. gravity_assist_analyzer:
-  agent_type: gravity_assist_analyzer
-  tools: gravity_assist_api
-  instructions: Context: You are an agent specializing in analyzing gravitational assist opportunities. You are activated by an external task and receive trajectory data as input. You use the gravity_assist_api tool to identify assist options.
-Objective: Use the provided trajectory data to analyze gravitational assist opportunities. Return the results in a structured format.
-Response format: Provide a list of assist options with details such as planet, timing, and velocity change.
-  description: Analyzes gravitational assist opportunities based on trajectory data using the gravity_assist_api tool.
-3. trajectory_corrector:
-  agent_type: trajectory_corrector
-  tools: trajectory_adjustment_api
-  instructions: Context: You are an agent specializing in correcting probe trajectories. You are activated by an external task and receive trajectory data and assist options as input. You use the trajectory_adjustment_api tool to calculate corrections.
-Objective: Use the provided trajectory data and assist options to correct the trajectory of an interplanetary probe. Return the results in a structured format.
-Response format: Provide the corrected trajectory data with details such as velocity, angle, and time adjustments.
-  description: Corrects the trajectory of an interplanetary probe using gravitational assist opportunities and trajectory data with the trajectory_adjustment_api tool.
+1. short_story_generator:
+  agent_type: short_story_generator
+  tools: 
+  description: Creates fictional narratives for writers and creatives by expanding on provided themes or prompts. Delivers complete short stories with structured plots.
 
 
 ---
 **User:**
-Correct the trajectory of an interplanetary probe using gravitational assist opportunities (input: trajectory data from Step 1, assist options from Step 2; output: corrected trajectory) [agent: trajectory_corrector]
+Write a short story based on the concept of bioluminescent fungi (input: story concept "bioluminescent fungi"; output: short story) [agent: short_story_generator]
 **Assistant:**
 ```
-RESPONSE_CHOICE_EXPLANATION: The existing task config for correcting probe trajectories already satisfies the user request without modifications.
+RESPONSE_CHOICE_EXPLANATION: The existing task config "generate_short_story" already satisfies the requirement to write a short story based on a given concept, such as "bioluminescent fungi."
+RESPONSE_TYPE: CREATE_TASK_CONFIG
+RESPONSE_CREATE_TASK_CONFIG:
+  task_type: generate_short_story
+  agent_type: short_story_generator
+  task_config_input: {"story_concept":"<concept or theme for the story>"}
+  description: Generate a short story based on a provided <story concept>. Ensure it has a clear beginning, middle, and end, creatively incorporating the concept.
+```
+
+### Example[5]: UPDATE_TASK_CONFIG - Deep-Sea Exploration and Marine Life Detection
+
+**Context:**
+---
+### Previous steps
+The previous steps represent the sequence of tasks completed before the current user input:
+
+1. Conduct basic sonar mapping to identify underwater terrain features in the Mariana Trench (input: zone_name: "Mariana Trench", scan_resolution: "standard", depth_range: "full"; output: terrain sonar data) [task_run: operator:sonar_mapping_underwater_terrain[1]:1]
+2. Conduct basic sonar mapping to identify underwater terrain features in the Puerto Rico Trench (input: zone_name: "Puerto Rico Trench", scan_resolution: "standard", depth_range: "full"; output: terrain sonar data) [task_run: operator:sonar_mapping_underwater_terrain[2]:1]
+
+### Existing task configs
+1. sonar_mapping_underwater_terrain:
+  task_type: sonar_mapping_underwater_terrain
+  agent_type: underwater_terrain_mapper
+  task_config_input: {"zone_name": "<zone_name>", "scan_resolution": "<scan_resolution>", "depth_range": "<depth_range>"}
+  description: Conduct sonar mapping to identify underwater terrain features in the specified <zone_name> using the given <scan_resolution> and <depth_range>. Return the terrain sonar data as output.
+
+### Existing agent configs
+1. underwater_terrain_mapper:
+  agent_type: underwater_terrain_mapper
+  tools: terrain_sonar_mapping_api
+  description: Analyzes local flora to identify and validate nectar sources or butterfly host plant compatibility using satellite and ground survey data.
+
+
+---
+**User:**
+Enhance sonar mapping by including marine life detection alongside terrain analysis at Mariana Trench (input: zone_name: "Mariana Trench", scan_resolution: "standard", depth_range: "full", bio_frequency_range: "medium", organism_filter: "all"; output: integrated terrain and biological sonar data) [task: sonar_mapping_underwater_terrain]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The original task config focused on underwater terrain mapping. Since the agent already supports marine life detection and this new task merely extends the input and description to reflect that optional feature, an update is appropriate.
+RESPONSE_TYPE: UPDATE_TASK_CONFIG
+RESPONSE_UPDATE_TASK_CONFIG:
+  task_type: sonar_mapping_underwater_terrain
+  taskConfigInput: { "zone_name": "<zone_name>", "scan_resolution": "<scan_resolution>", "depth_range": "<depth_range>", "bio_frequency_range": "<bio_frequency_range>", "organism_filter": "<organism_filter>" }
+  description: Conduct sonar mapping to identify underwater terrain features in the specified <zone_name> using the given <scan_resolution> and <depth_range>. When biological input parameters are provided, also detect marine life using <bio_frequency_range> and <organism_filter>. Return integrated terrain and biological sonar data as output.
+```
+
+### Example[6]: SELECT_TASK_CONFIG - Beekeeping and Butterfly Farming Site Analysis
+
+**Context:**
+---
+### Previous steps
+The previous steps represent the sequence of tasks completed before the current user input:
+
+1. Analyze local flora at Sunnybrook Farm for nectar sources suitable for beekeeping (input: location: "Sunnybrook Farm"; output: nectar suitability data) [task_run: operator:analyze_flora_for_nectar_sources[1]:1]
+
+### Existing task configs
+1. analyze_flora_for_nectar_sources:
+  task_type: analyze_flora_for_nectar_sources
+  agent_type: flora_nectar_analysis
+  task_config_input: {"location": "<location>"}
+  description: Analyze local flora at a specified <location> to determine nectar sources suitable for beekeeping. Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production suitability.
+
+### Existing agent configs
+1. flora_nectar_analysis:
+  agent_type: flora_nectar_analysis
+  tools: ground_survey_validator_api, pollinator_database_lookup_api, satellite_flora_scanner_api
+  description: Assesses nectar suitability for beekeepers by analyzing local flora using satellite and ground survey data. Delivers a list of validated nectar-producing species and their productivity ratings.
+
+
+---
+**User:**
+Analyze local flora at Meadowland Reserve for nectar sources suitable for beekeeping (input: location: "Meadowland Reserve"; output: nectar suitability data) [agent: flora_nectar_analysis]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The existing task config `analyze_flora_for_nectar_sources` already satisfies the user need to analyze local flora for nectar sources suitable for beekeeping. The task config input and description match the requirements of the new task.
 RESPONSE_TYPE: SELECT_TASK_CONFIG
 RESPONSE_SELECT_TASK_CONFIG:
-  task_type: correct_probe_trajectory
+  task_type: analyze_flora_for_nectar_sources
+```
+
+### Example[7]: SELECT_TASK_CONFIG - Deep-Sea Exploration and Marine Life Detection
+
+**Context:**
+---
+### Previous steps
+The previous steps represent the sequence of tasks completed before the current user input:
+
+1. Conduct basic sonar mapping to identify underwater terrain features in the Mariana Trench (input: zone_name: "Mariana Trench", scan_resolution: "standard", depth_range: "full"; output: terrain sonar data) [task_run: operator:sonar_mapping_underwater_terrain[1]:1]
+
+### Existing task configs
+1. sonar_mapping_underwater_terrain:
+  task_type: sonar_mapping_underwater_terrain
+  agent_type: underwater_terrain_mapper
+  task_config_input: {"zone_name": "<zone_name>", "scan_resolution": "<scan_resolution>", "depth_range": "<depth_range>"}
+  description: Conduct sonar mapping to identify underwater terrain features in the specified <zone_name> using the given <scan_resolution> and <depth_range>. Return the terrain sonar data as output.
+
+### Existing agent configs
+1. underwater_terrain_mapper:
+  agent_type: underwater_terrain_mapper
+  tools: terrain_sonar_mapping_api
+  description: Maps underwater landscapes for oceanographers by scanning zones with sonar pulses. Delivers geological profiles including depth contours and underwater obstacles.
+
+
+---
+**User:**
+Conduct basic sonar mapping to identify underwater terrain features in the Puerto Rico Trench (input: zone_name: "Puerto Rico Trench", scan_resolution: "standard", depth_range: "full"; output: terrain sonar data) [agent: underwater_terrain_mapper]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The existing task config `sonar_mapping_underwater_terrain` already satisfies the requirements for conducting sonar mapping in the Puerto Rico Trench with the specified input parameters.
+RESPONSE_TYPE: SELECT_TASK_CONFIG
+RESPONSE_SELECT_TASK_CONFIG:
+  task_type: sonar_mapping_underwater_terrain
+```
+
+### Example[8]: SELECT_TASK_CONFIG - Narrative Fusion: Merging Distinct Worlds through Modular Storytelling
+
+**Context:**
+---
+### Previous steps
+The previous steps represent the sequence of tasks completed before the current user input:
+
+1. Write a short story based on the concept of time travel (input: story concept "time travel"; output: short story) [task_run: operator:generate_short_story[1]:1]
+2. Write a short story based on the concept of bioluminescent fungi (input: story concept "bioluminescent fungi"; output: short story) [task_run: operator:generate_short_story[2]:1]
+
+### Existing task configs
+1. generate_short_story:
+  task_type: generate_short_story
+  agent_type: short_story_generator
+  task_config_input: {"story_concept":"<concept or theme for the story>"}
+  description: Generate a short story based on a provided <story concept>. Ensure it has a clear beginning, middle, and end, creatively incorporating the concept.
+
+### Existing agent configs
+1. short_story_generator:
+  agent_type: short_story_generator
+  tools: 
+  description: Creates fictional narratives for writers and creatives by expanding on provided themes or prompts. Delivers complete short stories with structured plots.
+
+
+---
+**User:**
+Write a short story based on the concept of ancient desert rituals (input: story concept "ancient desert rituals"; output: short story) [agent: short_story_generator]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The existing task config "generate_short_story" already satisfies the requirement to write a short story based on a given concept, such as "ancient desert rituals"
+RESPONSE_TYPE: SELECT_TASK_CONFIG
+RESPONSE_SELECT_TASK_CONFIG:
+  task_type: generate_short_story
+```
+
+### Example[9]: TASK_CONFIG_UNAVAILABLE - Beekeeping and Butterfly Farming Site Analysis (Missing related agent config)
+
+**Context:**
+---
+### Previous steps
+The previous steps represent the sequence of tasks completed before the current user input:
+
+1. Analyze local flora at Sunnybrook Farm for nectar sources suitable for beekeeping (input: location: "Sunnybrook Farm"; output: nectar suitability data) [task_run: operator:analyze_flora_for_nectar_sources[1]:1]
+2. Analyze local flora at Meadowland Reserve for nectar sources suitable for beekeeping (input: location: "Meadowland Reserve"; output: nectar suitability data) [task_run: operator:analyze_flora_for_nectar_sources[2]:1]
+
+### Existing task configs
+1. analyze_flora_for_nectar_sources:
+  task_type: analyze_flora_for_nectar_sources
+  agent_type: flora_nectar_analysis
+  task_config_input: {"location": "<location>"}
+  description: Analyze local flora at a specified <location> to determine nectar sources suitable for beekeeping. Utilize satellite imagery and ground survey data to identify plant species, validate their presence and health, and assess their nectar production suitability.
+
+### Existing agent configs
+1. flora_nectar_analysis:
+  agent_type: flora_nectar_analysis
+  tools: ground_survey_validator_api, pollinator_database_lookup_api, satellite_flora_scanner_api
+  description: Assesses nectar suitability for beekeepers by analyzing local flora using satellite and ground survey data. Delivers a list of validated nectar-producing species and their productivity ratings.
+
+
+---
+**User:**
+Analyze local flora at Sunnybrook Farm for nectar sources suitable for butterfly host plants (input: location: "Sunnybrook Farm"; output: butterfly host compatibility data) [agent: flora_butterfly_host_analysis]
+**Assistant:**
+```
+RESPONSE_CHOICE_EXPLANATION: The specified agent type 'flora_butterfly_host_analysis' does not appear in the list of existing agent configs. Therefore, the task configuration cannot proceed.
+RESPONSE_TYPE: TASK_CONFIG_UNAVAILABLE
+RESPONSE_TASK_CONFIG_UNAVAILABLE:
+  explanation: Agent type 'flora_butterfly_host_analysis' not found in existing agent configs.
 ```
 
 ---

@@ -7,6 +7,7 @@ import { SupervisorWorkflowInput } from "./dto.js";
 import { RequestHandler } from "./request-handler/request-handler.js";
 import { TaskRunStarterTool } from "./tool.js";
 import { WorkflowComposer } from "./workflow-composer/workflow-composer.js";
+import { SupervisorWorkflowStateLogger } from "./state/logger.js";
 
 export class SupervisorWorkflow extends Runnable<
   SupervisorWorkflowInput,
@@ -17,9 +18,30 @@ export class SupervisorWorkflow extends Runnable<
   protected workflowComposer: WorkflowComposer;
   protected taskRunStarterTool: TaskRunStarterTool;
   protected _memory: TokenMemory;
+  protected stateLogger: SupervisorWorkflowStateLogger;
 
   get memory() {
     return this._memory;
+  }
+
+  async logStateInput(
+    { prompt, originTaskRunId }: SupervisorWorkflowInput,
+    stateLogger: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await stateLogger.logSupervisorWorkflowStart({
+      input: {
+        prompt,
+        originTaskRunId,
+      },
+    });
+  }
+  async logStateOutput(
+    output: string,
+    stateLogger: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await stateLogger.logSupervisorWorkflowEnd({
+      output,
+    });
   }
 
   constructor(logger: Logger, llm: ChatModel, agentId: AgentIdValue) {
@@ -33,19 +55,23 @@ export class SupervisorWorkflow extends Runnable<
       capacityThreshold: 0.75, // maxTokens*capacityThreshold = threshold where we start removing old messages
       syncThreshold: 0.25, // maxTokens*syncThreshold = threshold where we start to use a real tokenization endpoint instead of guessing the number of tokens
     });
+    this.stateLogger = SupervisorWorkflowStateLogger.getInstance();
   }
 
-  async run({
-    prompt: input,
-    originTaskRunId,
-    onUpdate,
-  }: SupervisorWorkflowInput): Promise<string> {
+  override async run(input: SupervisorWorkflowInput): Promise<string> {
+    const { onUpdate } = input;
     const ctx = {
       actingAgentId: this.agentId,
       llm: this.llm,
       onUpdate,
     } satisfies Context;
+    return super.run(input, ctx);
+  }
 
+  protected async _run(
+    {prompt: input, originTaskRunId}: SupervisorWorkflowInput,
+    ctx: Context,
+  ): Promise<string> {
     const requestHandlerRunOutput = await this.requestHandler.run(
       {
         data: { request: input },

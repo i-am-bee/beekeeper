@@ -9,7 +9,7 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { clone } from "remeda";
 import { Context } from "./context.js";
 import { retry } from "./retry/retry.js";
-import { FnResult, FnResultWithPayload, RetryResult } from "./retry/types.js";
+import { FnResult, FnResultWithPayload, RetryResult } from "./retry/dto.js";
 import { Runnable } from "./runnable.js";
 import { groundInTime } from "../workflow-composer/helpers/prompt.js";
 
@@ -39,11 +39,12 @@ export abstract class LLMCall<
 
   abstract get protocol(): P;
 
-  async run(
+protected  async _run(
     input: LLMCallInput<TInput>,
     ctx: Context,
   ): Promise<LLMCallRunOutput<TOutput>> {
     const { userMessage: originalUserMessage, data, memory } = input;
+
     const callLLM = this.callLLM.bind(this);
     const result = await retry<TOutput, BaseMemory>(
       async (
@@ -170,7 +171,7 @@ export abstract class LLMCall<
       this.logger.error(`Error processing LLM call`, error);
       throw new Error(`Failed to process LLM call: ${error}`);
     }
-  }
+  }  
 
   protected abstract processResult(
     result: laml.ProtocolResult<P>,

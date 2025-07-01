@@ -1,5 +1,8 @@
 import { uniqueBy } from "remeda";
-import { Resources } from "../../workflow-composer/helpers/resources/dto.js";
+import {
+  AgentAvailableTool,
+  Resources,
+} from "../../workflow-composer/helpers/resources/dto.js";
 import { WorkflowComposeFixture } from "../base/workflow-compose-fixtures.js";
 import {
   unwrapTaskStepWithAgent,
@@ -7,7 +10,6 @@ import {
   unwrapTaskStepWithTaskRun,
   unwrapTaskStepWithToolsOrLLM,
 } from "./unwrap-task-step.js";
-import { AgentAvailableTool } from "../../workflow-composer/task-initializer/agent-config-initializer/dto.js";
 
 export const WorkflowSteps = [
   "agentConfigInitializer",

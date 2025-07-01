@@ -1,11 +1,12 @@
 import { BodyTemplateBuilder } from "@/agents/supervisor/workflow/templates/body.js";
 import * as laml from "@/laml/index.js";
+import { pick } from "remeda";
+import { AgentAvailableTool } from "../../../helpers/resources/dto.js";
 import {
   TaskStep,
   TaskStepInputParameter,
 } from "../../../helpers/task-step/dto.js";
-import { AgentAvailableTool, AgentConfigTinyDraft } from "../dto.js";
-import { pick } from "remeda";
+import { AgentConfigTinyDraft } from "../dto.js";
 
 export class ContextBuilder {
   private _output: string;

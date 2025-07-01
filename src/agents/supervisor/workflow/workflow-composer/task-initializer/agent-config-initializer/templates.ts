@@ -1,7 +1,7 @@
 import { AgentConfig } from "@/agents/registry/dto.js";
 import { BodyTemplateBuilder } from "@/agents/supervisor/workflow/templates/body.js";
 import * as laml from "@/laml/index.js";
-import { AgentAvailableTool } from "./dto.js";
+import { AgentAvailableTool } from "../../helpers/resources/dto.js";
 
 export class ExistingResourcesBuilder {
   private output: string;

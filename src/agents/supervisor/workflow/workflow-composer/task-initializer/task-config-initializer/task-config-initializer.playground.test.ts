@@ -6,7 +6,7 @@ import {
 } from "@/agents/supervisor/workflow/fixtures/helpers/unwrap-task-step.js";
 import { getChatLLM } from "@/helpers/llm.js";
 import { Logger } from "beeai-framework";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import boston_trip_fixtures from "@/agents/supervisor/workflow/fixtures/__test__/boston-trip/index.js";
 import narrative_fusion_fixtures from "@/agents/supervisor/workflow/fixtures/prompt/showcases/narrative-fusion/index.js";
 import smart_farm_harvest_fixtures from "@/agents/supervisor/workflow/fixtures/prompt/showcases/smart-farm-harvest-planner/index.js";
@@ -20,6 +20,36 @@ import { Resources } from "../../helpers/resources/dto.js";
 import { TaskStepMapper } from "../../helpers/task-step/task-step-mapper.js";
 import { getTaskConfigInitializerTool } from "./__tests__/helpers/mocks.js";
 import { prepareDataForWorkflowStep } from "@/agents/supervisor/workflow/fixtures/helpers/prepare-resources.js";
+
+vi.mock("@/agents/supervisor/workflow/state/logger.ts", async () => {
+  // Pull in the real module so we can re‑export everything else untouched
+  const actual = await vi.importActual<
+    typeof import("@/agents/supervisor/workflow/state/logger.ts")
+  >("@/agents/supervisor/workflow/state/logger.ts");
+
+  // Build *one* shared fake instance
+  const fakeLogger = new Proxy<Record<string | symbol, unknown>>(
+    {},
+    {
+      get(target, prop) {
+        if (!(prop in target)) {
+          target[prop] = vi.fn();
+        }
+        return target[prop];
+      },
+    },
+  ) as unknown;
+
+  return {
+    // Re‑export the original symbols
+    ...actual,
+    // …then override just the static we need
+    SupervisorWorkflowStateLogger: {
+      ...actual.SupervisorWorkflowStateLogger,
+      getInstance: vi.fn(() => fakeLogger),
+    },
+  };
+});
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
 const llm = getChatLLM("supervisor");

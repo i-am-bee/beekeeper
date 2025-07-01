@@ -3,8 +3,9 @@ import { Context } from "@/agents/supervisor/workflow/base/context.js";
 import {
   LLMCall,
   LLMCallInput,
+  LLMCallRunOutput,
 } from "@/agents/supervisor/workflow/base/llm-call.js";
-import { FnResult } from "@/agents/supervisor/workflow/base/retry/types.js";
+import { FnResult } from "@/agents/supervisor/workflow/base/retry/dto.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import {
@@ -22,6 +23,7 @@ import { protocol } from "./protocol.js";
 import { AgentConfigInitializerTool } from "./tool.js";
 import { clone } from "remeda";
 import { AgentInstructionsBuilder } from "./agent-instructions-builder/agent-instructions-builder.js";
+import { SupervisorWorkflowStateLogger } from "../../../state/logger.js";
 
 /**
  * Purpose of the agent config initializer is to create a new one, or select or update existing agent configuration based on the user prompt.
@@ -33,6 +35,39 @@ export class AgentConfigInitializer extends LLMCall<
 > {
   protected tool: AgentConfigInitializerTool;
   protected agentInstructionsBuilder: AgentInstructionsBuilder;
+
+  get protocol() {
+    return protocol;
+  }
+
+  protected systemPrompt(input: AgentConfigInitializerInput) {
+    return prompt(input);
+  }
+
+  async logStateInput(
+    {
+      data: { taskStep, selectOnly },
+    }: LLMCallInput<AgentConfigInitializerInput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await state.logAgentConfigInitializerStart({
+      input: { taskStep, selectOnly },
+    });
+  }
+  async logStateOutput(
+    output: LLMCallRunOutput<AgentConfigInitializerOutput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    if (output.type === "ERROR") {
+      await state.logAgentConfigInitializerError({
+        output,
+      });
+    } else {
+      await state.logAgentConfigInitializerEnd({
+        output: output.result,
+      });
+    }
+  }
 
   constructor(logger: Logger, agentId: AgentIdValue) {
     super(logger, agentId);
@@ -326,13 +361,5 @@ Please address these issues and provide the corrected response:`;
         explanation,
       };
     }
-  }
-
-  get protocol() {
-    return protocol;
-  }
-
-  protected systemPrompt(input: AgentConfigInitializerInput) {
-    return prompt(input);
   }
 }

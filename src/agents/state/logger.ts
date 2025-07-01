@@ -6,7 +6,7 @@ import {
   AgentConfigUpdateEvent,
   AgentCreateEvent,
   AgentDestroyEvent,
-  AgentEventKindEnum,
+  AgentEventKindEnumSchema,
   AgentPoolChangeEvent,
   AgentReleaseEvent,
   AgentStateDataTypeSchema,
@@ -56,7 +56,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAvailableTools(data: Omit<AvailableToolsEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.enum.available_tools_register,
+        kind: AgentEventKindEnumSchema.enum.available_tools_register,
         ...data,
       },
     });
@@ -65,7 +65,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAgentConfigCreate(data: Omit<AgentConfigCreateEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.Values.agent_config_create,
+        kind: AgentEventKindEnumSchema.Values.agent_config_create,
         ...data,
       },
     });
@@ -74,7 +74,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAgentConfigUpdate(data: Omit<AgentConfigUpdateEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.Values.agent_config_update,
+        kind: AgentEventKindEnumSchema.Values.agent_config_update,
         ...data,
       },
     });
@@ -83,7 +83,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAgentConfigDestroy(data: Omit<AgentConfigDestroyEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.Values.agent_config_destroy,
+        kind: AgentEventKindEnumSchema.Values.agent_config_destroy,
         ...data,
       },
     });
@@ -92,7 +92,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAgentCreate(data: Omit<AgentCreateEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.enum.agent_create,
+        kind: AgentEventKindEnumSchema.enum.agent_create,
         ...data,
       },
     });
@@ -101,7 +101,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAgentAcquire(data: Omit<AgentAcquireEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.enum.agent_acquire,
+        kind: AgentEventKindEnumSchema.enum.agent_acquire,
         ...data,
       },
     });
@@ -110,7 +110,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAgentRelease(data: Omit<AgentReleaseEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.enum.agent_release,
+        kind: AgentEventKindEnumSchema.enum.agent_release,
         ...data,
       },
     });
@@ -119,7 +119,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logAgentDestroy(data: Omit<AgentDestroyEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.enum.agent_destroy,
+        kind: AgentEventKindEnumSchema.enum.agent_destroy,
         ...data,
       },
     });
@@ -128,7 +128,7 @@ export class AgentStateLogger extends BaseStateLogger<
   public logPoolChange(data: Omit<AgentPoolChangeEvent, "kind">) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.Values.pool_change,
+        kind: AgentEventKindEnumSchema.Values.pool_change,
         ...data,
       },
     });
@@ -139,7 +139,7 @@ export class AgentStateLogger extends BaseStateLogger<
   ) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.Values.assignment_assign,
+        kind: AgentEventKindEnumSchema.Values.assignment_assign,
         assignmentKind: AssignmentKindEnum.enum.task,
         ...data,
       },
@@ -151,7 +151,7 @@ export class AgentStateLogger extends BaseStateLogger<
   ) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.enum.assignment_unassign,
+        kind: AgentEventKindEnumSchema.enum.assignment_unassign,
         assignmentKind: AssignmentKindEnum.enum.task,
         ...data,
       },
@@ -163,7 +163,7 @@ export class AgentStateLogger extends BaseStateLogger<
   ) {
     this.logUpdate({
       data: {
-        kind: AgentEventKindEnum.enum.assignment_history_entry,
+        kind: AgentEventKindEnumSchema.enum.assignment_history_entry,
         assignmentKind: AssignmentKindEnum.Values.task,
         ...data,
       },

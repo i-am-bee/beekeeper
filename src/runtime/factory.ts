@@ -1,3 +1,5 @@
+import { SupervisorWorkflowStateLogger } from "@/agents/supervisor/workflow/state/logger.js";
+import { ServiceLocator } from "@/utils/service-locator.js";
 import {
   AgentKindEnumSchema,
   AgentWithInstance,
@@ -11,13 +13,12 @@ import { AgentStateLogger } from "@agents/state/logger.js";
 import { TaskManager, TaskManagerSwitches } from "@tasks/manager/manager.js";
 import { TaskStateLogger } from "@tasks/state/logger.js";
 import { WorkspaceManager } from "@workspaces/manager/manager.js";
+import { Logger } from "beeai-framework";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { AgentFactory } from "../agents/agent-factory.js";
 import { BaseAgentFactory } from "../agents/base/agent-factory.js";
 import { operator, supervisor } from "../agents/index.js";
 import { Runtime } from "./runtime.js";
-import { Logger } from "beeai-framework";
-import { ServiceLocator } from "@/utils/service-locator.js";
 
 export interface Switches {
   taskManager?: TaskManagerSwitches;
@@ -46,6 +47,7 @@ export async function createRuntime({
   // Reset audit logs
   AgentStateLogger.init(outputDirPath);
   TaskStateLogger.init(outputDirPath);
+  SupervisorWorkflowStateLogger.init(outputDirPath);  
 
   // Setup workspace
   WorkspaceManager.init(workspace ?? "default", logger, {
@@ -264,6 +266,7 @@ export function disposeRuntime(runtime: Runtime) {
   AgentStateLogger.dispose();
   TaskStateLogger.dispose();
   WorkspaceManager.dispose();
+  SupervisorWorkflowStateLogger.dispose();
 
   runtime.dispose();
 }

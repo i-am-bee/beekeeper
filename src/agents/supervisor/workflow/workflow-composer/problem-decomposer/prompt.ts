@@ -200,10 +200,15 @@ const guidelines = BodyTemplateBuilder.new()
       text: "STEP_SEQUENCE - Rules",
       level: 3,
     },
-    content: `1. Use plain imperatives (e.g., “Book flight Prague → Rome”).
+    content: `
+Whenever a domain provides formal identifiers (IDs, keys, or codes), treat them as first‑class outputs—future steps must never have to “look up” an ID that an earlier step could have returned.
+
+1. Use plain imperatives (e.g., “Book flight Prague → Rome”).
 2. Each step must define its **inputs and outputs** explicitly.
-   a.  **Completeness check.**  The output list of a step *must* name every field that any *later* step will reference.  
-   (Example: if Step 3 needs \`citation_source\`, Step 1 or 2 must include \`citation_source\` in its outputs.)
+   a. **Completeness check.** The output list of a step *must* name every field that any *later* step will reference,
+      (Example: if Step 3 needs \`citation_source\`, Step 1 or 2 must include \`citation_source\` in its outputs.)
+      **and it must include the tool‑native or domain‑native IDs of those objects whenever such IDs exist.** For example, when returning product details that downstream logic will query,
+      list \`product_id\` alongside the product name, description, and price.
 3. Each step’s input must be explicitly justified. 
    a. Each input must be traceable to a valid source:
       - Either explicitly provided in user message,
@@ -281,7 +286,11 @@ const guidelines = BodyTemplateBuilder.new()
 **Example:**
 \`\`\`
 Generate directions from the user’s current location to the nearest shelter (input: user coordinates, list of nearby shelters [from Step 2]; output: step-by-step directions) [tools: google_maps]
-\`\`\``,
+\`\`\`
+
+#### Output parameters
+A step’s output list must enumerate **every value that will be consumed by any later step, INCLUDING any unique or primary‑key style identifiers (e.g., product_id, category_id, shopId, siteId) that downstream steps will need to call tools or reference entities unambiguously. Omit them only when you are absolutely certain no following step could require them.**
+`,
   })
   .section({
     title: {

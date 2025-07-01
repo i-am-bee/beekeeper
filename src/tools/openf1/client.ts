@@ -1,4 +1,3 @@
-import { Cache } from "beeai-framework/cache/decoratorCache";
 import { RateLimiter, RateLimiterConfig } from "../helpers/rate-limiter.js";
 
 export const F1_AVAILABLE_FIRST_SEASON_YEAR = 2023;
@@ -577,8 +576,8 @@ export class OpenF1Client {
     if (!OpenF1Client.instance) {
       OpenF1Client.instance = new OpenF1Client({
         rateLimiter: {
-          maxRequests: 10,
-          windowMs: 10000, // 1 minute
+          maxRequests: 2,
+          windowMs: 10000, // 10 s
           strategy: "queue" as const,
           maxQueueSize: 1000,
         },
@@ -678,86 +677,86 @@ export class OpenF1Client {
 
   // API Methods
   /** Get car telemetry data including speed, RPM, throttle, brake, and DRS status */
-  @Cache()
+
   async getCarData(params: CarDataParams = {}): Promise<CarData[]> {
     return this.request<CarData>("/car_data", params);
   }
 
   /** Get information about drivers including names, team details, and nationality */
-  @Cache()
+
   async getDrivers(params: DriversParams = {}): Promise<Driver[]> {
     return this.request<Driver>("/drivers", params);
   }
 
   /** Get timing intervals between drivers and gaps to the leader */
-  @Cache()
+
   async getIntervals(params: IntervalsParams = {}): Promise<Interval[]> {
     return this.request<Interval>("/intervals", params);
   }
 
   /** Get lap-by-lap data including lap times, pit stops, and tyre information */
-  @Cache()
+
   async getLaps(params: LapsParams = {}): Promise<Lap[]> {
     return this.request<Lap>("/laps", params);
   }
 
   /** Get real-time car positions on the track with X, Y, Z coordinates */
-  @Cache()
+
   async getLocation(params: LocationParams = {}): Promise<Location[]> {
     return this.request<Location>("/location", params);
   }
 
   /** Get information about race meetings including dates, locations, and circuits */
-  @Cache()
+
   async getMeetings(params: MeetingsParams = {}): Promise<Meeting[]> {
     return this.request<Meeting>("/meetings", params);
   }
 
   /** Get pit stop data including duration and lap numbers */
-  @Cache()
+
   async getPit(params: PitParams = {}): Promise<Pit[]> {
     return this.request<Pit>("/pit", params);
   }
 
   /** Get driver positions throughout the session */
-  @Cache()
+
   async getPosition(params: PositionParams = {}): Promise<Position[]> {
     return this.request<Position>("/position", params);
   }
 
   /** Get race control messages including flags, penalties, and safety car periods */
-  @Cache()
+
   async getRaceControl(params: RaceControlParams = {}): Promise<RaceControl[]> {
     return this.request<RaceControl>("/race_control", params);
   }
 
   /** Get session information including practice, qualifying, and race sessions */
-  @Cache()
+
   async getSessions(params: SessionsParams = {}): Promise<Session[]> {
     return this.request<Session>("/sessions", params);
   }
 
   /** Get stint data including tyre compounds and stint lengths */
-  @Cache()
+
   async getStints(params: StintsParams = {}): Promise<Stint[]> {
     return this.request<Stint>("/stints", params);
   }
 
   /** Get team radio communications with audio recording URLs */
-  @Cache()
+
   async getTeamRadio(params: TeamRadioParams = {}): Promise<TeamRadio[]> {
     return this.request<TeamRadio>("/team_radio", params);
   }
 
   /** Get weather conditions including temperature, humidity, and wind data */
-  @Cache()
+
   async getWeather(params: WeatherParams = {}): Promise<Weather[]> {
     return this.request<Weather>("/weather", params);
   }
 
   // Convenience methods
   /** Get the most recent Formula 1 meeting based on start date */
-  @Cache()
+
   async getLatestMeeting(): Promise<Meeting | null> {
     const meetings = await this.getMeetings();
     if (meetings.length === 0) {
@@ -771,19 +770,19 @@ export class OpenF1Client {
   }
 
   /** Get all drivers participating in a specific session */
-  @Cache()
+
   async getDriversForSession(sessionKey: number): Promise<Driver[]> {
     return this.getDrivers({ sessionKey });
   }
 
   /** Get all sessions for a specific championship year */
-  @Cache()
+
   async getSessionsForYear(year: number): Promise<Session[]> {
     return this.getSessions({ year });
   }
 
   /** Get all laps completed by a specific driver in a session */
-  @Cache()
+
   async getLapsForDriver(
     sessionKey: number,
     driverNumber: number,
@@ -792,13 +791,13 @@ export class OpenF1Client {
   }
 
   /** Get weather conditions for a specific session */
-  @Cache()
+
   async getWeatherForSession(sessionKey: number): Promise<Weather[]> {
     return this.getWeather({ sessionKey });
   }
 
   /** Get drivers participating in the current/latest session */
-  @Cache()
+
   async getCurrentSessionDrivers(): Promise<Driver[]> {
     const latestMeeting = await this.getLatestMeeting();
     if (!latestMeeting) {

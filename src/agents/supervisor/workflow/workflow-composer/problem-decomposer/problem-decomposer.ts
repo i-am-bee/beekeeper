@@ -1,13 +1,18 @@
 import * as laml from "@/laml/index.js";
 import { countBy } from "remeda";
 import { Context } from "../../base/context.js";
-import { LLMCall, LLMCallInput } from "../../base/llm-call.js";
-import { FnResult } from "../../base/retry/types.js";
+import {
+  LLMCall,
+  LLMCallInput,
+  LLMCallRunOutput,
+} from "../../base/llm-call.js";
+import { FnResult } from "../../base/retry/dto.js";
 import { assertTaskSteps } from "../helpers/task-step/helpers/assert.js";
 import { TaskStepMapper } from "../helpers/task-step/task-step-mapper.js";
 import { ProblemDecomposerInput, ProblemDecomposerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
+import { SupervisorWorkflowStateLogger } from "../../state/logger.js";
 
 export class ProblemDecomposer extends LLMCall<
   typeof protocol,
@@ -20,6 +25,29 @@ export class ProblemDecomposer extends LLMCall<
 
   protected systemPrompt(input: ProblemDecomposerInput) {
     return prompt(input);
+  }
+
+  async logStateInput(
+    { data: { request } }: LLMCallInput<ProblemDecomposerInput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await state.logProblemDecomposerStart({
+      input: { request },
+    });
+  }
+  async logStateOutput(
+    output: LLMCallRunOutput<ProblemDecomposerOutput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    if (output.type === "ERROR") {
+      await state.logProblemDecomposerError({
+        output,
+      });
+    } else {
+      await state.logProblemDecomposerEnd({
+        output: output.result,
+      });
+    }
   }
 
   protected async processResult(

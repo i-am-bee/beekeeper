@@ -64,7 +64,7 @@ export class AgentFactory extends BaseAgentFactory<
               }),
           },
           execution: {
-            maxIterations: 8,
+            maxIterations: 20,
             maxRetriesPerStep: 2,
             totalMaxRetries: 10,
           },

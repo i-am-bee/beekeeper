@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { getChatLLM } from "@/helpers/llm.js";
 import { Logger } from "beeai-framework";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RequestHandler } from "./request-handler.js";
 import { SUPERVISOR_AGENT_ID } from "../__test__/defaults.js";
 import poetry_song_analysis_fixtures from "../fixtures/__test__/poetry-song-analysis/index.js";
@@ -14,6 +14,37 @@ import asteroid_mining from "../fixtures/prompt/showcases/asteroid-mining-feasib
 import boston_trip_fixtures from "../fixtures/__test__/boston-trip/index.js";
 import deep_sea_fixtures from "@/agents/supervisor/workflow/fixtures/prompt/showcases/deep-sea-exploration/index.js";
 import feedback_analysis from "@/agents/supervisor/workflow/fixtures/prompt/showcases/feedback-sentiment-analysis/index.js";
+
+
+vi.mock("@/agents/supervisor/workflow/state/logger.ts", async () => {
+  // Pull in the real module so we can re‑export everything else untouched
+  const actual = await vi.importActual<
+    typeof import("@/agents/supervisor/workflow/state/logger.ts")
+  >("@/agents/supervisor/workflow/state/logger.ts");
+
+  // Build *one* shared fake instance
+  const fakeLogger = new Proxy<Record<string | symbol, unknown>>(
+    {},
+    {
+      get(target, prop) {
+        if (!(prop in target)) {
+          target[prop] = vi.fn();
+        }
+        return target[prop];
+      },
+    },
+  ) as unknown;
+
+  return {
+    // Re‑export the original symbols
+    ...actual,
+    // …then override just the static we need
+    SupervisorWorkflowStateLogger: {
+      ...actual.SupervisorWorkflowStateLogger,
+      getInstance: vi.fn(() => fakeLogger),
+    },
+  };
+});
 
 const logger = Logger.root.child({ name: "agent-config-tests" });
 const llm = getChatLLM("supervisor");

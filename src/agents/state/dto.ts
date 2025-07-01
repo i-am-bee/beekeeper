@@ -13,7 +13,7 @@ import {
 } from "../registry/dto.js";
 
 // Base schemas
-export const AgentEventKindEnum = z.enum([
+export const AgentEventKindEnumSchema = z.enum([
   "available_tools_register",
   "agent_config_create",
   "agent_config_update",
@@ -29,7 +29,7 @@ export const AgentEventKindEnum = z.enum([
 ]);
 
 export const BaseAgentEventSchema = z.object({
-  kind: AgentEventKindEnum,
+  kind: AgentEventKindEnumSchema,
 });
 
 // Agent Config Events
@@ -43,7 +43,7 @@ export type AgentConfigLifecycleEvent = z.infer<
 
 export const AgentConfigCreateEventSchema =
   BaseAgentConfigLifecycleEventSchema.extend({
-    kind: z.literal(AgentEventKindEnum.enum.agent_config_create),
+    kind: z.literal(AgentEventKindEnumSchema.enum.agent_config_create),
     config: AgentConfigSchema,
   });
 export type AgentConfigCreateEvent = z.infer<
@@ -52,7 +52,7 @@ export type AgentConfigCreateEvent = z.infer<
 
 export const AgentConfigUpdateEventSchema =
   BaseAgentConfigLifecycleEventSchema.extend({
-    kind: z.literal(AgentEventKindEnum.enum.agent_config_update),
+    kind: z.literal(AgentEventKindEnumSchema.enum.agent_config_update),
     config: AgentConfigSchema,
   });
 export type AgentConfigUpdateEvent = z.infer<
@@ -61,7 +61,7 @@ export type AgentConfigUpdateEvent = z.infer<
 
 export const AgentConfigDestroyEventSchema =
   BaseAgentConfigLifecycleEventSchema.extend({
-    kind: z.literal(AgentEventKindEnum.enum.agent_config_destroy),
+    kind: z.literal(AgentEventKindEnumSchema.enum.agent_config_destroy),
   });
 export type AgentConfigDestroyEvent = z.infer<
   typeof AgentConfigDestroyEventSchema
@@ -74,23 +74,23 @@ export const BaseAgentLifecycleEventSchema = BaseAgentEventSchema.extend({
 export type AgentLifecycleEvent = z.infer<typeof BaseAgentLifecycleEventSchema>;
 
 export const AgentCreateEventSchema = BaseAgentLifecycleEventSchema.extend({
-  kind: z.literal(AgentEventKindEnum.enum.agent_create),
+  kind: z.literal(AgentEventKindEnumSchema.enum.agent_create),
   agentConfigId: z.string(),
 });
 export type AgentCreateEvent = z.infer<typeof AgentCreateEventSchema>;
 
 export const AgentAcquireEventSchema = BaseAgentLifecycleEventSchema.extend({
-  kind: z.literal(AgentEventKindEnum.enum.agent_acquire),
+  kind: z.literal(AgentEventKindEnumSchema.enum.agent_acquire),
 });
 export type AgentAcquireEvent = z.infer<typeof AgentAcquireEventSchema>;
 
 export const AgentReleaseEventSchema = BaseAgentLifecycleEventSchema.extend({
-  kind: z.literal(AgentEventKindEnum.enum.agent_release),
+  kind: z.literal(AgentEventKindEnumSchema.enum.agent_release),
 });
 export type AgentReleaseEvent = z.infer<typeof AgentReleaseEventSchema>;
 
 export const AgentDestroyEventSchema = BaseAgentLifecycleEventSchema.extend({
-  kind: z.literal(AgentEventKindEnum.enum.agent_destroy),
+  kind: z.literal(AgentEventKindEnumSchema.enum.agent_destroy),
 });
 export type AgentDestroyEvent = z.infer<typeof AgentDestroyEventSchema>;
 
@@ -108,7 +108,7 @@ export const AssignedEventSchema = <TAssignment extends z.ZodType>(
   assignmentSchema: TAssignment,
 ) =>
   BaseAssignmentEventSchema.extend({
-    kind: z.literal(AgentEventKindEnum.enum.assignment_assign),
+    kind: z.literal(AgentEventKindEnumSchema.enum.assignment_assign),
     assignedSince: DateStringSchema,
     assignment: assignmentSchema,
   });
@@ -117,7 +117,7 @@ export type AssignedEvent<TAssignment extends z.ZodType> = z.infer<
 >;
 
 export const UnassignedEventSchema = BaseAssignmentEventSchema.extend({
-  kind: z.literal(AgentEventKindEnum.enum.assignment_unassign),
+  kind: z.literal(AgentEventKindEnumSchema.enum.assignment_unassign),
   unassignedAt: DateStringSchema,
 });
 export type UnassignedEvent = z.infer<typeof UnassignedEventSchema>;
@@ -126,7 +126,7 @@ export const HistoryEntryCreateEventSchema = <THistoryEntry extends z.ZodType>(
   historyEntrySchema: THistoryEntry,
 ) =>
   BaseAssignmentEventSchema.extend({
-    kind: z.literal(AgentEventKindEnum.enum.assignment_history_entry),
+    kind: z.literal(AgentEventKindEnumSchema.enum.assignment_history_entry),
     entry: historyEntrySchema,
   });
 export type HistoryEntryCreateEvent<THistoryEntry extends z.ZodType> = z.infer<
@@ -155,7 +155,7 @@ export type TaskHistoryEntryEvent = z.infer<typeof TaskHistoryEntryEventSchema>;
 
 // Available Tools Events
 export const AvailableToolsEventSchema = BaseAgentEventSchema.extend({
-  kind: z.literal(AgentEventKindEnum.enum.available_tools_register),
+  kind: z.literal(AgentEventKindEnumSchema.enum.available_tools_register),
   agentKindId: z.string(),
   availableTools: z.array(AvailableToolSchema),
 });
@@ -163,7 +163,7 @@ export type AvailableToolsEvent = z.infer<typeof AvailableToolsEventSchema>;
 
 // Pool Events
 export const AgentPoolChangeEventSchema = BaseAgentEventSchema.extend({
-  kind: z.literal(AgentEventKindEnum.enum.pool_change),
+  kind: z.literal(AgentEventKindEnumSchema.enum.pool_change),
   agentTypeId: z.string(),
   poolStats: AgentConfigPoolStatsSchema,
   versions: z.array(z.tuple([z.number(), AgentConfigPoolStatsSchema])),

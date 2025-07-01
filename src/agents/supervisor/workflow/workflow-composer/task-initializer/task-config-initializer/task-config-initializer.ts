@@ -3,8 +3,9 @@ import { Context } from "@/agents/supervisor/workflow/base/context.js";
 import {
   LLMCall,
   LLMCallInput,
+  LLMCallRunOutput,
 } from "@/agents/supervisor/workflow/base/llm-call.js";
-import { FnResult } from "@/agents/supervisor/workflow/base/retry/types.js";
+import { FnResult } from "@/agents/supervisor/workflow/base/retry/dto.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import { clone } from "remeda";
@@ -21,6 +22,7 @@ import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { TaskConfigInitializerTool } from "./tool.js";
 import { TaskStepInputParameter } from "../../helpers/task-step/dto.js";
+import { SupervisorWorkflowStateLogger } from "../../../state/logger.js";
 
 export class TaskConfigInitializer extends LLMCall<
   typeof protocol,
@@ -32,14 +34,38 @@ export class TaskConfigInitializer extends LLMCall<
   get protocol() {
     return protocol;
   }
+  protected systemPrompt(input: TaskConfigInitializerInput) {
+    return prompt(input);
+  }
+
+  async logStateInput(
+    {
+      data: { taskStep, actingAgentId },
+    }: LLMCallInput<TaskConfigInitializerInput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await state.logTaskConfigInitializerStart({
+      input: { taskStep, actingAgentId },
+    });
+  }
+  async logStateOutput(
+    output: LLMCallRunOutput<TaskConfigInitializerOutput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    if (output.type === "ERROR") {
+      await state.logTaskConfigInitializerError({
+        output,
+      });
+    } else {
+      await state.logTaskConfigInitializerEnd({
+        output: output.result,
+      });
+    }
+  }
 
   constructor(logger: Logger, agentId: AgentIdValue) {
     super(logger, agentId);
     this.tool = new TaskConfigInitializerTool();
-  }
-
-  protected systemPrompt(input: TaskConfigInitializerInput) {
-    return prompt(input);
   }
 
   protected async processResult(
@@ -111,6 +137,7 @@ export class TaskConfigInitializer extends LLMCall<
           this.handleOnUpdate(onUpdate, {
             type: result.RESPONSE_TYPE,
             value: `I'm going to create a brand new task config \`${config.taskType}\` for agent \`${config.agentType}\``,
+            payload: { toJson: config },
           });
 
           if (response.agent_type) {
@@ -227,7 +254,7 @@ export class TaskConfigInitializer extends LLMCall<
             return {
               type: "ERROR",
               explanation: existingTaskConfigs.length
-                ? `You can't select task config with task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are:\`${existingTaskConfigs.map((c) => c.taskType).join(",")}\`. Please use one of them.`
+                ? `You can't select task config with task_type:\`${response.task_type}\` because it doesn't exist. The only existing tasks are:\`${existingTaskConfigs.map((c) => c.taskType).join(",")}\`. Please use one of them or create a new one.`
                 : `You can't select task config with task_type:\`${response.task_type}\` because there are no existing tasks. Please create a task config first.`,
             };
           }

@@ -2,7 +2,7 @@ import { AgentIdValue } from "@/agents/registry/dto.js";
 import { TaskRun } from "@/tasks/manager/dto.js";
 import { Logger } from "beeai-framework";
 import { Context } from "../base/context.js";
-import { FnResult } from "../base/retry/types.js";
+import { FnResult } from "../base/retry/dto.js";
 import { Runnable } from "../base/runnable.js";
 import { WorkflowComposerInput, WorkflowComposerOutput } from "./dto.js";
 import { collectResources } from "./helpers/resources/utils.js";
@@ -12,6 +12,7 @@ import { ProblemDecomposer } from "./problem-decomposer/problem-decomposer.js";
 import { TaskInitializer } from "./task-initializer/task-initalizer.js";
 import { TaskRunInitializer } from "./task-run-initializer/task-run-initializer.js";
 import { assertTaskStepResourceType } from "./helpers/task-step/helpers/assert.js";
+import { SupervisorWorkflowStateLogger } from "../state/logger.js";
 
 export class WorkflowComposer extends Runnable<
   WorkflowComposerInput,
@@ -28,7 +29,31 @@ export class WorkflowComposer extends Runnable<
     this.taskRunInitializer = new TaskRunInitializer(logger, agentId);
   }
 
-  async run(
+
+    async logStateInput(
+      { input, originTaskRunId }: WorkflowComposerInput,
+      state: SupervisorWorkflowStateLogger,
+    ): Promise<void> {
+      await state.logWorkflowComposerStart({
+        input: { input, originTaskRunId },
+      });
+    }
+    async logStateOutput(
+      output: FnResult<WorkflowComposerOutput>,
+      state: SupervisorWorkflowStateLogger,
+    ): Promise<void> {
+      if (output.type === "ERROR") {
+        await state.logWorkflowComposerError({
+          output,
+        });
+      } else {
+        await state.logWorkflowComposerEnd({
+          output: output.result,
+        });
+      }
+    }
+
+protected  async _run(
     input: WorkflowComposerInput,
     ctx: Context,
   ): Promise<FnResult<WorkflowComposerOutput>> {

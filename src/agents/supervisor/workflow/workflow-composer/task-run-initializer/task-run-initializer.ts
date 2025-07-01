@@ -2,8 +2,12 @@ import { AgentIdValue } from "@/agents/registry/dto.js";
 import * as laml from "@/laml/index.js";
 import { Logger } from "beeai-framework";
 import { Context } from "vm";
-import { LLMCall, LLMCallInput } from "../../base/llm-call.js";
-import { FnResult } from "../../base/retry/types.js";
+import {
+  LLMCall,
+  LLMCallInput,
+  LLMCallRunOutput,
+} from "../../base/llm-call.js";
+import { FnResult } from "../../base/retry/dto.js";
 import { extendResources } from "../helpers/resources/utils.js";
 import { TaskStep } from "../helpers/task-step/dto.js";
 import { assignResource } from "../helpers/task-step/helpers/assign-resource.js";
@@ -11,6 +15,7 @@ import { TaskRunInitializerInput, TaskRunInitializerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
 import { TaskRunInitializerTool } from "./tool.js";
+import { SupervisorWorkflowStateLogger } from "../../state/logger.js";
 
 export class TaskRunInitializer extends LLMCall<
   typeof protocol,
@@ -23,13 +28,38 @@ export class TaskRunInitializer extends LLMCall<
     return protocol;
   }
 
+  protected systemPrompt(input: TaskRunInitializerInput) {
+    return prompt(input);
+  }
+
+  async logStateInput(
+    {
+      data: { taskStep, actingAgentId, originTaskRunId },
+    }: LLMCallInput<TaskRunInitializerInput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await state.logTaskRunInitializerStart({
+      input: { taskStep, actingAgentId, originTaskRunId },
+    });
+  }
+  async logStateOutput(
+    output: LLMCallRunOutput<TaskRunInitializerOutput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    if (output.type === "ERROR") {
+      await state.logTaskRunInitializerError({
+        output,
+      });
+    } else {
+      await state.logTaskRunInitializerEnd({
+        output: output.result,
+      });
+    }
+  }
+
   constructor(logger: Logger, agentId: AgentIdValue) {
     super(logger, agentId);
     this.tool = new TaskRunInitializerTool();
-  }
-
-  protected systemPrompt(input: TaskRunInitializerInput) {
-    return prompt(input);
   }
 
   protected async processResult(
@@ -104,6 +134,12 @@ export class TaskRunInitializer extends LLMCall<
               new Set(collectBlockedByTaskRunIds(taskStep, previousSteps)),
             ),
           } as const;
+
+          this.handleOnUpdate(onUpdate, {
+            type: result.RESPONSE_TYPE,
+            value: `I'm going to create a new task run for task config \`${taskConfig.taskType}\``,
+            payload: { toJson: toolInput },
+          });
 
           const {
             result: { data: taskRun },

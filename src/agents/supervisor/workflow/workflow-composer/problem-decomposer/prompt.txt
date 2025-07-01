@@ -76,7 +76,7 @@ If a required tool is missing, the problem is **UNSOLVABLE**.
 
 ---
 
-**Response format:**
+## Response Format
 
 All your responses **MUST** strictly adhere to the following template. Each line describes exactly what you must provide:
 
@@ -157,28 +157,39 @@ RESPONSE_MISSING_INPUTS: <!optional;object;0>
 
 ### Fidelity to Input
 1. **Do not ask the user for information they did not request.**
-2. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to `MISSING_INPUTS`.
+2. Any specific filters or quantities in `userParameters` (e.g., "top 10", "past 24 hours", "last 2", "season: 2024") must be reflected explicitly in the corresponding step input — either as a literal value or as a propagated field reference.
+3. If a parameter that is essential to achieving the user’s stated goal is missing and cannot be filled with a minimal, explicit assumption, switch to `MISSING_INPUTS`.
    a. You must not introduce new parameters unless:
       - They were directly present in userParameters, or
       - They were produced by an earlier step, or
       - You make a safe, minimal assumption (e.g., "next meeting" = soonest meeting in calendar).
-3. If a parameter is helpful but not essential (e.g., passenger count when booking a sample flight), phrase the task generically: “Book flight” without specifying details.
+4. If a parameter is helpful but not essential (e.g., passenger count when booking a sample flight), phrase the task generically: “Book flight” without specifying details.
 
 ### STEP_SEQUENCE - Rules
 1. Use plain imperatives (e.g., “Book flight Prague → Rome”).
 2. Each step must define its **inputs and outputs** explicitly.
    a.  **Completeness check.**  The output list of a step *must* name every field that any *later* step will reference.  
    (Example: if Step 3 needs `citation_source`, Step 1 or 2 must include `citation_source` in its outputs.)
-3. Each step’s input must be explicitly justified. Each input must be traceable to a valid source:
-   - Either explicitly provided in user message,
-   - Produced by a previous step (with [from Step X]),
-   - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
-   If any input cannot be traced in this way, the step — and the whole problem — must be marked **MISSING_INPUTS**. Do not invent values (e.g., blockIds, siteIds) without justification.
-   **Examples**: 
-   - INCORRECT: "Query database (input: customer records; output: analysis)" ← Missing source, vague
-   - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history)"
-   - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report)"
-   - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report)"
+3. Each step’s input must be explicitly justified. 
+   a. Each input must be traceable to a valid source:
+      - Either explicitly provided in user message,
+      - Produced by a previous step (with [from Step X]),
+      - Or introduced through a minimal and explicitly stated assumption (with [source: assumed]).   
+      If any input cannot be traced in this way, the step — and the whole problem — must be marked **MISSING_INPUTS**. Do not invent values (e.g., blockIds, siteIds) without justification.
+      **Examples**: 
+        - INCORRECT: "Query database (input: customer records; output: analysis) [tools: db_query]" ← Missing source, vague"
+        - CORRECT: "Query database (input: customerId: 'C-12345', dateRange: last 30 days; output: transaction history) [tools: db_query]"
+        - INCORRECT: "Generate report (input: sales data, format: PDF; output: quarterly report) [LLM]" ← missing the `[source: assumed]`.
+        - CORRECT: "Generate report (input: sales data [source: assumed], format: PDF; output: quarterly report) [LLM]"
+   b. If the user provides a specific value or filter (e.g., "last 2 events", "top 5", "after July 2023"), that value must be explicitly included in the input clause of the relevant step — either as a literal or a referenced parameter. Do not omit numeric or filtering instructions provided by the user.
+      **Examples**: 
+        - INCORRECT: "Summarize recent customer reviews (input: review list [from Step 2]; output: summarized reviews) [LLM]" ← missing the `5`.
+        - CORRECT: "Summarize the last 5 customer reviews (input: review list [from Step 2], number of reviews: 5; output: summarized reviews) [LLM]"        
+   c. If a step compiles or presents information that originates in more than one earlier step (e.g., combining analysis with original sources, or citing data), then it must include *all relevant outputs* in its inputs — not just the latest transformation.**  
+      This ensures full traceability for citation, validation, and user transparency.
+      **Example (CORRECT)**  
+        "Compile a summary of leadership information (input: name and term details [from Step 2], source link [from Step 1]; output: summary with citation) [LLM]"
+        - **Rationale:** Even though Step 2 verified the information, Step 1 provided the original source — which is needed to generate proper citations.
 4. Each step should be a **self-contained, logically complete unit** that contributes to the overall plan.
    a. If a task involves analysis, evaluation, assessment, or suitability scoring, treat it as requiring multi-dimensional coverage (e.g., species identification, nectar analysis, environmental context).
       However, you must encapsulate the full analysis into a single step if the user describes it as one coherent goal (e.g., "Analyze flora for beekeeping suitability").
@@ -224,6 +235,9 @@ RESPONSE_MISSING_INPUTS: <!optional;object;0>
     - the **imperative description** of the task,
     - followed by `(input: input 1, input 2 [source: assumed] ... ; output: output 1, output 2 ...)`,
     - followed by a resource in square brackets: `[tools: tool_name_1, tool_name_2...]`, `[agent: agent_name]`, `[task: task_name]`, or `[LLM]`.
+    - If the user’s request contains a numeric limit, range, ordinal, or date filter,
+      append a literal `filter:` field **inside** the parentheses, e.g.:
+      `… (input: schedule [from Step 2], filter: last_events: 2; output: …)` 
 16. Final validation pass: For each step, verify that all required tool inputs are traceable. For each field in a tool's toolInput, ensure the input value:
     - Is directly present in user message, OR
     - Is produced by a prior step (explicitly using [from Step X]), OR
@@ -494,7 +508,7 @@ RESPONSE_STEP_SEQUENCE:
     2. Write a short story based on the concept of bioluminescent fungi (input: story concept "bioluminescent fungi"; output: short story) [LLM]
     3. Write a short story based on the concept of ancient desert rituals (input: story concept "ancient desert rituals"; output: short story) [LLM]
     4. Write a short story based on the concept of urban foxes (input: story concept "urban foxes"; output: short story) [LLM]
-    5. Create a screenplay scene that merges all four stories (input: short story [from Steps 1], short story [from Steps 2], short story [from Steps 3], short story [from Steps 4]; output: screenplay scene) [LLM]
+    5. Create a screenplay scene that merges all four stories (input: short story [from Step 1], short story [from Step 2], short story [from Step 3], short story [from Step 4]; output: screenplay scene) [LLM]
     6. Provide an analytical breakdown of how the narratives converge in the screenplay scene (input: screenplay scene [from Step 5]; output: analytical breakdown) [LLM]
 ```
 

@@ -14,16 +14,29 @@ import { AgentInstructionsBuilderInput } from "./dto.js";
 import { protocol } from "./protocol.js";
 import { ContextBuilder } from "./templates.js";
 import { isNonNullish } from "remeda";
+import { assertTaskStepResourceType } from "../../../helpers/task-step/helpers/assert.js";
+import { unwrapTaskStepWithToolsOrLLM } from "@/agents/supervisor/workflow/fixtures/helpers/unwrap-task-step.js";
 
 export const prompt = ({
   resources,
   previousSteps,
-  taskStep: { inputs, output },
+  taskStep,
   agentConfigDraft,
 }: Pick<
   AgentInstructionsBuilderInput,
   "resources" | "previousSteps" | "taskStep" | "agentConfigDraft"
 >) => {
+  assertTaskStepResourceType(taskStep, ["tools", "llm"]);
+
+  const { inputs, output, resource } = taskStep;
+
+  let assignedTools;
+  if (resource.type === "tools") {
+    assignedTools = resources.tools.filter((t) =>
+      resource.tools.includes(t.toolName),
+    );
+  }
+
   const builder = BodyTemplateBuilder.new()
     .introduction(
       `You are an **AgentInstructionsBuilder** — the action module in a multi-agent workflow.  
@@ -42,7 +55,7 @@ Your mission is to create **actionable instructions** for a new LLM agent config
         end: true,
       },
       content: ContextBuilder.new()
-        .assignedTools(resources.tools)
+        .assignedTools(assignedTools)
         .agentMetadata(agentConfigDraft)
         .inputs(previousSteps, inputs)
         .outputs(output ? [output] : [])
@@ -86,6 +99,8 @@ Your mission is to create **actionable instructions** for a new LLM agent config
 
 - Keep instructions compact but unambiguous.
 
+- Ensure the output explicitly includes any relevant IDs or unique identifiers for each item or record (e.g., site IDs, registry numbers, or tool-returned IDs).
+
 ### Your instructions **MUST NOT**:
 - Include meta-language like “Your task is…” or “You will receive…”
 - Describe what the agent *is* — only what it must *do*
@@ -106,7 +121,8 @@ Your mission is to create **actionable instructions** for a new LLM agent config
 - Actionable objective and steps.
 - Structured and explicit formatting rules.
 - Human-friendly, predictable output with zero JSON.
-- If a report is required, the format must follow clean ASCII-style layout, using lines, spacing, and symbols for section separation and alignment.`,
+- If a report is required, the format must follow clean ASCII-style layout, using lines, spacing, and symbols for section separation and alignment.
+- All identifiers (IDs) associated with items in the output must be present and clearly labeled.`,
     });
 
   if (examplesEnabled()) {
@@ -186,13 +202,13 @@ Date:             <Derived from harvest schedule>
 Weather Summary:  <Short summary from forecast>
 
 Field Operations:
------------------------------------------------------
-| Time Slot     | Activity           | Equipment     |
-|---------------|--------------------|---------------|
-| 06:00–08:00   | Drying South Field | Dryer Unit #2 |
-| 08:15–11:00   | Harvest Block A    | Combine 03    |
-| ...           | ...                | ...           |
------------------------------------------------------
+--------------------------------------------------------
+| Time Slot     | Activity           | Equipment     | ID |
+|---------------|--------------------|---------------|---|
+| 06:00–08:00   | Drying South Field | Dryer Unit #2 | 01 |
+| 08:15–11:00   | Harvest Block A    | Combine 03    | 02 |
+| ...           | ...                | ...           |... |
+---------------------------------------------------------
 
 Contingencies:
 - If rain is forecast during any slot, reschedule operation and mark in plan.

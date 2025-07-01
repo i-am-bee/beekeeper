@@ -1,9 +1,7 @@
 import { BodyTemplateBuilder } from "@/agents/supervisor/workflow/templates/body.js";
 import * as laml from "@/laml/index.js";
-import {
-  AgentAvailableTool,
-  AgentConfigTiny,
-} from "../task-initializer/agent-config-initializer/dto.js";
+import { AgentAvailableTool } from "../helpers/resources/dto.js";
+import { AgentConfigTiny } from "../task-initializer/agent-config-initializer/dto.js";
 import { TaskConfigMinimal } from "../task-initializer/task-config-initializer/dto.js";
 
 export class ExistingResourcesBuilder {

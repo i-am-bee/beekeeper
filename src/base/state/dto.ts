@@ -1,9 +1,8 @@
 import { z } from "zod";
-import { DateStringSchema } from "../dto.js";
 
 export const LogUpdateSchema = <TData extends z.ZodType>(dataSchema: TData) =>
   z.object({
-    timestamp: DateStringSchema,
+    timestamp: z.union([z.string(), z.date()]),
     data: dataSchema,
   });
 export type LogUpdate<T extends z.ZodType> = z.infer<
@@ -11,7 +10,7 @@ export type LogUpdate<T extends z.ZodType> = z.infer<
 >;
 
 export const LogInitSchema = z.object({
-  timestamp: DateStringSchema,
+  timestamp: z.union([z.string(), z.date()]),
   type: z.literal("@log_init"),
 });
 export type LogInit = z.infer<typeof LogInitSchema>;

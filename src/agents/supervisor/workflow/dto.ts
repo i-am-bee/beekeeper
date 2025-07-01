@@ -15,3 +15,8 @@ export const SupervisorWorkflowInputSchema = z.object({
 export type SupervisorWorkflowInput = z.infer<
   typeof SupervisorWorkflowInputSchema
 >;
+
+export const SupervisorWorkflowOutputSchema = z.string();
+export type SupervisorWorkflowOutput = z.infer<
+  typeof SupervisorWorkflowOutputSchema
+>;

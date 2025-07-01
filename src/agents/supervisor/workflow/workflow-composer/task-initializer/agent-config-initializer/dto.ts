@@ -1,14 +1,7 @@
-import { AgentConfigSchema } from "@/agents/registry/dto.js";
 import { z } from "zod";
 import { ResourcesSchema } from "../../helpers/resources/dto.js";
+import { AgentConfigSchema } from "@/agents/registry/dto.js";
 import { TaskStepSchema } from "../../helpers/task-step/dto.js";
-
-export const AgentAvailableToolSchema = z.object({
-  toolName: z.string(),
-  description: z.string(),
-  toolInput: z.string().optional(),
-});
-export type AgentAvailableTool = z.infer<typeof AgentAvailableToolSchema>;
 
 export const AgentConfigTinyDraftSchema = AgentConfigSchema.pick({
   agentType: true,

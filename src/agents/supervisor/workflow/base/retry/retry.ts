@@ -1,4 +1,4 @@
-import { Fn, FnErrorResult, RetryOptions, RetryResult } from "./types.js";
+import { Fn, FnErrorResult, RetryOptions, RetryResult } from "./dto.js";
 
 export async function retry<T, P>(
   fn: Fn<T, P>,

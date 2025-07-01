@@ -1,10 +1,11 @@
 import * as laml from "@/laml/index.js";
 import { Context } from "../base/context.js";
-import { LLMCall, LLMCallInput } from "../base/llm-call.js";
-import { FnResult } from "../base/retry/types.js";
+import { LLMCall, LLMCallInput, LLMCallRunOutput } from "../base/llm-call.js";
+import { FnResult } from "../base/retry/dto.js";
 import { RequestHandlerInput, RequestHandlerOutput } from "./dto.js";
 import { prompt } from "./prompt.js";
 import { protocol } from "./protocol.js";
+import { SupervisorWorkflowStateLogger } from "../state/logger.js";
 
 export class RequestHandler extends LLMCall<
   typeof protocol,
@@ -17,6 +18,29 @@ export class RequestHandler extends LLMCall<
   }
   get protocol() {
     return protocol;
+  }
+
+  async logStateInput(
+    { data: { request } }: LLMCallInput<RequestHandlerInput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    await state.logRequestHandlerStart({
+      input: { request },
+    });
+  }
+  async logStateOutput(
+    output: LLMCallRunOutput<RequestHandlerOutput>,
+    state: SupervisorWorkflowStateLogger,
+  ): Promise<void> {
+    if (output.type === "ERROR") {
+      await state.logRequestHandlerError({
+        output,
+      });
+    } else {
+      await state.logRequestHandlerEnd({
+        output: output.result,
+      });
+    }
   }
 
   protected async processResult(

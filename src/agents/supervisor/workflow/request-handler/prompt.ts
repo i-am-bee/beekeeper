@@ -83,7 +83,8 @@ const decisionCriteria = BodyTemplateBuilder.new()
     },
     content: `| If **ALL** these are true →                                                                                                                                                                                                                                                                                                                 | …then choose **RESPONSE_TYPE** | Short rationale                                               |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| • The information requested is static or unlikely to have changed since well before the “current date.” If the fact could plausibly change in normal circumstances (e.g., current office‑holders, prices, sports standings, weather), do not treat it as static.
+| • The information requested is timeless and inherently unchanging (e.g., laws of physics, file formats, language definitions).
+• If the answer pertains to historical events (e.g., sports results, elections, award winners), **do not treat it as static**—these must be verified or structured by workflow.
 • No additional context or data collection is required.
 • Fulfilling the request needs **no multi-step plan** or coordination with other agents/tools.                                                                     | **DIRECT_ANSWER**              | Provide the answer immediately.                               |
 | • The request is **ambiguous, incomplete, or self-contradictory** *and* you cannot safely infer the missing pieces (e.g., missing file, unclear goal, no location given for location-sensitive task).
@@ -99,7 +100,10 @@ const decisionCriteria = BodyTemplateBuilder.new()
 2. **Clarify early, not late.** Use **CLARIFICATION** whenever an assumption would risk misunderstanding the user’s goal or producing an unusable plan. Keep questions precise and minimal.
 3. **Plan when scope grows.** Choose **COMPOSE_WORKFLOW** for anything that is likely to span multiple actions, tools, or agents—even if parts seem answerable now.
 4. **Policy & safety.** If the request violates policy or is infeasible, respond per policy (either with refusal or safe completion) before applying these criteria.
-5. **Freshness check.** When answering about any person in office, company leadership, live scores, prices, or other volatile data, assume your cached knowledge may be outdated. Route to **COMPOSE_WORKFLOW** so a downstream step can verify with a live source.`,
+5. **Freshness check.** Always route to COMPOSE_WORKFLOW when the request references:
+   – Time-sensitive or changing data (e.g., current leaders, prices, weather, standings)
+   – Historically fixed facts that still require traceable source confirmation (e.g., sports results, election winners, awards)
+   Even if the answer seems knowable from memory, assume workflow verification is required.`,
   })
   .build();
 

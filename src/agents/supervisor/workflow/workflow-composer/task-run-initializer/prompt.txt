@@ -43,11 +43,13 @@ Your job is to prepare a **task run** for the current task step using the assign
 2. Find the matching task config from the list.
 3. Use the `task_config_input` as a template to prepare the actual input.
 4. Copy the values from the task step input that are **not** marked `[from Step X]`.
-   a. Ignore every parameter marked [from Step X]; never copy them, never stub them with angle‑bracket placeholders, and never rename them. They will be auto‑injected by the runtime engine.
+   a. ⚠️ You MUST NOT include any parameter marked `[from Step X]` in the task_run_input — not even as a placeholder or default.
+   b. Never substitute inputs with angle brackets (e.g., "president_name": "<president's name>"). These are treated as violations.
+   c. If all inputs are marked [from Step X], then task_run_input must be completely empty (do not even include {}).
 5. Output a task run using the correct format.
 ---
 
-**Response format:**
+## Response Format
 
 All your responses **MUST** strictly adhere to the following template. Each line describes exactly what you must provide:
 
@@ -85,7 +87,9 @@ RESPONSE_TASK_RUN_UNAVAILABLE: <!optional;object;0>
 ## Final Notes
 
 - Do **not** generate or invent new task configs or agent configs.
-- Do **not** try to resolve `[from Step X]` inputs. These will be filled by the engine.
+- Do not try to resolve `[from Step X]` inputs. These will be injected at runtime by the execution engine.
+- Do not include, stub, rename, or represent `[from Step X]` inputs in your response in any way.
+- If the only inputs for the task are marked `[from Step X]`, then the task_run_input section must be omitted entirely (not even {} or placeholders).
 - Your job is only to prepare `task_run_input` using what is available directly in the input field of the task step.
 ---
 
