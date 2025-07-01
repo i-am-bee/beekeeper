@@ -13,7 +13,10 @@ import { addToPathString, findPath } from "./tree-path.js";
 import { Logger } from "beeai-framework";
 import { v4 as uuidv4 } from "uuid";
 
-export interface BaseControllable<TElement, TParent> {
+export interface BaseControllable<
+  TElement extends blessed.Widgets.BlessedElement | blessed.Widgets.Screen,
+  TParent,
+> {
   id: string;
   name: string;
   element: TElement;
@@ -24,11 +27,8 @@ export interface BaseControllable<TElement, TParent> {
   keyActions?: KeyActions;
 }
 
-export interface ControllableElement
-  extends BaseControllable<
-    blessed.Widgets.BlessedElement,
-    ControllableContainer | ControllableScreen
-  > {
+export interface ControllableElement<T extends blessed.Widgets.BlessedElement>
+  extends BaseControllable<T, ControllableContainer | ControllableScreen> {
   kind: "element";
 }
 
@@ -49,13 +49,13 @@ export interface ControllableScreen
   children: string[];
 }
 
-export type Controllable =
+export type Controllable<T extends blessed.Widgets.BlessedElement> =
   | ControllableScreen
   | ControllableContainer
-  | ControllableElement;
+  | ControllableElement<T>;
 
-export type AddElementInput = Pick<
-  ControllableElement,
+export type AddElementInput<T extends blessed.Widgets.BlessedElement> = Pick<
+  ControllableElement<T>,
   "kind" | "name" | "element" | "parent" | "onFocus" | "onBlur"
 >;
 
@@ -65,11 +65,11 @@ export type AddContainerInput = Pick<
 >;
 
 export interface ControlsManagerEvents {
-  "focus:change": (focused?: Controllable) => void;
+  "focus:change": (focused?: Controllable<any>) => void;
 }
 
 export interface PathStep {
-  el: Controllable;
+  el: Controllable<any>;
   direction: "UP" | "DOWN";
 }
 
@@ -77,8 +77,8 @@ const SCREEN_ID = "screen";
 export class ControlsManager {
   private logger: Logger;
   private _screen: ControllableScreen;
-  private elements = new Map<string, Controllable>();
-  private _focused?: Controllable;
+  private elements = new Map<string, Controllable<any>>();
+  private _focused?: Controllable<any>;
   private _keyBindings?: KeyBindings;
   private emitter = new EventEmitter();
   private keyActionListeners = new Map<string, KeyActionListener>();
@@ -155,10 +155,12 @@ export class ControlsManager {
   }
 
   add(input: AddContainerInput): ControllableContainer;
-  add(input: AddElementInput): ControllableElement;
-  add(
-    input: AddContainerInput | AddElementInput,
-  ): ControllableContainer | ControllableElement {
+  add<T extends blessed.Widgets.BlessedElement>(
+    input: AddElementInput<T>,
+  ): ControllableElement<T>;
+  add<T extends blessed.Widgets.BlessedElement>(
+    input: AddContainerInput | AddElementInput<T>,
+  ): ControllableContainer | ControllableElement<T> {
     const parent = this.getContainer(input.parent.id);
     let element;
     const id = this.getId(input.name, parent.id);
@@ -168,7 +170,7 @@ export class ControlsManager {
         element = {
           ...input,
           id,
-        } satisfies ControllableElement;
+        } satisfies ControllableElement<T>;
         break;
       case "container":
         element = {
@@ -268,7 +270,7 @@ export class ControlsManager {
     }
   }
 
-  private setKeyBindings(target: Controllable) {
+  private setKeyBindings(target: Controllable<any>) {
     const pathFromRoot = this.getPath(target.id);
     const keyBindings = createKeyBindings(
       pathFromRoot.map((it) => it.el.keyActions).filter(isNonNullish),
@@ -292,7 +294,7 @@ export class ControlsManager {
     this._keyBindings = keyBindings;
   }
 
-  private unsetKeyBindings(target: Controllable, keyBindings: KeyBindings) {
+  private unsetKeyBindings(target: Controllable<any>, keyBindings: KeyBindings) {
     this.logger.debug(
       Array.from(keyBindings.keys.entries()),
       `unsetKeyBindings(${target.id})`,

@@ -1,3 +1,5 @@
+import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
+import { NavigationDescription } from "@/ui/controls/navigation.js";
 import { Logger } from "beeai-framework";
 import blessed from "neo-blessed";
 import {
@@ -6,26 +8,24 @@ import {
   ScreenInput,
 } from "../../base/monitor.js";
 import { UIConfig } from "../../config.js";
+import { ControllableContainer } from "../../controls/controls-manager.js";
+import { Controls } from "./components/controls.js";
+import { WorkflowRuns } from "./components/workflow-runs.js";
 import {
-  ControllableContainer,
-  ControllableElement,
-} from "../../controls/controls-manager.js";
-import { WorkflowStep } from "./dto.js";
-import { WorkflowStepsDataProvider } from "./data-provider.js";
-import { UIColors } from "@/ui/colors.js";
-import * as chatStyles from "../config.js";
-import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
-import { NavigationDescription } from "@/ui/controls/navigation.js";
+  WorkflowDataProviderMode,
+  WorkflowPopupDataProvider,
+} from "./data-provider.js";
+import { WorkflowExplorer } from "./workflow-explorer/workflow-explorer.js";
 
 export class WorkflowPopup extends ContainerComponent {
   private _container: ControllableContainer;
-  private hideButton: ControllableElement;
+  private controls: Controls;
   private title: blessed.Widgets.TextElement;
-  private table: blessed.Widgets.ListTableElement;
-  private autoPopupCheckbox: blessed.Widgets.CheckboxElement;
-  private steps: WorkflowStepsDataProvider;
+  private workflowExplorer: WorkflowExplorer;
+  private workflowRuns: WorkflowRuns;
   private onHide?: () => void;
   private onAutoPopup?: () => void;
+  private dataProvider: WorkflowPopupDataProvider; // Assuming this is defined elsewhere
   private _isVisible = false; // Initially hidden
 
   private initiatorElementId?: string;
@@ -41,15 +41,18 @@ export class WorkflowPopup extends ContainerComponent {
   constructor(
     arg: ParentInput | ScreenInput,
     logger: Logger,
+    workflowStateLogPath: string,
     onAutoPopup?: () => void,
   ) {
     super(arg, logger);
 
+    this.dataProvider = new WorkflowPopupDataProvider(
+      workflowStateLogPath,
+      WorkflowDataProviderMode.PAUSE,
+    );
+
     this.onAutoPopup = onAutoPopup;
 
-    this.steps = new WorkflowStepsDataProvider();
-
-    // Create dialog box
     this._container = this.controlsManager.add({
       kind: "container",
       name: "container",
@@ -57,12 +60,13 @@ export class WorkflowPopup extends ContainerComponent {
         parent: this.parent.element,
         top: "center",
         left: "center",
-        width: 100,
-        height: 20,
+        width: 150,
+        height: 40,
         tags: true,
         focusable: false,
         keys: false,
         mouse: false,
+        vi: false,
         border: {
           type: "line",
         },
@@ -75,12 +79,31 @@ export class WorkflowPopup extends ContainerComponent {
       parent: this.parent,
     });
 
-    // Dialog title
+    this.workflowExplorer = new WorkflowExplorer(
+      {
+        kind: "parent",
+        parent: this._container,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+      this.dataProvider,
+    );
+
+    this.workflowRuns = new WorkflowRuns(
+      {
+        kind: "parent",
+        parent: this._container,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+      this.dataProvider,
+    );
+
     this.title = blessed.text({
       parent: this._container.element,
       top: 1,
       left: "center",
-      content: "Workflow",
+      content: "Supervisor Workflow",
       focusable: false,
       keys: false,
       mouse: false,
@@ -90,66 +113,28 @@ export class WorkflowPopup extends ContainerComponent {
       },
     });
 
-    this.table = blessed.listtable({
-      parent: this._container.element,
-      top: 3,
-      left: 1,
-      width: "100%-4",
-      height: "100%-8",
-      align: "left",
-      mouse: false,
-      keys: false,
-      tags: true,
-      style: {
-        bg: UIColors.black.black,
-        header: {
-          fg: UIColors.white.white,
-          bg: UIColors.black.black,
-        },
-        cell: {
-          fg: UIColors.white.white,
-          bg: UIColors.black.black,
-        },
-      },
-      vi: false,
-    });
-
-    this.autoPopupCheckbox = blessed.checkbox({
-      parent: this._container.element,
-      top: "100%-5",
-      left: "100%-20",
-      content: "Auto popup",
-      checked: false,
-      mouse: false,
-      keys: false,
-      style: {
-        bg: UIColors.black.black,
-        fg: UIColors.white.white,
-        focus: {
-          bg: UIColors.black.black,
-          fg: UIColors.white.white,
-        },
-      },
-    });
-
     // Send/abort button
-    this.hideButton = this.controlsManager.add({
-      kind: "element",
-      name: "hideButton",
-      element: blessed.button({
-        parent: this._container.element,
-        width: 10,
-        height: 3,
-        left: "50%-5",
-        top: "100%-6",
-        ...chatStyles.getHideButtonStyle(),
-        tags: true,
-        mouse: false,
-      }),
-      parent: this._container,
-    });
-
+    this.controls = new Controls(
+      {
+        kind: "parent",
+        parent: this._container,
+        controlsManager: this.controlsManager,
+      },
+      logger,
+      this.dataProvider,
+    );
+    this.setupEventHandlers();
     this.setupControls();
+    this.dataProvider.start();
+  }
+
+  private setupEventHandlers() {
+    // this.state.on("state:updated", ({ type }) => {
+    //   switch (type) {
+    //     case StateUpdateType.SUPERVISOR_WORKFLOW_RUN:
+    //       break;
+    //   }
+    // });
   }
 
   private setupControls(shouldRender = true) {
@@ -184,8 +169,8 @@ export class WorkflowPopup extends ContainerComponent {
   }
 
   private toggleAutoPopup(): void {
-    this.autoPopupCheckbox.checked = !this.autoPopupCheckbox.checked;
-    this.screen.element.render();
+    // this.autoPopupCheckbox.checked = !this.autoPopupCheckbox.checked;
+    // this.screen.element.render();
   }
 
   show(
@@ -221,21 +206,21 @@ export class WorkflowPopup extends ContainerComponent {
     this.onHide?.();
   }
 
-  addStep(step: WorkflowStep): void {
-    this.steps.reduce(step);
+  // addStep(step: WorkflowStep): void {
+  //   this.steps.reduce(step);
 
-    if (this.autoPopupCheckbox.checked && !this._isVisible) {
-      this.onAutoPopup?.();
-    }
+  //   if (this.autoPopupCheckbox.checked && !this._isVisible) {
+  //     this.onAutoPopup?.();
+  //   }
 
-    this.updateTable(this._isVisible);
-  }
+  //   this.updateTable(this._isVisible);
+  // }
 
-  private updateTable(shouldRender = true): void {
-    this.table.setData(this.steps.tableData());
+  // private updateTable(shouldRender = true): void {
+  //   this.table.setData(this.steps.tableData());
 
-    if (shouldRender) {
-      this.screen.element.render();
-    }
-  }
+  //   if (shouldRender) {
+  //     this.screen.element.render();
+  //   }
+  // }
 }

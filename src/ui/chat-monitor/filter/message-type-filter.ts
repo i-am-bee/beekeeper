@@ -27,8 +27,11 @@ export interface MessageTypeFilterEvents {
 
 export class MessageTypeFilter extends ContainerComponent {
   private _container: ControllableContainer;
-  private _expandButton: ControllableElement;
-  private _typeCheckboxes: Record<string, ControllableElement> = {};
+  private _expandButton: ControllableElement<blessed.Widgets.ButtonElement>;
+  private _typeCheckboxes: Record<
+    string,
+    ControllableElement<blessed.Widgets.CheckboxElement>
+  > = {};
   private _isExpanded = false;
   private emitter = new EventEmitter();
   private _value: MessageTypeFilterValues = { messageTypes: [] };

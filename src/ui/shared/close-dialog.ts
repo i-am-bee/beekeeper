@@ -17,8 +17,8 @@ export class CloseDialog {
   private title: blessed.Widgets.TextElement;
   private message: blessed.Widgets.TextElement;
   private screen: ControllableScreen;
-  private confirmBtn: ControllableElement;
-  private cancelBtn: ControllableElement;
+  private confirmBtn: ControllableElement<blessed.Widgets.ButtonElement>;
+  private cancelBtn: ControllableElement<blessed.Widgets.ButtonElement>;
   private isVisible = false;
   private onConfirm: () => void;
   private onCancel: () => void;

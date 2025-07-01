@@ -31,9 +31,9 @@ type ChatInputOptions = (ParentInput | ScreenInput) & {
 
 export class ChatInput extends ContainerComponent {
   private _container: ControllableContainer;
-  private _inputBox: ControllableElement;
-  private _sendButton: ControllableElement;
-  private _abortButton: ControllableElement;
+  private _inputBox: ControllableElement<Textarea>;
+  private _sendButton: ControllableElement<blessed.Widgets.ButtonElement>;
+  private _abortButton: ControllableElement<blessed.Widgets.ButtonElement>;
   private emitter = new EventEmitter();
 
   private _onValueChange: () => void;

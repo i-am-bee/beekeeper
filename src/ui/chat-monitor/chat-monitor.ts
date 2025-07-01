@@ -18,6 +18,7 @@ import { ChatRuntimeHandler, MessageTypeEnum } from "./runtime-handler.js";
 import { Runtime } from "@/runtime/index.js";
 import { isNonNullish } from "remeda";
 import { WorkflowPopup } from "./workflow-popup/workflow-popup.js";
+import { join } from "path";
 
 export class ChatMonitor extends ContainerComponent {
   private closeDialog: CloseDialog;
@@ -94,11 +95,13 @@ export class ChatMonitor extends ContainerComponent {
         kind: "parent",
         parent: this.parent,
         controlsManager: this.controlsManager,
+        // join(dirPath ?? process.cwd(), "state", "task_state.log");
         // onAutoPopup: () => {
         //   this.workflowPopup.show(this.controlsManager.focused.id);
         // },
       },
       logger,
+      join("./output", "state", "workflow_state.log"),
     );
 
     // Should be last to appear on top
@@ -342,6 +345,7 @@ export class ChatMonitor extends ContainerComponent {
 
   private abortOperation(onAbort?: () => void) {
     if (!this._isProcessing || this._isAborting) {
+      this.onAbort?.();
       return;
     }
     this.onAbort = onAbort;
