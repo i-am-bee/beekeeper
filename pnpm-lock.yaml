@@ -84,9 +84,6 @@ importers:
       '@eslint/js':
         specifier: ^9.21.0
         version: 9.21.0
-      '@i-am-bee/acp-sdk':
-        specifier: ^0.0.4
-        version: 0.0.4
       '@types/blessed':
         specifier: ^0.1.25
         version: 0.1.25
@@ -543,10 +540,6 @@ packages:
   '@humanwhocodes/retry@0.4.2':
     resolution: {integrity: sha512-xeO57FpIu4p1Ri3Jq/EXq4ClRm86dVF2z/+kvFnyqVYRavTZmaFaUBbWCOuuTh0o/g7DSsk6kc2vrS4Vl5oPOQ==}
     engines: {node: '>=18.18'}
-
-  '@i-am-bee/acp-sdk@0.0.4':
-    resolution: {integrity: sha512-bp0Nx1SibAeq+QbmavYf4cOBzW98crtn8gXfq4VCo0Vm7VIHEC0IGA40g+iFHx+OTAyAN/he0PAme2pGyGseXw==}
-    engines: {node: '>=18'}
 
   '@ibm-cloud/watsonx-ai@1.6.4':
     resolution: {integrity: sha512-u0fmXagywjLAd3apZTV6kRQAHjWl3bNKv5422mQJsM/MZB5YPjx28tjEbpoORh15RuWjYyO/wHZACRWBBkNhbQ==}
@@ -4665,15 +4658,6 @@ snapshots:
   '@humanwhocodes/retry@0.3.1': {}
 
   '@humanwhocodes/retry@0.4.2': {}
-
-  '@i-am-bee/acp-sdk@0.0.4':
-    dependencies:
-      '@opentelemetry/api': 1.9.0
-      content-type: 1.0.5
-      eventsource: 3.0.5
-      raw-body: 3.0.0
-      zod: 3.24.2
-      zod-to-json-schema: 3.24.5(zod@3.24.2)
 
   '@ibm-cloud/watsonx-ai@1.6.4(@langchain/core@0.3.43(openai@4.85.4(ws@8.18.1)(zod@3.24.2)))':
     dependencies:
