@@ -12,9 +12,13 @@ import {
 import { Logger } from "beeai-framework";
 import clipboardy from "clipboardy";
 import blessed from "neo-blessed";
-import * as chatStyles from "../config.js";
 import { ChatFilterValues } from "../filter/filter.js";
 import { MessageTypeEnum } from "../runtime-handler.js";
+import {
+  formatCompleteMessage,
+  getMessagesBoxStyle,
+  getMessagesContainerStyle,
+} from "../config.js";
 
 export interface MessageValue {
   role: string;
@@ -52,7 +56,7 @@ export class Messages extends ContainerComponent {
     // Container
     this._container = this.controlsManager.add({
       kind: "container",
-      name: "messagesContainer",
+      name: "messages_container",
       element: blessed.box({
         parent: this.parent.element,
         width: "100%",
@@ -63,7 +67,7 @@ export class Messages extends ContainerComponent {
         alwaysScroll: false,
         mouse: false,
         keys: true,
-        ...chatStyles.getMessagesContainerStyle(),
+        ...getMessagesContainerStyle(),
       }),
       parent: this.parent,
     });
@@ -71,7 +75,7 @@ export class Messages extends ContainerComponent {
     // Messages area - adjusted to make room for filter boxes
     this._messagesBox = this.controlsManager.add({
       kind: "container",
-      name: "messagesBox",
+      name: "messages_box",
       element: blessed.box({
         parent: this._container.element,
         width: "100%-2",
@@ -81,7 +85,7 @@ export class Messages extends ContainerComponent {
         alwaysScroll: true,
         mouse: false,
         keys: true,
-        ...chatStyles.getMessagesBoxStyle(),
+        ...getMessagesBoxStyle(),
       }),
       parent: this._container,
     });
@@ -243,9 +247,9 @@ export class Messages extends ContainerComponent {
     });
 
     this.controlsManager.updateNavigation(this._container.id, {
-      in: this._messagesBox.id,
       inEffect: () => {
         // TODO Change color of container to indicate edit mode
+        this.focusMessagesBox();
       },
     });
 
@@ -267,7 +271,12 @@ export class Messages extends ContainerComponent {
   }
 
   focusMessagesBox() {
-    this.controlsManager.focus(this._messagesBox.id);
+    this.controlsManager.focus(this._messagesBox.id, () => {
+      this.container.element.style = getMessagesContainerStyle(false);
+      this.screen.element.render();
+    });
+    this.container.element.style = getMessagesContainerStyle(true);
+    this.screen.element.render();
   }
 
   private resetCurrentMessageIndex(resetPosition = false) {
@@ -289,7 +298,7 @@ export class Messages extends ContainerComponent {
       keys: true,
       vi: true,
       parent: this._messagesBox.element,
-      ...chatStyles.getMessagesContainerStyle(),
+      ...getMessagesContainerStyle(),
     });
 
     fakeBox.setContent(msg);
@@ -363,7 +372,7 @@ export class Messages extends ContainerComponent {
 
     // Format and display filtered messages
     const formattedMessages = filteredMessages.map((msg, idx) => {
-      const formatted = chatStyles.formatCompleteMessage(
+      const formatted = formatCompleteMessage(
         msg.timestamp,
         msg.role,
         msg.content,

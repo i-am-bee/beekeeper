@@ -9,13 +9,17 @@ import {
 } from "@/ui/controls/controls-manager.js";
 import { Logger } from "beeai-framework";
 import blessed from "neo-blessed";
-import * as chatStyles from "../config.js";
 import { UIColors } from "@/ui/colors.js";
-import { getPlayPauseButtonStyle } from "../config.js";
+import {
+  getPlayPauseButtonContent,
+  getPlayPauseButtonStyle,
+} from "../config.js";
 import {
   WorkflowDataProviderMode,
   WorkflowPopupDataProvider,
 } from "../data-provider.js";
+import { getCheckboxStyle } from "../../config.js";
+import { NavigationDirection } from "@/ui/controls/navigation.js";
 
 export class Controls extends ContainerComponent {
   private _container: ControllableContainer;
@@ -23,7 +27,9 @@ export class Controls extends ContainerComponent {
   private autoPopupCheckbox: ControllableElement<blessed.Widgets.CheckboxElement>;
   private autoPlayCheckbox: ControllableElement<blessed.Widgets.CheckboxElement>;
   private dataProvider: WorkflowPopupDataProvider;
-  private buttonsEnabled = false;
+  private playPauseButtonEnabled = false;
+  private focusedElementId?: string;
+  private onBlurCallback?: (direction: NavigationDirection) => void;
 
   constructor(
     arg: ParentInput | ScreenInput,
@@ -64,10 +70,8 @@ export class Controls extends ContainerComponent {
         height: 3,
         left: "50%-5",
         top: 1,
-        content: chatStyles.getPlayPauseButtonContent(
-          this.dataProvider.isPlaying,
-        ),
-        ...chatStyles.getPlayPauseButtonStyle(
+        content: getPlayPauseButtonContent(this.dataProvider.isPlaying),
+        ...getPlayPauseButtonStyle(
           this.dataProvider.isPlaying,
           this.dataProvider.hasRuns,
         ),
@@ -79,46 +83,30 @@ export class Controls extends ContainerComponent {
 
     this.autoPlayCheckbox = this.controlsManager.add({
       kind: "element",
-      name: "play_pause_button",
+      name: "auto_play_checkbox",
       element: blessed.checkbox({
         parent: this._container.element,
         top: 2,
         left: "100%-40",
         content: "Auto play",
-        checked: this.dataProvider.autoPlayEnabled,
         mouse: false,
         keys: false,
-        style: {
-          bg: UIColors.black.black,
-          fg: UIColors.white.white,
-          focus: {
-            bg: UIColors.black.black,
-            fg: UIColors.white.white,
-          },
-        },
+        ...getCheckboxStyle(this.dataProvider.autoPlayEnabled),
       }),
       parent: this._container,
     });
 
     this.autoPopupCheckbox = this.controlsManager.add({
       kind: "element",
-      name: "play_pause_button",
+      name: "auto_popup_checkbox",
       element: blessed.checkbox({
         parent: this._container.element,
         top: 2,
         left: "100%-20",
         content: "Auto popup",
-        checked: this.dataProvider.autoPopupEnabled,
         mouse: false,
         keys: false,
-        style: {
-          bg: UIColors.black.black,
-          fg: UIColors.white.white,
-          focus: {
-            bg: UIColors.black.black,
-            fg: UIColors.white.white,
-          },
-        },
+        ...getCheckboxStyle(this.dataProvider.autoPopupEnabled),
       }),
       parent: this._container,
     });
@@ -131,13 +119,12 @@ export class Controls extends ContainerComponent {
     this.dataProvider.on("mode:change", (mode) => {
       const isPlaying = mode === WorkflowDataProviderMode.PLAY;
       this.playPauseButton.element.setContent(
-        chatStyles.getPlayPauseButtonContent(isPlaying),
+        getPlayPauseButtonContent(isPlaying),
       );
       this.playPauseButton.element.style = getPlayPauseButtonStyle(
         isPlaying,
-        this.buttonsEnabled,
+        this.playPauseButtonEnabled,
       );
-      this.setupControls();
     });
 
     this.dataProvider.on("run:data", (isEmpty) => {
@@ -153,17 +140,90 @@ export class Controls extends ContainerComponent {
     });
   }
 
+  focus(onBlur: (direction: NavigationDirection) => void, shouldRender = true) {
+    this.onBlurCallback = onBlur;
+
+    this.focusedElementId = this.controlsManager.focused.id;
+    this.setupControls(shouldRender);
+
+    if (this.playPauseButtonEnabled) {
+      this.controlsManager.focus(this.playPauseButton.id);
+    } else {
+      this.controlsManager.focus(this.autoPlayCheckbox.id);
+    }
+  }
+
+  blur(direction: NavigationDirection, shouldRender = true) {
+    if (this.focusedElementId === undefined) {
+      return;
+    }
+    this.onBlurCallback?.(direction);
+    this.onBlurCallback = undefined;
+    this.controlsManager.focus(this.focusedElementId);
+    this.focusedElementId = undefined;
+    if (shouldRender) {
+      this.screen.element.render();
+    }
+  }
+
   private setupControls(shouldRender = true) {
+    this.enablePlayPauseButton(this.dataProvider.hasRuns);
+
+    // Navigation
+    if (this.playPauseButtonEnabled) {
+      this.controlsManager.updateNavigation(this.playPauseButton.id, {
+        right: this.autoPlayCheckbox.id,
+        next: this.autoPlayCheckbox.id,
+        leftEffect: () => this.blur(NavigationDirection.LEFT),
+        previousEffect: () => this.blur(NavigationDirection.PREVIOUS),
+        upEffect: () => this.blur(NavigationDirection.UP),
+        outEffect: () => this.blur(NavigationDirection.OUT),
+      });
+      this.controlsManager.updateNavigation(this.autoPlayCheckbox.id, {
+        right: this.autoPopupCheckbox.id,
+        next: this.autoPopupCheckbox.id,
+        left: this.playPauseButton.id,
+        previous: this.playPauseButton.id,
+        upEffect: () => this.blur(NavigationDirection.UP),
+        inEffect: () => this.dataProvider.toggleAutoPlay(),
+        outEffect: () => this.blur(NavigationDirection.OUT),
+      });
+      this.controlsManager.updateNavigation(this.autoPopupCheckbox.id, {
+        left: this.autoPlayCheckbox.id,
+        previous: this.autoPlayCheckbox.id,
+        inEffect: () => this.dataProvider.toggleAutoPopup(),
+        upEffect: () => this.blur(NavigationDirection.UP),
+        outEffect: () => this.blur(NavigationDirection.OUT),
+      });
+    } else {
+      this.controlsManager.updateNavigation(this.autoPlayCheckbox.id, {
+        right: this.autoPopupCheckbox.id,
+        next: this.autoPopupCheckbox.id,
+        leftEffect: () => this.blur(NavigationDirection.LEFT),
+        previousEffect: () => this.blur(NavigationDirection.PREVIOUS),
+        inEffect: () => this.dataProvider.toggleAutoPlay(),
+        upEffect: () => this.blur(NavigationDirection.UP),
+        outEffect: () => this.blur(NavigationDirection.OUT),
+      });
+      this.controlsManager.updateNavigation(this.autoPopupCheckbox.id, {
+        left: this.autoPlayCheckbox.id,
+        previous: this.autoPlayCheckbox.id,
+        inEffect: () => this.dataProvider.toggleAutoPopup(),
+        upEffect: () => this.blur(NavigationDirection.UP),
+        outEffect: () => this.blur(NavigationDirection.OUT),
+      });
+    }
+
     if (shouldRender) {
       this.screen.element.render();
     }
   }
 
   private enablePlayPauseButton(isEnabled: boolean) {
-    if (this.buttonsEnabled === isEnabled) {
+    if (this.playPauseButtonEnabled === isEnabled) {
       return;
     }
-    this.buttonsEnabled = isEnabled;
+    this.playPauseButtonEnabled = isEnabled;
     this.playPauseButton.element.style = getPlayPauseButtonStyle(
       this.dataProvider.isPlaying,
       isEnabled,

@@ -1,12 +1,13 @@
+import { Logger } from "beeai-framework";
 import blessed from "neo-blessed";
 import {
   ContainerComponent,
   ParentInput,
   ScreenInput,
 } from "../base/monitor.js";
+import { getBaseStyle } from "../chat-monitor/config.js";
 import { UIColors } from "../colors.js";
 import { ControllableContainer } from "../controls/controls-manager.js";
-import { Logger } from "beeai-framework";
 
 export class HelpBar extends ContainerComponent {
   private _container: ControllableContainer;
@@ -23,6 +24,7 @@ export class HelpBar extends ContainerComponent {
         height: 1,
         top: "100%-1",
         left: 0,
+        ...getBaseStyle(),
       }),
       parent: this.parent,
     });

@@ -84,6 +84,7 @@ export class ControlsManager {
   private emitter = new EventEmitter();
   private keyActionListeners = new Map<string, KeyActionListener>();
   private static _lastKeypressEventId = uuidv4();
+  private onBlurCallback?: () => void;
 
   static get lastKeypressEventId() {
     return this._lastKeypressEventId;
@@ -228,13 +229,19 @@ export class ControlsManager {
     }
   }
 
-  focus(id: string, shouldRender = true) {
+  focus(id: string, onBlur?: () => void, shouldRender = true) {
     this.logger.debug(`focus(${id})`);
 
     if (id === this._screen.id) {
       this.logger.warn(`Screen can't be focused, skip!`);
       return;
     }
+
+    if (id !== this._focused?.id && this.onBlurCallback) {
+      this.onBlurCallback();
+      this.onBlurCallback = undefined;
+    }
+    this.onBlurCallback = onBlur;
 
     const path = this.getPath(id, this._focused?.id);
     this.logger.debug(

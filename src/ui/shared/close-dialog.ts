@@ -1,4 +1,9 @@
 import blessed from "neo-blessed";
+import {
+  getBaseStyle,
+  getBorderedBoxStyle,
+  getTextFieldStyle,
+} from "../chat-monitor/config.js";
 import { UIColors } from "../colors.js";
 import {
   ControllableContainer,
@@ -49,15 +54,8 @@ export class CloseDialog {
         focusable: false,
         keys: false,
         mouse: false,
-        border: {
-          type: "line",
-        },
-        style: {
-          border: {
-            fg: "red",
-          },
-          bg: "black",
-        },
+        vi: false,
+        ...getBorderedBoxStyle(true),
         hidden: true, // Initially hidden
       }),
       parent: this.controlsManager.screen,
@@ -72,10 +70,11 @@ export class CloseDialog {
       focusable: false,
       keys: false,
       mouse: false,
-      style: {
-        bold: true,
-        fg: "white",
-      },
+      ...getTextFieldStyle({
+        style: {
+          bold: true,
+        },
+      }),
     });
 
     // Dialog message
@@ -87,9 +86,7 @@ export class CloseDialog {
       mouse: false,
       left: "center",
       content: "Are you sure you want to exit?",
-      style: {
-        fg: "white",
-      },
+      ...getTextFieldStyle(),
     });
 
     // Confirm button
@@ -106,12 +103,14 @@ export class CloseDialog {
         focusable: false,
         keys: false,
         mouse: false,
-        style: {
-          fg: UIColors.white.white,
-          focus: {
-            bg: UIColors.red.red,
+        ...getBaseStyle({
+          style: {
+            focus: {
+              bg: UIColors.red.red,
+            },
           },
-        },
+        }),
+        align: "center",
         tags: true,
       }),
       parent: this.dialog,
@@ -131,12 +130,14 @@ export class CloseDialog {
         focusable: false,
         keys: false,
         mouse: false,
-        style: {
-          fg: UIColors.white.white,
-          focus: {
-            bg: UIColors.blue.blue,
+        ...getBaseStyle({
+          style: {
+            focus: {
+              bg: UIColors.blue.blue,
+            },
           },
-        },
+        }),
+        align: "center",
         tags: true,
       }),
       parent: this.dialog,

@@ -1,3 +1,4 @@
+import { updateDeepPartialObject } from "@/utils/objects.js";
 import { clone } from "remeda";
 import { UIColors } from "../colors.js";
 import * as st from "../config.js";
@@ -99,59 +100,89 @@ export function formatCompleteMessage(
   return `${formattedTimestamp} ${formattedRole}: ${formattedContent}`;
 }
 
+export function getBaseStyle(override?: any) {
+  return updateDeepPartialObject<any>(
+    {
+      style: {
+        bg: st.UIConfig.colors.bg,
+        fg: st.UIConfig.colors.fg,
+        focus: {
+          bg: st.UIConfig.colors.bg,
+        },
+      },
+    },
+    override,
+  );
+}
+
+export function getTextFieldStyle(override?: any) {
+  return updateDeepPartialObject<any>(getBaseStyle(), override);
+}
+
+export function getBorderedBoxStyle(active = false, override?: any) {
+  const out = updateDeepPartialObject<any>(
+    getBaseStyle(),
+    updateDeepPartialObject<any>(
+      {
+        border: {
+          type: "line",
+          bg: st.UIConfig.colors.bg,
+          fg: active ? st.UIConfig.colors.active : st.UIConfig.colors.fg,
+        },
+        style: {
+          label: {
+            fg: st.UIConfig.colors.fg,
+            bg: st.UIConfig.colors.bg,
+          },
+          focus: {
+            border: {
+              fg: active
+                ? st.UIConfig.colors.active
+                : st.UIConfig.colors.focused,
+              bg: st.UIConfig.colors.bg,
+            },
+          },
+        },
+      },
+      override,
+    ),
+  );
+
+  return clone(out);
+}
+
 /**
  * Get UI styling for the messages box
  * @returns Object with UI configuration for the messages box
  */
-export function getMessagesContainerStyle() {
-  const border = clone(st.UIConfig.borders.general) as any;
+export function getMessagesContainerStyle(active = false) {
   return {
-    border,
+    ...getBorderedBoxStyle(active),
     label: " Messages ",
-    style: {
-      focus: border.focus,
-    },
   };
 }
 
 export function getMessagesBoxStyle() {
-  return {
+  return updateDeepPartialObject<any>(getBaseStyle(), {
     scrollbar: st.UIConfig.scrollbar,
-    style: {
-      // focus: {
-      //   bg: UIColors.green.dartmouth_green,
-      // },
-    },
-  };
+  });
 }
 
-export function getInputContainerBoxStyle() {
-  const border = clone(st.UIConfig.borders.general) as any;
+export function getInputContainerBoxStyle(active = false) {
   return {
-    border: border,
+    ...getBorderedBoxStyle(active),
     label: " Input ",
-    style: {
-      focus: border.focus,
-    },
   };
 }
 
 export function getInputBoxStyle() {
-  return {
-    style: {
-      ...st.UIConfig.input,
-    },
-  };
+  return updateDeepPartialObject<any>(getBaseStyle(), {
+    scrollbar: st.UIConfig.scrollbar,
+  });
 }
 
-/**
- * Get UI styling for the abort button
- * @param isAbort Whether the system is currently processing
- * @returns Object with UI configuration for the abort button
- */
-
 export function getButtonStyle(disabled = false) {
-  return {
+  return updateDeepPartialObject<any>(getBaseStyle(), {
     align: "center" as any,
     valign: "middle" as any,
     style: {
@@ -161,7 +192,7 @@ export function getButtonStyle(disabled = false) {
         bg: disabled ? UIColors.red.cardinal : UIColors.blue.electric_blue,
       },
     },
-  };
+  });
 }
 
 export function getSendButtonStyle(disabled = false) {
@@ -171,15 +202,31 @@ export function getSendButtonStyle(disabled = false) {
   };
 }
 export function getAbortButtonStyle(disabled = false) {
-  return {
+  return updateDeepPartialObject<any>(getButtonStyle(disabled), {
     content: "ABORT",
-    ...getButtonStyle(disabled),
     style: {
-      ...getButtonStyle(disabled).style,
       bg: disabled ? UIColors.gray.cool_gray : UIColors.red.dark_red,
       focus: {
         bg: disabled ? UIColors.gray.cool_gray : UIColors.red.electric_red,
       },
     },
-  };
+  });
+}
+
+export function getCheckboxStyle(checked: boolean, override?: any) {
+  return updateDeepPartialObject<any>(
+    getTextFieldStyle({
+      style: {
+        focus: {
+          fg: st.UIConfig.colors.focused,
+        },
+      },
+    }),
+    updateDeepPartialObject<any>(
+      {
+        checked: checked,
+      },
+      override,
+    ),
+  );
 }

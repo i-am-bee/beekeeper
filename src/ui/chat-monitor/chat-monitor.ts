@@ -238,6 +238,16 @@ export class ChatMonitor extends ContainerComponent {
             }),
           },
         },
+        {
+          key: "C-w",
+          action: {
+            description: NavigationDescription.WORKFLOW_EXPLORER,
+            listener: keyActionListenerFactory(() => {
+              this.collapse();
+              this.workflowPopup.show(this.controlsManager.focused.id);
+            }),
+          },
+        },
       ].filter(isNonNullish),
     });
 
@@ -271,6 +281,7 @@ export class ChatMonitor extends ContainerComponent {
   private collapse() {
     this.filter.collapse();
     this.closeDialog.hide();
+    this.workflowPopup.hide();
   }
 
   private setupEventHandlers() {

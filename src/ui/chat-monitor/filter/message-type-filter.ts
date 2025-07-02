@@ -8,12 +8,16 @@ import {
   ScreenInput,
 } from "../../base/monitor.js";
 import { UIColors } from "../../colors.js";
-import { UIConfig } from "../../config.js";
 import {
   ControllableContainer,
   ControllableElement,
 } from "../../controls/controls-manager.js";
 import { MessageTypeEnum } from "../runtime-handler.js";
+import {
+  getBorderedBoxStyle,
+  getCheckboxStyle,
+  getTextFieldStyle,
+} from "../config.js";
 
 export interface MessageTypeFilterValues {
   messageTypes: MessageTypeEnum[];
@@ -94,7 +98,7 @@ export class MessageTypeFilter extends ContainerComponent {
     // Type filter box area
     this._container = this.controlsManager.add({
       kind: "container",
-      name: "typeFilterBox",
+      name: "type_filter_box",
       element: blessed.box({
         parent: this.parent.element,
         width: "100%",
@@ -105,19 +109,7 @@ export class MessageTypeFilter extends ContainerComponent {
         mouse: false,
         keys: false,
         focusable: false,
-        border: {
-          type: "line",
-        },
-        style: {
-          border: {
-            fg: UIColors.white.white,
-          },
-          focus: {
-            border: {
-              fg: UIColors.blue.cyan,
-            },
-          },
-        },
+        ...getBorderedBoxStyle(),
       }),
       parent: this.parent,
     });
@@ -128,9 +120,7 @@ export class MessageTypeFilter extends ContainerComponent {
       content: "Message Filters:",
       left: 2,
       top: 0,
-      style: {
-        bold: true,
-      },
+      ...getTextFieldStyle(),
     });
 
     // Create message type checkboxes
@@ -139,7 +129,7 @@ export class MessageTypeFilter extends ContainerComponent {
     // Toggle button for role filter
     this._expandButton = this.controlsManager.add({
       kind: "element",
-      name: "expandButton",
+      name: "expand_button",
       element: blessed.button({
         parent: this._container.element,
         content: "▼ Show Role Filters",
@@ -150,12 +140,7 @@ export class MessageTypeFilter extends ContainerComponent {
         mouse: false,
         keys: false,
         focusable: false,
-        style: {
-          fg: UIColors.white.white,
-          focus: {
-            fg: UIConfig.colors.focused,
-          },
-        },
+        ...getTextFieldStyle(),
       }),
       parent: this._container,
     });
@@ -260,13 +245,9 @@ export class MessageTypeFilter extends ContainerComponent {
         top: 2,
         focusable: false,
         mouse: false,
-        checked: this.messageTypeFilters[MessageTypeEnum.PROGRESS],
-        style: {
-          fg: "green",
-          focus: {
-            fg: UIConfig.colors.focused,
-          },
-        },
+        ...getCheckboxStyle(this.messageTypeFilters[MessageTypeEnum.PROGRESS], {
+          style: { fg: UIColors.green.green },
+        }),
       }),
       parent: this._container,
     });
@@ -283,12 +264,9 @@ export class MessageTypeFilter extends ContainerComponent {
         focusable: false,
         mouse: false,
         checked: this.messageTypeFilters[MessageTypeEnum.SYSTEM],
-        style: {
-          fg: "blue",
-          focus: {
-            fg: UIConfig.colors.focused,
-          },
-        },
+        ...getCheckboxStyle(this.messageTypeFilters[MessageTypeEnum.SYSTEM], {
+          style: { fg: UIColors.blue.blue },
+        }),
       }),
       parent: this._container,
     });
@@ -304,13 +282,9 @@ export class MessageTypeFilter extends ContainerComponent {
         top: 2,
         focusable: false,
         mouse: false,
-        checked: this.messageTypeFilters[MessageTypeEnum.ABORT],
-        style: {
-          fg: UIColors.yellow.yellow,
-          focus: {
-            fg: UIConfig.colors.focused,
-          },
-        },
+        ...getCheckboxStyle(this.messageTypeFilters[MessageTypeEnum.ABORT], {
+          style: { fg: UIColors.yellow.yellow },
+        }),
       }),
       parent: this._container,
     });
@@ -326,13 +300,9 @@ export class MessageTypeFilter extends ContainerComponent {
         top: 2,
         focusable: false,
         mouse: false,
-        checked: this.messageTypeFilters[MessageTypeEnum.ERROR],
-        style: {
-          fg: UIColors.red.red,
-          focus: {
-            fg: UIConfig.colors.focused,
-          },
-        },
+        ...getCheckboxStyle(this.messageTypeFilters[MessageTypeEnum.ERROR], {
+          style: { fg: UIColors.red.red },
+        }),
       }),
       parent: this._container,
     });
@@ -343,10 +313,12 @@ export class MessageTypeFilter extends ContainerComponent {
       content: "Always visible: Input, Final",
       left: 2,
       top: 4,
-      style: {
-        fg: "grey",
-        bold: true,
-      },
+      ...getTextFieldStyle({
+        style: {
+          fg: UIColors.gray.gray,
+          bold: true,
+        },
+      }),
     });
 
     // Set up checkbox event handlers

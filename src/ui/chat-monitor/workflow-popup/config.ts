@@ -1,18 +1,16 @@
 import { clone } from "remeda";
 import * as st from "../../config.js";
 import { UIColors } from "@/ui/colors.js";
+import { getBorderedBoxStyle } from "../config.js";
 
-export function getRunListStyle() {
-  return clone(st.UIConfig.list);
+export function getWorkflowPopupStyle(active = false) {
+  return getBorderedBoxStyle(active);
 }
 
-export function getInfoBoxStyle() {
-  return {
-    style: {
-      fg: UIColors.white.white,
-      bg: UIColors.blue.navy_blue,
-    },
-  };
+export function getRunListStyle(active = false) {
+  return getBorderedBoxStyle(active, {
+    scrollbar: getRunListScrollbarStyle(),
+  });
 }
 
 export function getRunListScrollbarStyle() {

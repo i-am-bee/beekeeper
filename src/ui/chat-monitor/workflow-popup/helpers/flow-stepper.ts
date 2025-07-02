@@ -1,10 +1,7 @@
 import EventEmitter from "events";
 import { clone } from "remeda";
 import { DataStepper } from "./data-stepper.js";
-import {
-  getArrayOnPath,
-  getValueOnPath
-} from "./flow-stepper-utils.js";
+import { getArrayOnPath, getValueOnPath } from "./flow-stepper-utils.js";
 
 export interface FlowStep {
   /**

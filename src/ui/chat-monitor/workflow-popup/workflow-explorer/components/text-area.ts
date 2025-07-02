@@ -1,6 +1,5 @@
 import blessed from "neo-blessed";
 
-
 export class TextArea {
   private _element: blessed.Widgets.BoxElement;
 

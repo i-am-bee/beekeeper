@@ -111,7 +111,10 @@ export const UIConfig = {
 
   colors: {
     focused: UIColors.blue.cyan,
-    bg: UIColors.gray.granite_gray,
+    active: UIColors.purple.magenta,
+    fg: UIColors.white.white,
+    // bg: UIColors.gray.granite_gray,
+    bg: UIColors.black.black,
   },
 
   status: {
@@ -182,7 +185,7 @@ export const UIConfig = {
 
   list: {
     selected: { bg: UIColors.blue.blue, fg: UIColors.white.white },
-    border: { fg: UIColors.white.white },
+    border: { fg: UIColors.white.white, focus: { fg: UIColors.blue.cyan } },
     item: {
       hover: { bg: UIColors.blue.blue },
     },

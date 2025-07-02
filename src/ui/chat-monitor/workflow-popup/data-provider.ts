@@ -123,27 +123,21 @@ export class WorkflowPopupDataProvider extends EventEmitter {
         case StateUpdateType.SUPERVISOR_WORKFLOW_RUN:
           if (!this._hasRuns && this.stateBuilder.getState().runs.length > 0) {
             this._hasRuns = true;
-            this.emit("run:data", !this._hasRuns);
           }
+          this.emit("run:data", !this._hasRuns);
           break;
       }
     });
   }
 
-  setAutoPlay(enabled: boolean) {
-    if (this._autoPlayEnabled === enabled) {
-      return; // No change, do nothing
-    }
-    this._autoPlayEnabled = enabled;
-    this.emit("auto_play:change", enabled);
+  toggleAutoPlay(): void {
+    this._autoPlayEnabled = !this._autoPlayEnabled;
+    this.emit("auto_play:change", this._autoPlayEnabled);
   }
 
-  setAutoPopup(enabled: boolean) {
-    if (this._autoPopupEnabled === enabled) {
-      return; // No change, do nothing
-    }
-    this._autoPopupEnabled = enabled;
-    this.emit("auto_popup:change", enabled);
+  toggleAutoPopup() {
+    this._autoPopupEnabled = !this._autoPopupEnabled;
+    this.emit("auto_popup:change", this._autoPopupEnabled);
   }
 
   changeMode(mode: WorkflowDataProviderMode) {

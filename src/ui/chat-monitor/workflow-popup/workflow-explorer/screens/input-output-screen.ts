@@ -20,11 +20,11 @@ export class InputOutputScreen extends WorkflowScreen {
       left: 0,
       width: "100%-2",
       height: 1,
-      content: "Input:",  
+      content: "Input:",
       style: {
-        fg: "white",        
+        fg: "white",
         bold: true,
-      },    
+      },
     });
     this.inputTextArea = new StyledTextArea(
       this.parent.element,
@@ -64,7 +64,7 @@ export class InputOutputScreen extends WorkflowScreen {
     } else {
       // this.inputTextArea.element.setContent(this._input);
       this.inputTextArea.element.setText("XXX");
-      this.inputTextArea.element.show();     
+      this.inputTextArea.element.show();
       this.inputTitleElement.show();
     }
 

@@ -1,5 +1,8 @@
 import { keyActionListenerFactory } from "@/ui/controls/key-bindings.js";
-import { NavigationDescription } from "@/ui/controls/navigation.js";
+import {
+  NavigationDescription,
+  NavigationDirection,
+} from "@/ui/controls/navigation.js";
 import { Logger } from "beeai-framework";
 import blessed from "neo-blessed";
 import {
@@ -7,10 +10,10 @@ import {
   ParentInput,
   ScreenInput,
 } from "../../base/monitor.js";
-import { UIConfig } from "../../config.js";
 import { ControllableContainer } from "../../controls/controls-manager.js";
 import { Controls } from "./components/controls.js";
 import { WorkflowRuns } from "./components/workflow-runs.js";
+import { getWorkflowPopupStyle } from "./config.js";
 import {
   WorkflowDataProviderMode,
   WorkflowPopupDataProvider,
@@ -55,7 +58,7 @@ export class WorkflowPopup extends ContainerComponent {
 
     this._container = this.controlsManager.add({
       kind: "container",
-      name: "container",
+      name: "workflow_popup_container",
       element: blessed.box({
         parent: this.parent.element,
         top: "center",
@@ -67,13 +70,7 @@ export class WorkflowPopup extends ContainerComponent {
         keys: false,
         mouse: false,
         vi: false,
-        border: {
-          type: "line",
-        },
-        style: {
-          ...UIConfig.borders.general.focus,
-          bg: "black",
-        },
+        ...getWorkflowPopupStyle(true),
         hidden: !this._isVisible, // Initially hidden
       }),
       parent: this.parent,
@@ -137,13 +134,13 @@ export class WorkflowPopup extends ContainerComponent {
     // });
   }
 
-  private setupControls(shouldRender = true) {
+  private setupControls(shouldRender = true): void {
     // Shortcuts
     this.controlsManager.updateKeyActions(this.container.id, {
       kind: "exclusive",
       actions: [
         {
-          key: ["C-c", "escape", "enter"],
+          key: ["C-c"],
           action: {
             description: NavigationDescription.HIDE,
             listener: keyActionListenerFactory(() => {
@@ -160,11 +157,126 @@ export class WorkflowPopup extends ContainerComponent {
             }),
           },
         },
+        {
+          key: ["enter"],
+          action: {
+            description: NavigationDescription.IN_OUT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.IN);
+            }),
+          },
+        },
+        {
+          key: ["escape"],
+          action: {
+            description: NavigationDescription.IN_OUT,
+            listener: keyActionListenerFactory(() => {
+              if (this.controlsManager.focused.id === this.container.id) {
+                this.hide();
+                return;
+              }
+              this.controlsManager.navigate(NavigationDirection.OUT);
+            }),
+          },
+        },
+        {
+          key: ["tab"],
+          action: {
+            description: NavigationDescription.NEXT_PREV,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.NEXT);
+            }),
+          },
+        },
+        {
+          key: ["S-tab"],
+          action: {
+            description: NavigationDescription.NEXT_PREV,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.PREVIOUS);
+            }),
+          },
+        },
+        {
+          key: ["left"],
+          action: {
+            description: NavigationDescription.LEFT_RIGHT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.LEFT);
+            }),
+          },
+        },
+        {
+          key: ["right"],
+          action: {
+            description: NavigationDescription.LEFT_RIGHT,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.RIGHT);
+            }),
+          },
+        },
+        {
+          key: ["up"],
+          action: {
+            description: NavigationDescription.UP_DOWN,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.UP);
+            }),
+          },
+        },
+        {
+          key: ["down"],
+          action: {
+            description: NavigationDescription.UP_DOWN,
+            listener: keyActionListenerFactory(() => {
+              this.controlsManager.navigate(NavigationDirection.DOWN);
+            }),
+          },
+        },
       ],
+    });
+
+    // Navigation
+    this.controlsManager.updateNavigation(this.container.id, {
+      in: this.workflowRuns.runList.id,
+    });
+    this.controlsManager.updateNavigation(this.workflowRuns.runList.id, {
+      outEffect: this.hide.bind(this),
+      right: this.workflowExplorer.container.id,
+      next: this.workflowExplorer.container.id,
+      downEffect: () =>
+        this.controls.focus(this.navigateFromControls.bind(this)),
+    });
+    this.controlsManager.updateNavigation(this.workflowExplorer.container.id, {
+      outEffect: this.hide.bind(this),
+      left: this.workflowRuns.runList.id,
+      previous: this.workflowRuns.runList.id,
+      nextEffect: () =>
+        this.controls.focus(this.navigateFromControls.bind(this)),
+      rightEffect: () =>
+        this.controls.focus(this.navigateFromControls.bind(this)),
+      downEffect: () =>
+        this.controls.focus(this.navigateFromControls.bind(this)),
     });
 
     if (shouldRender) {
       this.screen.element.render();
+    }
+  }
+
+  private navigateFromControls(direction: NavigationDirection): void {
+    switch (direction) {
+      case NavigationDirection.OUT:
+        this.controlsManager.focus(this.container.id);
+        break;
+      case NavigationDirection.UP:
+        this.controlsManager.focus(this.workflowExplorer.container.id);
+        break;
+      case NavigationDirection.PREVIOUS:
+        this.controlsManager.focus(this.workflowExplorer.container.id);
+        break;
+      default:
+      // PASS;
     }
   }
 
@@ -187,7 +299,8 @@ export class WorkflowPopup extends ContainerComponent {
 
     this.initiatorElementId = initiatorElementId;
     this._container.element.show();
-    this.controlsManager.focus(this._container.id);
+    this.controlsManager.focus(this.workflowRuns.runList.id);
+    // this.controls.focus(() => this.hide(), false);
     this.screen.element.render();
     this._isVisible = true;
   }

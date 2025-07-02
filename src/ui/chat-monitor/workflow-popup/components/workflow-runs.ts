@@ -6,18 +6,22 @@ import {
 import { ControllableElement } from "@/ui/controls/controls-manager.js";
 import { Logger } from "beeai-framework";
 import blessed from "neo-blessed";
-import { getRunListScrollbarStyle, getRunListStyle } from "../config.js";
+import { getRunListStyle } from "../config.js";
 import { WorkflowPopupDataProvider } from "../data-provider.js";
 
 export class WorkflowRuns extends ContainerComponent {
   private dataProvider: WorkflowPopupDataProvider;
 
-  private runList: ControllableElement<blessed.Widgets.ListElement>;
+  private _runList: ControllableElement<blessed.Widgets.ListElement>;
   private runListItemsData: {
     runIndex: number;
     itemContent: string;
   }[] = [];
   private runListSelectedIndex: number | null = null;
+
+  get runList() {
+    return this._runList;
+  }
 
   constructor(
     arg: ParentInput | ScreenInput,
@@ -28,7 +32,7 @@ export class WorkflowRuns extends ContainerComponent {
 
     this.dataProvider = dataProvider;
 
-    this.runList = this.controlsManager.add({
+    this._runList = this.controlsManager.add({
       kind: "element",
       name: "run_list",
       element: blessed.list({
@@ -37,17 +41,15 @@ export class WorkflowRuns extends ContainerComponent {
         height: "100%-10",
         left: 0,
         top: 3,
-        border: { type: "line" },
         label: " Runs ",
-        style: getRunListStyle(),
+        ...getRunListStyle(),
         tags: true,
         scrollable: true,
         mouse: false,
         keys: false,
         vi: false,
         valign: "middle",
-        align: "left",
-        scrollbar: getRunListScrollbarStyle(),
+        align: "center",
       }),
       parent: this.parent,
     });
@@ -69,15 +71,15 @@ export class WorkflowRuns extends ContainerComponent {
 
     const runs = this.dataProvider.state.runs;
     if (runs.length === 0) {
-      this.runList.element.setContent("No runs available");
-      this.runList.element.style.align = "center";
+      this._runList.element.setContent("No runs available");
+      this._runList.element.style.align = "center";
       this.runListSelectedIndex = null;
       this.runListItemsData = [];
       return;
     }
 
-    this.runList.element.setContent("");
-    this.runList.element.style.align = "left";
+    this._runList.element.setContent("");
+    this._runList.element.style.align = "left";
 
     this.runListItemsData = runs.map((run, index) => {
       const itemContent = `{bold}Run ${index + 1}{/bold}`;
@@ -86,9 +88,9 @@ export class WorkflowRuns extends ContainerComponent {
 
     if (this.runListSelectedIndex == null && this.runListItemsData.length) {
       this.runListSelectedIndex = 0;
-      this.runList.element.select(this.runListSelectedIndex);
+      this._runList.element.select(this.runListSelectedIndex);
     }
-    this.runList.element.setItems(
+    this._runList.element.setItems(
       this.runListItemsData.map((it) => it.itemContent),
     );
 
@@ -98,8 +100,25 @@ export class WorkflowRuns extends ContainerComponent {
   }
 
   private setupControls(shouldRender = true) {
+    this.controlsManager.updateNavigation(this.runList.id, {
+      upEffect: this.selectRun.bind(this, true),
+      downEffect: this.selectRun.bind(this),
+    });
+
     if (shouldRender) {
       this.screen.element.render();
     }
+  }
+
+  private selectRun(up = false) {
+    const newIndex = up
+      ? (this.runListSelectedIndex ?? 0) - 1
+      : (this.runListSelectedIndex ?? 0) + 1;
+
+    if (newIndex < 0 || newIndex >= this.runListItemsData.length) {
+      return;
+    }
+    this.runListSelectedIndex = newIndex;
+    this._runList.element.select(this.runListSelectedIndex);
   }
 }

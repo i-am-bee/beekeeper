@@ -9,13 +9,13 @@ import blessed from "neo-blessed";
 import { getRunListStyle } from "../config.js";
 import { WorkflowPopupDataProvider } from "../data-provider.js";
 import { Phases, PhaseType } from "./components/phases.js";
-import { InputOutputScreen } from "./screens/input-output-screen.js";
+// import { InputOutputScreen } from "./screens/input-output-screen.js";
 
 export class WorkflowExplorer extends ContainerComponent {
   private _container: ControllableContainer;
   private dataProvider: WorkflowPopupDataProvider;
   private phases: Phases;
-  private ioScreen: InputOutputScreen;
+  // private ioScreen: InputOutputScreen;
 
   get container() {
     return this._container;
@@ -43,12 +43,9 @@ export class WorkflowExplorer extends ContainerComponent {
         keys: false,
         mouse: false,
         vi: false,
+        ...getRunListStyle(),
         align: "center",
         valign: "middle",
-        border: {
-          type: "line",
-        },
-        style: getRunListStyle(),
       }),
       parent: this.parent,
     });
@@ -81,8 +78,8 @@ export class WorkflowExplorer extends ContainerComponent {
   }
 
   private setupEventHandlers() {
-    this.dataProvider.on("workflow:update", () => {
-    });
+    // this.dataProvider.on("workflow:update", () => {
+    // });
   }
 
   private updateWorkflowExplorer(shouldRender = true) {

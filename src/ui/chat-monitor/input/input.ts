@@ -16,9 +16,13 @@ import { Logger } from "beeai-framework";
 import EventEmitter from "events";
 import blessed from "neo-blessed";
 import { Textarea } from "../../blessed/Textarea.js";
-import * as st from "../../config.js";
-import * as chatStyles from "../config.js";
 import { isNonNullish } from "remeda";
+import {
+  getAbortButtonStyle,
+  getInputBoxStyle,
+  getInputContainerBoxStyle,
+  getSendButtonStyle,
+} from "../config.js";
 
 interface ChatInputEvents {
   "send:click": (message: string) => void;
@@ -94,7 +98,7 @@ export class ChatInput extends ContainerComponent {
     // Input area
     this._container = this.controlsManager.add({
       kind: "container",
-      name: "chatInputContainer",
+      name: "chat_input_container",
       element: blessed.box({
         parent: this.parent.element,
         width: "100%", // Make room for abort button
@@ -104,7 +108,7 @@ export class ChatInput extends ContainerComponent {
         vi: false,
         mouse: false,
         keys: false,
-        ...chatStyles.getInputContainerBoxStyle(),
+        ...getInputContainerBoxStyle(),
       }),
       parent: this.parent,
     });
@@ -112,7 +116,7 @@ export class ChatInput extends ContainerComponent {
     // Input area
     this._inputBox = this.controlsManager.add({
       kind: "element",
-      name: "inputBox",
+      name: "input_box",
       element: new Textarea({
         parent: this._container.element,
         width: "100%-17", // Make room for abort button
@@ -120,8 +124,7 @@ export class ChatInput extends ContainerComponent {
         vi: false,
         mouse: false,
         keys: false,
-        scrollbar: st.UIConfig.scrollbar,
-        ...chatStyles.getInputBoxStyle(),
+        ...getInputBoxStyle(),
       }),
       parent: this._container,
     });
@@ -129,14 +132,14 @@ export class ChatInput extends ContainerComponent {
     // Send/abort button
     this._sendButton = this.controlsManager.add({
       kind: "element",
-      name: "sendButton",
+      name: "send_button",
       element: blessed.button({
         parent: this._container.element,
         width: 10,
         height: 3,
         left: "100%-14",
         top: 0,
-        ...chatStyles.getSendButtonStyle(true),
+        ...getSendButtonStyle(true),
         tags: true,
         mouse: false,
       }),
@@ -145,14 +148,14 @@ export class ChatInput extends ContainerComponent {
 
     this._abortButton = this.controlsManager.add({
       kind: "element",
-      name: "abortButton",
+      name: "abort_button",
       element: blessed.button({
         parent: this._container.element,
         width: 10,
         height: 3,
         left: "50%-5",
         top: "0",
-        ...chatStyles.getAbortButtonStyle(),
+        ...getAbortButtonStyle(),
         tags: true,
         mouse: false,
         hidden: true,
@@ -214,7 +217,7 @@ export class ChatInput extends ContainerComponent {
     switch (state) {
       case "ready": {
         this.controlsManager.updateNavigation(this._container.id, {
-          in: this._inputBox.id,
+          inEffect: this.focusInputBox.bind(this),
           out: this.parent.id,
         });
         this.controlsManager.updateNavigation(this._inputBox.id, {
@@ -225,7 +228,7 @@ export class ChatInput extends ContainerComponent {
       }
       case "ready_to_send": {
         this.controlsManager.updateNavigation(this._container.id, {
-          in: this._inputBox.id,
+          inEffect: this.focusInputBox.bind(this),
           out: this.parent.id,
         });
         this.controlsManager.updateNavigation(this._inputBox.id, {
@@ -235,8 +238,8 @@ export class ChatInput extends ContainerComponent {
           },
         });
         this.controlsManager.updateNavigation(this._sendButton.id, {
-          previous: this._inputBox.id,
-          left: this._inputBox.id,
+          previousEffect: this.focusInputBox.bind(this),
+          leftEffect: this.focusInputBox.bind(this),
           out: this._container.id,
           inEffect: () => {
             this.clickSendButton();
@@ -267,7 +270,12 @@ export class ChatInput extends ContainerComponent {
   }
 
   focusInputBox() {
-    this.controlsManager.focus(this._inputBox.id);
+    this.controlsManager.focus(this._inputBox.id, () => {
+      this.container.element.style = getInputContainerBoxStyle(false);
+      this.screen.element.render();
+    });
+    this.container.element.style = getInputContainerBoxStyle(true);
+    this.screen.element.render();
   }
 
   public setProcessing(isProcessing: boolean) {
@@ -299,7 +307,7 @@ export class ChatInput extends ContainerComponent {
     // Update send button
     const disabled =
       !this._isProcessing && this._inputBox.element.getContent().length === 0;
-    const buttonStyle = chatStyles.getSendButtonStyle(disabled);
+    const buttonStyle = getSendButtonStyle(disabled);
     this._sendButton.element.style = buttonStyle.style;
 
     if (shouldRender) {
@@ -310,7 +318,7 @@ export class ChatInput extends ContainerComponent {
   public setAborting(isAborting: boolean) {
     this._isAborting = isAborting;
     const disabled = this._isAborting;
-    const buttonStyle = chatStyles.getAbortButtonStyle(disabled);
+    const buttonStyle = getAbortButtonStyle(disabled);
     this.abortButton.element.style = buttonStyle.style;
   }
 
